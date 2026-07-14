@@ -130,6 +130,18 @@ CREATE TABLE onec_kindergarten_daily_activity (
     logged_by INT REFERENCES onec_users(id)
 );
 
+-- Role -> permission mapping (Phase 7). Presence of a (role, permission) row
+-- means that role has that permission for this tenant. Absence means it
+-- doesn't — this is an allow-list, not a deny-list. Tenant-overridable: a
+-- tenant admin can INSERT/DELETE rows here to customize a role's access
+-- without any code change.
+CREATE TABLE onec_role_permissions (
+    id SERIAL PRIMARY KEY,
+    role VARCHAR(50) NOT NULL,
+    permission VARCHAR(100) NOT NULL,
+    UNIQUE(role, permission)
+);
+
 CREATE TABLE onec_certificates (
     id SERIAL PRIMARY KEY,
     learner_id INT REFERENCES onec_learners(id) ON DELETE CASCADE,

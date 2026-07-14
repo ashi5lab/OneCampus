@@ -3,23 +3,24 @@ const router = express.Router();
 const controller = require('./controller');
 const auth = require('../../middleware/auth');
 const moduleGuard = require('../../middleware/moduleGuard');
+const requirePermission = require('../../middleware/permissionGuard');
 
 // Protect all routes with auth AND ensure the exams module is active
 router.use(auth);
 router.use(moduleGuard('exams'));
 
-router.get('/', controller.listEvaluations);
-router.post('/', controller.createEvaluation);
-router.get('/:id', controller.getEvaluation);
-router.put('/:id', controller.updateEvaluation);
-router.delete('/:id', controller.removeEvaluation);
+router.get('/', requirePermission('evaluations.view'), controller.listEvaluations);
+router.post('/', requirePermission('evaluations.manage'), controller.createEvaluation);
+router.get('/:id', requirePermission('evaluations.view'), controller.getEvaluation);
+router.put('/:id', requirePermission('evaluations.manage'), controller.updateEvaluation);
+router.delete('/:id', requirePermission('evaluations.manage'), controller.removeEvaluation);
 
-router.get('/:evaluationId/schedules', controller.listSchedules);
-router.post('/:evaluationId/schedules', controller.createSchedule);
-router.put('/schedules/:scheduleId', controller.updateSchedule);
-router.delete('/schedules/:scheduleId', controller.removeSchedule);
+router.get('/:evaluationId/schedules', requirePermission('evaluations.view'), controller.listSchedules);
+router.post('/:evaluationId/schedules', requirePermission('evaluations.manage'), controller.createSchedule);
+router.put('/schedules/:scheduleId', requirePermission('evaluations.manage'), controller.updateSchedule);
+router.delete('/schedules/:scheduleId', requirePermission('evaluations.manage'), controller.removeSchedule);
 
-router.get('/schedules/:scheduleId/scores', controller.listScores);
-router.post('/schedules/:scheduleId/scores', controller.recordScore);
+router.get('/schedules/:scheduleId/scores', requirePermission('evaluations.view'), controller.listScores);
+router.post('/schedules/:scheduleId/scores', requirePermission('evaluations.grade'), controller.recordScore);
 
 module.exports = router;

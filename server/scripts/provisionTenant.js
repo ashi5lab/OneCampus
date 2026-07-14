@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const db = require('../config/db');
+const { seedDefaultPermissions } = require('../lib/permissions');
 
 async function provisionTenant({ domain, name, type }) {
   let activeModules = [];
@@ -53,6 +54,9 @@ async function provisionTenant({ domain, name, type }) {
     
     // Execute DDL
     await client.query(schemaSql);
+
+    // 4. Seed default role -> permission mapping (Phase 7)
+    await seedDefaultPermissions(client);
 
     await client.query('COMMIT');
     console.log(`Successfully provisioned tenant: ${domain} (Schema: ${schemaName})`);
