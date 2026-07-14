@@ -1,0 +1,11 @@
+@import './styles/theme.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .input {
+    @apply w-full rounded border border-border px-3 py-2 text-sm text-ink-900;
+  }
+}

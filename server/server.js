@@ -24,6 +24,7 @@ app.use(tenantResolver);
 app.use(tenantDb);
 
 // Setup API routes
+const tenantRoutes = require('./modules/tenant/routes');
 const authRoutes = require('./modules/auth/routes');
 const unitsRoutes = require('./modules/units/routes');
 const cohortsRoutes = require('./modules/cohorts/routes');
@@ -34,6 +35,7 @@ const guardiansRoutes = require('./modules/guardians/routes');
 const attendanceRoutes = require('./modules/attendance/routes');
 const evaluationsRoutes = require('./modules/evaluations/routes');
 
+app.use('/api/v1/tenant', tenantRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/units', unitsRoutes);
 app.use('/api/v1/cohorts', cohortsRoutes);
