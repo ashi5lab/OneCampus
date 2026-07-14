@@ -44,7 +44,7 @@ export function CohortFormModal({ onClose, onSubmit, submitting, submitError }) 
           <button
             type="submit"
             disabled={submitting}
-            className="rounded bg-accent px-3.5 py-2 text-xs font-semibold text-ink-900 disabled:opacity-60"
+            className="rounded bg-accent px-3.5 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
           >
             {submitting ? 'Saving…' : 'Save'}
           </button>

@@ -18,14 +18,19 @@ export default {
         },
         accent: {
           DEFAULT: 'var(--accent)',
-          dark: 'var(--accent-dark)'
+          dark: 'var(--accent-dark)',
+          ink: 'var(--accent-ink)'
         },
         success: 'var(--success)',
         danger: 'var(--danger)',
         sidebar: {
           bg: 'var(--sidebar-bg)',
           hover: 'var(--sidebar-bg-hover)',
-          text: 'var(--sidebar-text)'
+          text: 'var(--sidebar-text)',
+          textStrong: 'var(--sidebar-text-strong)',
+          activeBg: 'var(--sidebar-active-bg)',
+          activeText: 'var(--sidebar-active-text)',
+          border: 'var(--sidebar-border)'
         }
       },
       borderRadius: {

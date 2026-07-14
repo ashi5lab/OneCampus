@@ -29,7 +29,7 @@ export function CohortsPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-ink-900"
+          className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
         >
           + Add {t('cohort')}
         </button>
