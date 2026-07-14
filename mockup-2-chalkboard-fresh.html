@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OneCampus — Chalkboard Fresh</title>
+<style>
+  :root{
+    --board:#1F3D2E;
+    --board-light:#2E5540;
+    --cream:#FBF7EE;
+    --paper:#FFFFFF;
+    --ink:#26301F;
+    --ink-soft:#6B7460;
+    --mustard:#E0A83B;
+    --coral:#E27554;
+    --line:#E7E1D2;
+    --green-ok:#4C8B5B;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--cream); color:var(--ink);
+    font-family:'Georgia', 'Iowan Old Style', serif;
+    font-size:14px; line-height:1.5;
+  }
+  .sans{font-family:-apple-system, 'Segoe UI', sans-serif;}
+  .app{display:grid; grid-template-columns:240px 1fr; min-height:100vh;}
+
+  .sidebar{background:var(--board); color:#EFEAD9; padding:26px 18px; position:relative;}
+  .sidebar::after{
+    content:""; position:absolute; top:0; right:0; bottom:0; width:6px;
+    background:repeating-linear-gradient(180deg, var(--mustard) 0 10px, transparent 10px 20px);
+    opacity:0.5;
+  }
+  .brand{margin-bottom:30px; padding:0 6px;}
+  .brand-name{font-size:19px; font-weight:700; letter-spacing:-0.01em;}
+  .brand-sub{font-family:'Courier New', monospace; font-size:11px; color:#B9C9BC; margin-top:3px; letter-spacing:0.03em;}
+  .nav-group-label{font-family:'Courier New', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:#8FAE9A; padding:18px 10px 8px;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
+    color:#DCE7DD; font-size:14px; cursor:pointer; margin-bottom:3px; font-family:-apple-system, sans-serif; font-weight:500;
+  }
+  .nav-item:hover{background:var(--board-light);}
+  .nav-item.active{background:var(--mustard); color:var(--board); font-weight:700;}
+  .nav-dot{width:6px; height:6px; border-radius:50%; background:currentColor; opacity:0.6; flex-shrink:0;}
+  .nav-item.active .nav-dot{opacity:1;}
+
+  .main{padding:32px 40px; max-width:1180px;}
+  .topbar{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px;}
+  .eyebrow{font-family:'Courier New', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--coral); font-weight:700; margin-bottom:6px;}
+  h1{font-size:30px; margin:0; font-weight:700; letter-spacing:-0.01em;}
+  .subtext{color:var(--ink-soft); font-size:14px; margin-top:6px; font-family:-apple-system, sans-serif;}
+  .btn{
+    background:var(--board); color:#fff; border:none; padding:12px 20px; border-radius:999px;
+    font-size:13.5px; font-weight:700; cursor:pointer; font-family:-apple-system, sans-serif;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px;}
+  .stat-card{
+    background:var(--paper); border:1.5px solid var(--line); border-radius:var(--radius); padding:18px 20px;
+    font-family:-apple-system, sans-serif;
+  }
+  .stat-label{font-size:12px; color:var(--ink-soft); font-weight:600;}
+  .stat-value{font-size:28px; font-weight:800; margin-top:6px; color:var(--board); font-family:Georgia, serif;}
+  .stat-delta{font-size:12px; margin-top:5px; font-weight:600; color:var(--green-ok);}
+
+  .card{background:var(--paper); border:1.5px solid var(--line); border-radius:var(--radius); overflow:hidden; font-family:-apple-system, sans-serif;}
+  .card-head{display:flex; justify-content:space-between; align-items:center; padding:18px 22px; border-bottom:1.5px solid var(--line);}
+  .card-title{font-weight:800; font-size:16px; font-family:Georgia, serif; color:var(--board);}
+  .filters{display:flex; gap:8px; align-items:center;}
+  .chip{
+    border:1.5px solid var(--line); background:var(--cream); color:var(--ink-soft);
+    font-size:12.5px; font-weight:700; padding:7px 14px; border-radius:999px; cursor:pointer;
+  }
+  .chip.active{background:var(--coral); color:#fff; border-color:var(--coral);}
+  .search{
+    border:1.5px solid var(--line); border-radius:999px; padding:8px 14px; font-size:12.5px;
+    width:190px; color:var(--ink-soft); background:var(--cream);
+  }
+
+  table{width:100%; border-collapse:collapse;}
+  th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft);
+    font-weight:700; padding:12px 22px; border-bottom:1.5px solid var(--line);
+  }
+  td{padding:14px 22px; border-bottom:1px solid var(--line); font-size:13.5px; vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .student-cell{display:flex; align-items:center; gap:11px;}
+  .mini-avatar{
+    width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:800; color:#fff; flex-shrink:0; font-family:Georgia, serif;
+  }
+  .s-name{font-weight:700; color:var(--ink);}
+  .s-sub{font-size:11.5px; color:var(--ink-soft); font-family:'Courier New', monospace;}
+  .badge{padding:4px 11px; border-radius:999px; font-size:11.5px; font-weight:700; display:inline-block;}
+  .badge.active{background:#E3EFDD; color:var(--green-ok);}
+  .badge.pending{background:#FBEAD2; color:#B87A1E;}
+  .badge.inactive{background:#F6E2DA; color:var(--coral);}
+  .attendance-bar{width:70px; height:6px; background:var(--cream); border:1px solid var(--line); border-radius:3px; overflow:hidden; margin-top:4px;}
+  .attendance-fill{height:100%; background:var(--mustard); border-radius:3px;}
+  .row-actions{color:var(--ink-soft); font-size:16px; cursor:pointer;}
+  .theme-tag{position:fixed; bottom:16px; right:16px; background:var(--board); color:#fff; font-size:11px; font-weight:700; padding:6px 14px; border-radius:999px; opacity:0.9; font-family:-apple-system, sans-serif;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-name">Rose Hill Sr. Sec.</div>
+      <div class="brand-sub">SCHOOL MANAGEMENT</div>
+    </div>
+    <div class="nav-group-label">Overview</div>
+    <div class="nav-item"><span class="nav-dot"></span>Dashboard</div>
+    <div class="nav-group-label">School Management</div>
+    <div class="nav-item"><span class="nav-dot"></span>Users</div>
+    <div class="nav-item active"><span class="nav-dot"></span>Students</div>
+    <div class="nav-item"><span class="nav-dot"></span>Teachers</div>
+    <div class="nav-item"><span class="nav-dot"></span>Classes</div>
+    <div class="nav-item"><span class="nav-dot"></span>Attendance</div>
+    <div class="nav-item"><span class="nav-dot"></span>Exams</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">School Management / Students</div>
+        <h1>Students</h1>
+        <div class="subtext">412 students enrolled across 14 classes this term</div>
+      </div>
+      <button class="btn">+ Add Student</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value">412</div>
+        <div class="stat-delta">↑ 8 this month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg. Attendance</div>
+        <div class="stat-value">93.4%</div>
+        <div class="stat-delta">↑ 1.2%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending Admissions</div>
+        <div class="stat-value">6</div>
+        <div class="stat-delta" style="color:#B87A1E;">Needs review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Classes</div>
+        <div class="stat-value">14</div>
+        <div class="stat-delta" style="color:var(--ink-soft);">Grade 1 – 10</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">All Students</div>
+        <div class="filters">
+          <input class="search" placeholder="Search students…" />
+          <div class="chip active">All</div>
+          <div class="chip">Active</div>
+          <div class="chip">Pending</div>
+        </div>
+      </div>
+      <table>
+        <tr><th>Student</th><th>Class</th><th>Roll No.</th><th>Guardian</th><th>Attendance</th><th>Status</th><th></th></tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar" style="background:#5B8C6E;">AK</div><div><div class="s-name">Aditi Krishnan</div><div class="s-sub">RH-2024-0113</div></div></div></td>
+          <td>Grade 9 – B</td><td>09B-14</td><td>Meera Krishnan</td>
+          <td>96%<div class="attendance-bar"><div class="attendance-fill" style="width:96%"></div></div></td>
+          <td><span class="badge active">Active</span></td><td class="row-actions">⋯</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar" style="background:var(--coral);">RN</div><div><div class="s-name">Rohan Nair</div><div class="s-sub">RH-2024-0089</div></div></div></td>
+          <td>Grade 7 – A</td><td>07A-22</td><td>Suresh Nair</td>
+          <td>88%<div class="attendance-bar"><div class="attendance-fill" style="width:88%"></div></div></td>
+          <td><span class="badge active">Active</span></td><td class="row-actions">⋯</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar" style="background:var(--mustard);">FT</div><div><div class="s-name">Fathima T.</div><div class="s-sub">RH-2024-0201</div></div></div></td>
+          <td>Grade 10 – C</td><td>10C-05</td><td>Abdul Rahman</td>
+          <td>91%<div class="attendance-bar"><div class="attendance-fill" style="width:91%"></div></div></td>
+          <td><span class="badge active">Active</span></td><td class="row-actions">⋯</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar" style="background:#8A9B7C;">VJ</div><div><div class="s-name">Vishnu Jayan</div><div class="s-sub">RH-2024-0244</div></div></div></td>
+          <td>Grade 5 – A</td><td>05A-09</td><td>Priya Jayan</td>
+          <td>—<div class="attendance-bar"><div class="attendance-fill" style="width:0%"></div></div></td>
+          <td><span class="badge pending">Pending</span></td><td class="row-actions">⋯</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar" style="background:#B0785A;">SM</div><div><div class="s-name">Sana Mathew</div><div class="s-sub">RH-2023-0176</div></div></div></td>
+          <td>Grade 9 – B</td><td>09B-02</td><td>Thomas Mathew</td>
+          <td>78%<div class="attendance-bar"><div class="attendance-fill" style="width:78%"></div></div></td>
+          <td><span class="badge inactive">Inactive</span></td><td class="row-actions">⋯</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="theme-tag">Theme 2 — Chalkboard Fresh</div>
+</body>
+</html>

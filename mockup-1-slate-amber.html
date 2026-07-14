@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OneCampus — Slate &amp; Amber</title>
+<style>
+  :root{
+    --bg:#F5F6F8;
+    --surface:#FFFFFF;
+    --slate-900:#1C2230;
+    --slate-700:#3A4358;
+    --slate-500:#6B7488;
+    --slate-300:#D7DBE3;
+    --slate-100:#EEF0F4;
+    --amber:#E5A331;
+    --amber-dark:#B8791A;
+    --green:#2E7D5B;
+    --red:#C24545;
+    --radius:10px;
+    --font-display: 'Söhne', -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--slate-900);
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size:14px; line-height:1.5;
+  }
+  .app{display:grid; grid-template-columns:248px 1fr; min-height:100vh;}
+
+  /* Sidebar */
+  .sidebar{background:var(--slate-900); color:#fff; padding:24px 16px; display:flex; flex-direction:column;}
+  .brand{display:flex; align-items:center; gap:10px; padding:0 8px 28px 8px;}
+  .brand-mark{width:28px; height:28px; border-radius:7px; background:linear-gradient(135deg, var(--amber), var(--amber-dark)); flex-shrink:0;}
+  .brand-name{font-weight:600; font-size:15px; letter-spacing:-0.01em;}
+  .brand-sub{font-size:11px; color:var(--slate-500); margin-top:1px;}
+  .nav-group-label{font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--slate-500); padding:16px 12px 6px;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px;
+    color:#C7CCD6; font-size:13.5px; font-weight:500; cursor:pointer; margin-bottom:2px;
+  }
+  .nav-item:hover{background:rgba(255,255,255,0.06);}
+  .nav-item.active{background:var(--amber); color:var(--slate-900); font-weight:600;}
+  .nav-icon{width:16px; height:16px; border-radius:4px; background:currentColor; opacity:0.55; flex-shrink:0;}
+  .nav-item.active .nav-icon{opacity:1;}
+  .sidebar-footer{margin-top:auto; padding:12px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:10px;}
+  .avatar{width:30px; height:30px; border-radius:50%; background:var(--slate-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;}
+  .user-name{font-size:12.5px; font-weight:600;}
+  .user-role{font-size:11px; color:var(--slate-500);}
+
+  /* Main */
+  .main{padding:28px 36px; max-width:1180px;}
+  .topbar{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:26px;}
+  .eyebrow{font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--slate-500); font-weight:600; margin-bottom:4px;}
+  h1{font-size:24px; margin:0; letter-spacing:-0.02em; font-weight:650;}
+  .subtext{color:var(--slate-500); font-size:13.5px; margin-top:4px;}
+  .btn{
+    background:var(--slate-900); color:#fff; border:none; padding:10px 16px; border-radius:8px;
+    font-size:13.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:7px;
+  }
+  .btn-amber{background:var(--amber); color:var(--slate-900);}
+
+  /* Stat cards */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px;}
+  .stat-card{background:var(--surface); border:1px solid var(--slate-300); border-radius:var(--radius); padding:16px 18px;}
+  .stat-label{font-size:12px; color:var(--slate-500); font-weight:600;}
+  .stat-value{font-size:26px; font-weight:650; margin-top:6px; letter-spacing:-0.02em;}
+  .stat-delta{font-size:12px; margin-top:4px; font-weight:600;}
+  .stat-delta.up{color:var(--green);}
+  .stat-delta.down{color:var(--red);}
+
+  /* Table card */
+  .card{background:var(--surface); border:1px solid var(--slate-300); border-radius:var(--radius); overflow:hidden;}
+  .card-head{display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--slate-100);}
+  .card-title{font-weight:650; font-size:15px;}
+  .filters{display:flex; gap:8px;}
+  .chip{
+    border:1px solid var(--slate-300); background:var(--slate-100); color:var(--slate-700);
+    font-size:12.5px; font-weight:600; padding:7px 12px; border-radius:7px; cursor:pointer;
+  }
+  .chip.active{background:var(--slate-900); color:#fff; border-color:var(--slate-900);}
+  .search{
+    border:1px solid var(--slate-300); border-radius:7px; padding:7px 12px; font-size:12.5px;
+    width:200px; color:var(--slate-500);
+  }
+
+  table{width:100%; border-collapse:collapse;}
+  th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--slate-500);
+    font-weight:650; padding:11px 20px; border-bottom:1px solid var(--slate-100); background:var(--slate-100);
+  }
+  td{padding:13px 20px; border-bottom:1px solid var(--slate-100); font-size:13.5px; vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .student-cell{display:flex; align-items:center; gap:10px;}
+  .mini-avatar{width:32px; height:32px; border-radius:50%; background:var(--slate-100); border:1px solid var(--slate-300); display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:650; color:var(--slate-700); flex-shrink:0;}
+  .s-name{font-weight:600;}
+  .s-sub{font-size:11.5px; color:var(--slate-500); font-family:var(--font-mono);}
+  .badge{padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:650; display:inline-block;}
+  .badge.active{background:#E4F3EB; color:var(--green);}
+  .badge.pending{background:#FCEFDA; color:var(--amber-dark);}
+  .badge.inactive{background:#F5E6E6; color:var(--red);}
+  .attendance-bar{width:70px; height:5px; background:var(--slate-100); border-radius:3px; overflow:hidden; margin-top:4px;}
+  .attendance-fill{height:100%; background:var(--green); border-radius:3px;}
+  .row-actions{color:var(--slate-500); font-size:16px; cursor:pointer;}
+  .theme-tag{position:fixed; bottom:16px; right:16px; background:var(--slate-900); color:#fff; font-size:11px; font-weight:600; padding:6px 12px; border-radius:20px; opacity:0.85;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <div class="brand-name">Rose Hill Sr. Sec.</div>
+        <div class="brand-sub">School Management</div>
+      </div>
+    </div>
+    <div class="nav-group-label">Overview</div>
+    <div class="nav-item"><span class="nav-icon"></span>Dashboard</div>
+    <div class="nav-group-label">School Management</div>
+    <div class="nav-item"><span class="nav-icon"></span>Users</div>
+    <div class="nav-item active"><span class="nav-icon"></span>Students</div>
+    <div class="nav-item"><span class="nav-icon"></span>Teachers</div>
+    <div class="nav-item"><span class="nav-icon"></span>Classes</div>
+    <div class="nav-item"><span class="nav-icon"></span>Attendance</div>
+    <div class="nav-item"><span class="nav-icon"></span>Exams</div>
+    <div class="sidebar-footer">
+      <div class="avatar">AS</div>
+      <div>
+        <div class="user-name">Ashique S.</div>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">School Management / Students</div>
+        <h1>Students</h1>
+        <div class="subtext">412 students enrolled across 14 classes this term</div>
+      </div>
+      <button class="btn btn-amber">+ Add Student</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value">412</div>
+        <div class="stat-delta up">↑ 8 this month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg. Attendance</div>
+        <div class="stat-value">93.4%</div>
+        <div class="stat-delta up">↑ 1.2%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending Admissions</div>
+        <div class="stat-value">6</div>
+        <div class="stat-delta down">Needs review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Classes</div>
+        <div class="stat-value">14</div>
+        <div class="stat-delta up">Grade 1 – 10</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">All Students</div>
+        <div class="filters">
+          <input class="search" placeholder="Search students…" />
+          <div class="chip active">All</div>
+          <div class="chip">Active</div>
+          <div class="chip">Pending</div>
+        </div>
+      </div>
+      <table>
+        <tr>
+          <th>Student</th><th>Class</th><th>Roll No.</th><th>Guardian</th><th>Attendance</th><th>Status</th><th></th>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar">AK</div><div><div class="s-name">Aditi Krishnan</div><div class="s-sub">RH-2024-0113</div></div></div></td>
+          <td>Grade 9 – B</td><td>09B-14</td><td>Meera Krishnan</td>
+          <td>96%<div class="attendance-bar"><div class="attendance-fill" style="width:96%"></div></div></td>
+          <td><span class="badge active">Active</span></td><td class="row-actions">⋯</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar">RN</div><div><div class="s-name">Rohan Nair</div><div class="s-sub">RH-2024-0089</div></div></div></td>
+          <td>Grade 7 – A</td><td>07A-22</td><td>Suresh Nair</td>
+          <td>88%<div class="attendance-bar"><div class="attendance-fill" style="width:88%"></div></div></td>
+          <td><span class="badge active">Active</span></td><td class="row-actions">⋯</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar">FT</div><div><div class="s-name">Fathima T.</div><div class="s-sub">RH-2024-0201</div></div></div></td>
+          <td>Grade 10 – C</td><td>10C-05</td><td>Abdul Rahman</td>
+          <td>91%<div class="attendance-bar"><div class="attendance-fill" style="width:91%"></div></div></td>
+          <td><span class="badge active">Active</span></td><td class="row-actions">⋯</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar">VJ</div><div><div class="s-name">Vishnu Jayan</div><div class="s-sub">RH-2024-0244</div></div></div></td>
+          <td>Grade 5 – A</td><td>05A-09</td><td>Priya Jayan</td>
+          <td>—<div class="attendance-bar"><div class="attendance-fill" style="width:0%"></div></div></td>
+          <td><span class="badge pending">Pending</span></td><td class="row-actions">⋯</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar">SM</div><div><div class="s-name">Sana Mathew</div><div class="s-sub">RH-2023-0176</div></div></div></td>
+          <td>Grade 9 – B</td><td>09B-02</td><td>Thomas Mathew</td>
+          <td>78%<div class="attendance-bar"><div class="attendance-fill" style="width:78%"></div></div></td>
+          <td><span class="badge inactive">Inactive</span></td><td class="row-actions">⋯</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="theme-tag">Theme 1 — Slate &amp; Amber</div>
+</body>
+</html>

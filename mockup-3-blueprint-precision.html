@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OneCampus — Blueprint Precision</title>
+<style>
+  :root{
+    --bg:#FAFBFC;
+    --paper:#FFFFFF;
+    --ink:#0F1A2B;
+    --blue-900:#0B3D66;
+    --blue-600:#1B5C93;
+    --blue-100:#E4EEF6;
+    --grid-line:#DCE4EC;
+    --steel:#5A6B7D;
+    --steel-light:#8A97A6;
+    --lime:#7FB93F;
+    --rust:#C2542B;
+    --radius:4px;
+    --mono:'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter', -apple-system, 'Segoe UI', sans-serif;
+    font-size:13.5px; line-height:1.5;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size:24px 24px;
+    background-attachment:fixed;
+  }
+  .app{display:grid; grid-template-columns:250px 1fr; min-height:100vh;}
+
+  .sidebar{background:var(--blue-900); color:#fff; padding:0; border-right:2px solid var(--blue-900);}
+  .brand{padding:22px 20px; border-bottom:1px solid rgba(255,255,255,0.15);}
+  .brand-name{font-size:16px; font-weight:700; letter-spacing:-0.01em;}
+  .brand-sub{font-family:var(--mono); font-size:10.5px; color:#8FB4D6; margin-top:4px; letter-spacing:0.05em; text-transform:uppercase;}
+  .nav-group-label{
+    font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.1em;
+    color:#5F84A8; padding:18px 20px 8px; border-top:1px solid rgba(255,255,255,0.08);
+  }
+  .nav-group-label:first-of-type{border-top:none;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:10px 20px;
+    color:#C6D8E8; font-size:13px; cursor:pointer; font-weight:500;
+    border-left:3px solid transparent;
+  }
+  .nav-item:hover{background:rgba(255,255,255,0.05);}
+  .nav-item.active{background:rgba(127,185,63,0.12); color:#fff; border-left-color:var(--lime); font-weight:650;}
+  .nav-index{font-family:var(--mono); font-size:11px; color:#5F84A8; width:16px;}
+  .nav-item.active .nav-index{color:var(--lime);}
+
+  .main{padding:28px 36px 40px; max-width:1200px;}
+  .topbar{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px; padding-bottom:18px; border-bottom:2px solid var(--ink);}
+  .eyebrow{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--rust); font-weight:700; margin-bottom:6px;}
+  h1{font-size:26px; margin:0; font-weight:700; letter-spacing:-0.02em;}
+  .subtext{color:var(--steel); font-size:13px; margin-top:5px; font-family:var(--mono);}
+  .btn{
+    background:var(--blue-900); color:#fff; border:1.5px solid var(--blue-900); padding:10px 18px; border-radius:var(--radius);
+    font-size:12.5px; font-weight:700; cursor:pointer; font-family:var(--mono); text-transform:uppercase; letter-spacing:0.04em;
+  }
+
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-bottom:24px; border:1.5px solid var(--ink);}
+  .stat-card{background:var(--paper); padding:16px 18px; border-right:1.5px solid var(--ink);}
+  .stat-card:last-child{border-right:none;}
+  .stat-label{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; color:var(--steel); font-weight:700;}
+  .stat-value{font-size:27px; font-weight:700; margin-top:7px; letter-spacing:-0.02em; font-family:var(--mono);}
+  .stat-delta{font-size:11px; margin-top:5px; font-weight:600; font-family:var(--mono);}
+  .stat-delta.up{color:var(--lime);}
+  .stat-delta.warn{color:var(--rust);}
+
+  .card{background:var(--paper); border:1.5px solid var(--ink);}
+  .card-head{display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:1.5px solid var(--ink); background:var(--blue-100);}
+  .card-title{font-weight:700; font-size:13.5px; font-family:var(--mono); text-transform:uppercase; letter-spacing:0.04em; color:var(--blue-900);}
+  .filters{display:flex; gap:8px; align-items:center;}
+  .chip{
+    border:1.5px solid var(--steel-light); background:var(--paper); color:var(--steel);
+    font-size:11.5px; font-weight:700; padding:6px 12px; border-radius:var(--radius); cursor:pointer; font-family:var(--mono);
+  }
+  .chip.active{background:var(--blue-900); color:#fff; border-color:var(--blue-900);}
+  .search{
+    border:1.5px solid var(--steel-light); border-radius:var(--radius); padding:7px 12px; font-size:12px;
+    width:190px; color:var(--steel); font-family:var(--mono);
+  }
+
+  table{width:100%; border-collapse:collapse;}
+  th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; color:var(--steel);
+    font-weight:700; padding:10px 20px; border-bottom:1.5px solid var(--ink); font-family:var(--mono);
+  }
+  td{padding:12px 20px; border-bottom:1px solid var(--grid-line); font-size:13px; vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .student-cell{display:flex; align-items:center; gap:10px;}
+  .mini-avatar{
+    width:30px; height:30px; border-radius:var(--radius); border:1.5px solid var(--ink); display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; color:var(--blue-900); flex-shrink:0; font-family:var(--mono); background:var(--blue-100);
+  }
+  .s-name{font-weight:650;}
+  .s-sub{font-size:11px; color:var(--steel); font-family:var(--mono);}
+  .badge{padding:3px 9px; border-radius:var(--radius); font-size:10.5px; font-weight:700; display:inline-block; font-family:var(--mono); text-transform:uppercase; border:1px solid;}
+  .badge.active{background:#EEF6E4; color:#4A7A1F; border-color:#4A7A1F;}
+  .badge.pending{background:#FBEFE6; color:var(--rust); border-color:var(--rust);}
+  .badge.inactive{background:#F2F2F2; color:var(--steel); border-color:var(--steel-light);}
+  .attendance-bar{width:64px; height:5px; background:var(--blue-100); border:1px solid var(--steel-light); border-radius:2px; overflow:hidden; margin-top:4px;}
+  .attendance-fill{height:100%; background:var(--lime);}
+  .row-actions{color:var(--steel); font-size:15px; cursor:pointer; font-family:var(--mono);}
+  .theme-tag{position:fixed; bottom:16px; right:16px; background:var(--ink); color:#fff; font-size:10.5px; font-weight:700; padding:6px 12px; border-radius:var(--radius); font-family:var(--mono); text-transform:uppercase;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-name">Rose Hill Sr. Sec.</div>
+      <div class="brand-sub">School Management // v1.0</div>
+    </div>
+    <div class="nav-group-label">Overview</div>
+    <div class="nav-item"><span class="nav-index">00</span>Dashboard</div>
+    <div class="nav-group-label">School Management</div>
+    <div class="nav-item"><span class="nav-index">01</span>Users</div>
+    <div class="nav-item active"><span class="nav-index">02</span>Students</div>
+    <div class="nav-item"><span class="nav-index">03</span>Teachers</div>
+    <div class="nav-item"><span class="nav-index">04</span>Classes</div>
+    <div class="nav-item"><span class="nav-index">05</span>Attendance</div>
+    <div class="nav-item"><span class="nav-index">06</span>Exams</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">SCH-MGMT / STUDENTS</div>
+        <h1>Students</h1>
+        <div class="subtext">412 records — 14 classes — term 2026-27</div>
+      </div>
+      <button class="btn">+ Add Student</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total</div>
+        <div class="stat-value">412</div>
+        <div class="stat-delta up">+8 MTD</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Attendance</div>
+        <div class="stat-value">93.4%</div>
+        <div class="stat-delta up">+1.2%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value">06</div>
+        <div class="stat-delta warn">Review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Classes</div>
+        <div class="stat-value">14</div>
+        <div class="stat-delta">Gr. 1–10</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Student Registry</div>
+        <div class="filters">
+          <input class="search" placeholder="search…" />
+          <div class="chip active">ALL</div>
+          <div class="chip">ACTIVE</div>
+          <div class="chip">PENDING</div>
+        </div>
+      </div>
+      <table>
+        <tr><th>Student</th><th>Class</th><th>Roll No.</th><th>Guardian</th><th>Attendance</th><th>Status</th><th></th></tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar">AK</div><div><div class="s-name">Aditi Krishnan</div><div class="s-sub">RH-2024-0113</div></div></div></td>
+          <td>Grade 9-B</td><td>09B-14</td><td>Meera Krishnan</td>
+          <td>96%<div class="attendance-bar"><div class="attendance-fill" style="width:96%"></div></div></td>
+          <td><span class="badge active">Active</span></td><td class="row-actions">···</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar">RN</div><div><div class="s-name">Rohan Nair</div><div class="s-sub">RH-2024-0089</div></div></div></td>
+          <td>Grade 7-A</td><td>07A-22</td><td>Suresh Nair</td>
+          <td>88%<div class="attendance-bar"><div class="attendance-fill" style="width:88%"></div></div></td>
+          <td><span class="badge active">Active</span></td><td class="row-actions">···</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar">FT</div><div><div class="s-name">Fathima T.</div><div class="s-sub">RH-2024-0201</div></div></div></td>
+          <td>Grade 10-C</td><td>10C-05</td><td>Abdul Rahman</td>
+          <td>91%<div class="attendance-bar"><div class="attendance-fill" style="width:91%"></div></div></td>
+          <td><span class="badge active">Active</span></td><td class="row-actions">···</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar">VJ</div><div><div class="s-name">Vishnu Jayan</div><div class="s-sub">RH-2024-0244</div></div></div></td>
+          <td>Grade 5-A</td><td>05A-09</td><td>Priya Jayan</td>
+          <td>—<div class="attendance-bar"><div class="attendance-fill" style="width:0%"></div></div></td>
+          <td><span class="badge pending">Pending</span></td><td class="row-actions">···</td>
+        </tr>
+        <tr>
+          <td><div class="student-cell"><div class="mini-avatar">SM</div><div><div class="s-name">Sana Mathew</div><div class="s-sub">RH-2023-0176</div></div></div></td>
+          <td>Grade 9-B</td><td>09B-02</td><td>Thomas Mathew</td>
+          <td>78%<div class="attendance-bar"><div class="attendance-fill" style="width:78%"></div></div></td>
+          <td><span class="badge inactive">Inactive</span></td><td class="row-actions">···</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="theme-tag">Theme 3 — Blueprint Precision</div>
+</body>
+</html>
