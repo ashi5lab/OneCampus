@@ -4,4 +4,6 @@
 
 **API Endpoints used**: `GET /api/v1/learners`, `POST /api/v1/learners`.
 
-**Known limitation**: creating a learner requires an existing `onec_users` row id — there's no user-creation UI yet, so this only works with users seeded via `server/scripts/seedTestUser.js` or created directly. Wiring up user creation is follow-up work.
+**Business rules**: creating a learner creates its `onec_users` row (role `learner`) and `onec_learners` row together in one transaction — the form collects username/email/password directly, no separate user-creation step needed.
+
+**Known limitation**: no permissions system yet (Phase 7) — any authenticated user can create/edit/delete learners regardless of role.

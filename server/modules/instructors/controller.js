@@ -1,7 +1,18 @@
 const { z } = require('zod');
+const bcrypt = require('bcrypt');
 
-const instructorSchema = z.object({
-  user_id: z.number().int(),
+const instructorCreateSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  email: z.string().email("A valid email is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  staff_id: z.string().min(1, "Staff ID is required"),
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  phone: z.string().optional().nullable(),
+  meta: z.record(z.any()).optional().default({})
+});
+
+const instructorUpdateSchema = z.object({
   staff_id: z.string().min(1, "Staff ID is required"),
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
@@ -32,21 +43,40 @@ async function getById(req, res) {
   }
 }
 
+// Creates the onec_users row and the onec_instructors row together, in one
+// transaction, so the frontend never needs a pre-existing user id — this
+// was previously the only way to create an instructor.
 async function create(req, res) {
   try {
-    const parsed = instructorSchema.safeParse(req.body);
+    const parsed = instructorCreateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { user_id, staff_id, first_name, last_name, phone, meta } = parsed.data;
+    const { username, email, password, staff_id, first_name, last_name, phone, meta } = parsed.data;
+    const password_hash = await bcrypt.hash(password, 10);
 
-    const result = await req.db.query(
-      'INSERT INTO onec_instructors (user_id, staff_id, first_name, last_name, phone, meta) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [user_id, staff_id, first_name, last_name, phone, meta]
-    );
-    res.status(201).json({ data: result.rows[0] });
+    await req.db.query('BEGIN');
+    try {
+      const userResult = await req.db.query(
+        `INSERT INTO onec_users (username, email, password_hash, role) VALUES ($1, $2, $3, 'instructor') RETURNING id`,
+        [username, email, password_hash]
+      );
+      const user_id = userResult.rows[0].id;
+
+      const instructorResult = await req.db.query(
+        `INSERT INTO onec_instructors (user_id, staff_id, first_name, last_name, phone, meta)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [user_id, staff_id, first_name, last_name, phone, meta]
+      );
+
+      await req.db.query('COMMIT');
+      res.status(201).json({ data: instructorResult.rows[0] });
+    } catch (err) {
+      await req.db.query('ROLLBACK');
+      throw err;
+    }
   } catch (err) {
     console.error(err);
-    if (err.code === '23505') return res.status(400).json({ error: 'Staff ID or User ID must be unique' });
+    if (err.code === '23505') return res.status(400).json({ error: 'Username, email, or staff ID is already in use' });
     res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -54,21 +84,21 @@ async function create(req, res) {
 async function update(req, res) {
   try {
     const { id } = req.params;
-    const parsed = instructorSchema.safeParse(req.body);
+    const parsed = instructorUpdateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { user_id, staff_id, first_name, last_name, phone, meta } = parsed.data;
+    const { staff_id, first_name, last_name, phone, meta } = parsed.data;
 
     const result = await req.db.query(
-      'UPDATE onec_instructors SET user_id = $1, staff_id = $2, first_name = $3, last_name = $4, phone = $5, meta = $6 WHERE id = $7 RETURNING *',
-      [user_id, staff_id, first_name, last_name, phone, meta, id]
+      'UPDATE onec_instructors SET staff_id = $1, first_name = $2, last_name = $3, phone = $4, meta = $5 WHERE id = $6 RETURNING *',
+      [staff_id, first_name, last_name, phone, meta, id]
     );
 
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
-    if (err.code === '23505') return res.status(400).json({ error: 'Staff ID or User ID must be unique' });
+    if (err.code === '23505') return res.status(400).json({ error: 'Staff ID must be unique' });
     res.status(500).json({ error: 'Internal server error' });
   }
 }
