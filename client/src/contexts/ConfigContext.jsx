@@ -7,7 +7,8 @@ const ConfigContext = createContext(null);
 const THEME_CLASS_BY_KEY = {
   slate: 'theme-slate',
   chalkboard: 'theme-chalkboard',
-  blueprint: 'theme-blueprint'
+  blueprint: 'theme-blueprint',
+  purple: 'theme-purple'
 };
 const THEME_STORAGE_KEY = 'onecampus.theme';
 

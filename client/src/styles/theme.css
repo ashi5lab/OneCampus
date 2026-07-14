@@ -14,6 +14,7 @@
   --surface-muted: #EEF0F4;
   --accent: #E5A331; /* Amber */
   --accent-dark: #B8791A;
+  --accent-ink: var(--ink-900); /* amber is light enough for dark text */
   --success: #2E7D5B;
   --danger: #C24545;
   --radius: 10px;
@@ -24,7 +25,11 @@
   --sidebar-bg: #1C2230;
   --sidebar-bg-hover: rgba(255,255,255,0.06);
   --sidebar-text: #C7CCD6;
-  
+  --sidebar-text-strong: #FFFFFF;
+  --sidebar-active-bg: var(--accent);
+  --sidebar-active-text: var(--ink-900);
+  --sidebar-border: rgba(255,255,255,0.08);
+
   /* Shared structural values mapped to this theme's tokens */
   --body-bg: var(--bg);
   --text-primary: var(--ink-900);
@@ -45,6 +50,7 @@
   --ink-500: #6B7460; /* --ink-soft */
   --accent: #E0A83B; /* Mustard */
   --accent-dark: #E27554; /* Coral */
+  --accent-ink: var(--ink-900); /* mustard is light enough for dark text */
   --border: #E7E1D2;
   --surface-muted: #FBF7EE; /* reusing cream */
   --success: #4C8B5B;
@@ -55,6 +61,10 @@
   --font-mono: "Courier New", monospace;
   
   --sidebar-text: #DCE7DD;
+  --sidebar-text-strong: #FFFFFF;
+  --sidebar-active-bg: var(--accent);
+  --sidebar-active-text: var(--ink-900);
+  --sidebar-border: rgba(255,255,255,0.08);
 }
 
 /* 
@@ -72,8 +82,13 @@
   --sidebar-bg: #0B3D66; /* Navy */
   --sidebar-bg-hover: rgba(255,255,255,0.05);
   --sidebar-text: #C6D8E8;
+  --sidebar-text-strong: #FFFFFF;
+  --sidebar-active-bg: var(--accent);
+  --sidebar-active-text: var(--ink-900);
+  --sidebar-border: rgba(255,255,255,0.08);
   --accent: #1B5C93; /* blue-600 */
   --accent-dark: #7FB93F; /* lime, as positive/active */
+  --accent-ink: #FFFFFF; /* blue-600 is too dark for dark text */
   --surface-muted: #E4EEF6; /* blue-100 */
   --border: #DCE4EC; /* grid-line */
   --success: #7FB93F;
@@ -82,6 +97,40 @@
   --font-display: "Inter", -apple-system, "Segoe UI", sans-serif;
   --font-body: "Inter", -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", monospace;
+}
+
+/*
+  Theme 4 — Purple
+  Sourced from OneCampus.dc.html (the purple portal design reference).
+  Unlike the first three, this uses a light (white) sidebar rather than a
+  dark one, so it overrides the sidebar text/active/border tokens instead
+  of relying on the dark-sidebar defaults.
+*/
+.theme-purple {
+  --bg: oklch(0.98 0.003 300);
+  --surface: #FFFFFF;
+  --surface-muted: oklch(0.95 0.005 300);
+  --ink-900: oklch(0.22 0.01 300);
+  --ink-700: oklch(0.35 0.01 300);
+  --ink-500: oklch(0.5 0.01 300);
+  --border: oklch(0.9 0.005 300);
+  --accent: oklch(0.52 0.19 302);
+  --accent-dark: oklch(0.45 0.19 302);
+  --accent-ink: #FFFFFF; /* this purple is too dark/saturated for dark text */
+  --success: oklch(0.6 0.14 145);
+  --danger: oklch(0.55 0.18 25);
+  --radius: 16px;
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", monospace;
+
+  --sidebar-bg: #FFFFFF;
+  --sidebar-bg-hover: oklch(0.96 0.005 300);
+  --sidebar-text: oklch(0.4 0.01 300);
+  --sidebar-text-strong: var(--ink-900);
+  --sidebar-active-bg: oklch(0.95 0.03 302);
+  --sidebar-active-text: oklch(0.45 0.19 302);
+  --sidebar-border: var(--border);
 }
 
 /* Global utility classes to apply tokens */

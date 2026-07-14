@@ -3,7 +3,8 @@ import { useConfig } from '../contexts/ConfigContext';
 const THEMES = [
   { key: 'slate', label: 'Slate & Amber' },
   { key: 'chalkboard', label: 'Chalkboard Fresh' },
-  { key: 'blueprint', label: 'Blueprint Precision' }
+  { key: 'blueprint', label: 'Blueprint Precision' },
+  { key: 'purple', label: 'Purple' }
 ];
 
 // Internal/admin-only theme toggle — proves the token system is decoupled

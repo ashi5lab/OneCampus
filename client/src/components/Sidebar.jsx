@@ -15,7 +15,7 @@ function initials(name) {
 const navItemClass = ({ isActive }) =>
   `mb-0.5 flex items-center gap-2.5 rounded px-3 py-2 text-[13.5px] font-medium ${
     isActive
-      ? 'bg-accent font-semibold text-ink-900'
+      ? 'bg-sidebar-activeBg font-semibold text-sidebar-activeText'
       : 'text-sidebar-text hover:bg-sidebar-hover'
   }`;
 
@@ -24,7 +24,7 @@ export function Sidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <div className="flex flex-col bg-sidebar-bg px-4 py-6 text-white">
+    <div className="flex flex-col border-r border-sidebar-border bg-sidebar-bg px-4 py-6 text-sidebar-textStrong">
       <div className="mb-7 px-2">
         <div className="text-[15px] font-semibold tracking-tight">
           {config?.org_name || 'OneCampus'}
@@ -66,7 +66,7 @@ export function Sidebar() {
 
       <div className="mt-auto space-y-3 pt-3">
         <ThemeSwitcher />
-        <div className="flex items-center gap-2.5 border-t border-white/10 px-1 pt-3">
+        <div className="flex items-center gap-2.5 border-t border-sidebar-border px-1 pt-3">
           <div className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-full bg-ink-700 text-xs font-semibold">
             {initials(user?.username)}
           </div>
@@ -76,7 +76,7 @@ export function Sidebar() {
           </div>
           <button
             onClick={logout}
-            className="text-[11px] font-semibold text-sidebar-text hover:text-white"
+            className="text-[11px] font-semibold text-sidebar-text hover:text-sidebar-textStrong"
           >
             Log out
           </button>
