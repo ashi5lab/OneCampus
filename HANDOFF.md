@@ -76,7 +76,7 @@ Each frontend feature's `README.md` already states its own known limitation — 
 
 - ~~No user-creation UI anywhere~~ — fixed in PR #4: learner/instructor creation now creates the `onec_users` row inline, in the same form.
 - **No permission-awareness in the frontend.** With Phase 7 now enforcing role permissions server-side, an `instructor`- or `learner`-role user will see "+ Add" buttons and nav items they'll get a `403` on if clicked — `useConfig()`/a new permissions context should expose `can(permission)` so the UI can hide/disable what a role can't do, mirroring `hasModule()`'s existing pattern.
-- No attendance-marking UI (backend `POST /api/v1/attendance` exists and works; frontend is read-only).
+- ~~No attendance-marking UI~~ — fixed in PR #6: `AttendanceRoster` (cohort + date picker, per-learner status, batch save).
 - No score-entry UI for evaluations (backend upsert endpoint exists and works; frontend is read-only).
 - No unit picker for cohort creation (`unit_id` is a raw number field).
 - No frontend at all for Units, Modules (subjects/courses), or Guardians, despite full backend CRUD existing.

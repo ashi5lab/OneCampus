@@ -1,6 +1,7 @@
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { useAttendance } from '../hooks/useAttendance';
+import { AttendanceRoster } from './AttendanceRoster';
 
 const STATUS_VARIANT = { present: 'active', late: 'pending', absent: 'inactive', excused: 'pending' };
 
@@ -26,6 +27,9 @@ export function AttendancePage() {
         <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Attendance</h1>
       </div>
 
+      <AttendanceRoster />
+
+      <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">History</div>
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && (
