@@ -142,6 +142,17 @@ CREATE TABLE onec_role_permissions (
     UNIQUE(role, permission)
 );
 
+-- Audit trail for sensitive actions (spec Part 11): grading, deletions, and
+-- permission denials. user_id has no FK/ON DELETE CASCADE on purpose — a
+-- log entry must survive the user who caused it being deleted.
+CREATE TABLE onec_audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INT,
+    action VARCHAR(100) NOT NULL,
+    details JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE onec_certificates (
     id SERIAL PRIMARY KEY,
     learner_id INT REFERENCES onec_learners(id) ON DELETE CASCADE,
