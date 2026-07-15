@@ -1,6 +1,13 @@
 const { z } = require('zod');
+const PDFDocument = require('pdfkit');
 const { logAudit } = require('../../lib/audit');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
+
+const CERTIFICATE_TYPE_LABELS = {
+  transfer_certificate: 'Transfer Certificate',
+  conduct: 'Conduct Certificate',
+  degree: 'Degree Certificate'
+};
 
 const issueSchema = z.object({
   learner_id: z.number().int(),
@@ -62,6 +69,70 @@ async function getById(req, res) {
   }
 }
 
+// Renders the certificate row (plus its learner and the tenant's org name)
+// as a downloadable PDF. Same row-level scoping as getById (404, not 403,
+// for a certificate that isn't the caller's) — this is a read of the same
+// record, just a different representation.
+async function getPdf(req, res) {
+  try {
+    const { id } = req.params;
+    const result = await req.db.query('SELECT * FROM onec_certificates WHERE id = $1', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+
+    const cert = result.rows[0];
+
+    const scopedLearnerIds = await getScopedLearnerIds(req);
+    if (scopedLearnerIds !== null && !scopedLearnerIds.includes(cert.learner_id)) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    const learnerResult = await req.db.query(
+      'SELECT first_name, last_name, registry_no FROM onec_learners WHERE id = $1',
+      [cert.learner_id]
+    );
+    const learner = learnerResult.rows[0];
+    const orgName = req.tenantConfig.org_name || 'OneCampus';
+    const typeLabel = CERTIFICATE_TYPE_LABELS[cert.type] || cert.type;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="certificate-${cert.certificate_no}.pdf"`);
+
+    const doc = new PDFDocument({ size: 'A4', margin: 72 });
+    doc.pipe(res);
+
+    doc.fontSize(20).text(orgName, { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(16).text(typeLabel, { align: 'center' });
+    doc.moveDown(2);
+
+    doc.fontSize(12);
+    doc.text(`Certificate No: ${cert.certificate_no}`);
+    doc.text(`Issue Date: ${new Date(cert.issue_date).toLocaleDateString()}`);
+    doc.moveDown();
+
+    const learnerName = learner ? `${learner.first_name} ${learner.last_name}` : `Learner #${cert.learner_id}`;
+    const registrySuffix = learner?.registry_no ? ` (Registry No: ${learner.registry_no})` : '';
+    doc.text(`This is to certify that ${learnerName}${registrySuffix} is associated with ${orgName}.`);
+
+    if (cert.data && Object.keys(cert.data).length > 0) {
+      doc.moveDown();
+      doc.fontSize(11).text('Additional Details:', { underline: true });
+      for (const [key, value] of Object.entries(cert.data)) {
+        doc.fontSize(11).text(`${key}: ${value}`);
+      }
+    }
+
+    doc.moveDown(3);
+    doc.fontSize(12).text('_______________________', { align: 'right' });
+    doc.text('Authorized Signatory', { align: 'right' });
+
+    doc.end();
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 async function issue(req, res) {
   try {
     const parsed = issueSchema.safeParse(req.body);
@@ -89,4 +160,4 @@ async function issue(req, res) {
   }
 }
 
-module.exports = { getAll, getById, issue };
+module.exports = { getAll, getById, getPdf, issue };

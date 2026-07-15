@@ -11,6 +11,7 @@ router.use(moduleGuard('certificates'));
 
 router.get('/', requirePermission('certificates.view'), controller.getAll);
 router.get('/:id', requirePermission('certificates.view'), controller.getById);
+router.get('/:id/pdf', requirePermission('certificates.view'), controller.getPdf);
 router.post('/', requirePermission('certificates.issue'), controller.issue);
 
 module.exports = router;
