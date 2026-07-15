@@ -64,6 +64,14 @@ The last stub finally has an implementation behind it — `messaging` has been s
 
 ---
 
+## 1d. This session: notice board
+
+`onec_notices` (migration 008) — school-wide announcements with an `audience` field (`'all' | 'instructors' | 'learners' | 'guardians'`). Deliberately made a **core** feature, not module-toggle-gated like `attendance`/`exams`/`messaging` — every institution type wants a notice board, and gating it would've meant also updating every existing tenant's `config.active_modules` JSONB (not just running a schema migration) for no real benefit. `notices.view` is on every role by default; `notices.manage` (post/edit/delete) is admin/staff-only, same pattern as `certificates.issue`. Frontend: `NoticesPage` (list, admin/staff get post/edit/delete) + `NoticeFormModal`, sidebar "Notices" link gated by `can('notices.view')` only (no `hasModule` check, matching the "core feature" decision).
+
+**Must run before this works**: apply `server/migrations/008_add_notices.sql` to each existing tenant schema (creates the table, retrofits `notices.*` permission rows).
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):
