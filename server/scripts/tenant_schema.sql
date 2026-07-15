@@ -131,6 +131,18 @@ CREATE TABLE onec_kindergarten_daily_activity (
     logged_by INT REFERENCES onec_users(id)
 );
 
+-- School-wide announcements (see server/modules/notices). A core feature,
+-- not gated by a module toggle like attendance/exams/messaging — every
+-- institution type wants a notice board, unlike e.g. kindergarten_activity.
+CREATE TABLE onec_notices (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    audience VARCHAR(20) NOT NULL DEFAULT 'all',  -- 'all', 'instructors', 'learners', 'guardians'
+    posted_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Direct messages between two users (see server/modules/messages). No
 -- broadcast/group messaging in v1 — recipient_id is always a single user.
 CREATE TABLE onec_messages (

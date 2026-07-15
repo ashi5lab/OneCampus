@@ -45,6 +45,7 @@ export function Sidebar({ isOpen, onClose }) {
     hasModule('exams') && can('evaluations.view') && { to: '/app/evaluations', label: 'Exams' },
     hasModule('certificates') && can('certificates.view') && { to: '/app/certificates', label: 'Certificates' },
     hasModule('kindergarten_activity') && can('kindergarten_activity.view') && { to: '/app/kindergarten-activity', label: 'Daily Activity' },
+    can('notices.view') && { to: '/app/notices', label: 'Notices' },
     hasModule('messaging') && can('messages.view') && { to: '/app/messages', label: 'Messages', showUnreadBadge: true }
   ].filter(Boolean);
 

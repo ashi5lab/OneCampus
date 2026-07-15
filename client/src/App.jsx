@@ -25,6 +25,7 @@ import { GuardiansPage } from './features/guardians/components/GuardiansPage';
 import { CertificatesPage } from './features/certificates/components/CertificatesPage';
 import { KindergartenActivityPage } from './features/kindergartenActivity/components/KindergartenActivityPage';
 import { MessagesPage } from './features/messages/components/MessagesPage';
+import { NoticesPage } from './features/notices/components/NoticesPage';
 
 export default function App() {
   return (
@@ -125,6 +126,7 @@ export default function App() {
         <Route path="certificates" element={<CertificatesPage />} />
         <Route path="kindergarten-activity" element={<KindergartenActivityPage />} />
         <Route path="messages" element={<MessagesPage />} />
+        <Route path="notices" element={<NoticesPage />} />
       </Route>
     </Routes>
   );
