@@ -80,6 +80,16 @@ The last stub finally has an implementation behind it — `messaging` has been s
 
 ---
 
+## 1f. This session: homework / assignments module
+
+`onec_assignments` + `onec_assignment_submissions` (migration 010). Simpler than Evaluations' evaluation+schedule split — one `onec_assignments` row IS the specific task for one cohort/module, no separate "exam type" umbrella. `listAssignments` filters to a `learner`'s own cohort (relevance, not a security boundary). Submission `learner_id` is always resolved server-side from the caller's own record (never client-supplied), upserted the same way `attendance.mark()` does. Permission split mirrors Evaluations: `assignments.view` (everyone), `assignments.manage`/`assignments.grade` (admin/staff/instructor — posting and grading homework is teacher-side), `assignments.submit` (learner only). Frontend dispatches like `ScoreEntryPage` does: `AssignmentDetailPage` shows `SubmissionsRoster` (grader) or `SubmissionForm` (learner's own submission + grade/feedback once graded) depending on `can('assignments.grade')`.
+
+**Known gap** (documented in the module's `README.md`): a `guardian` has `assignments.view` but submission-list scoping only resolves a learner's own id, not a guardian's linked children — a guardian querying submissions gets an empty result instead of their child's. Not a security issue, just incomplete; would need `lib/rowScope.js` wired in to close it.
+
+**Must run before this works**: apply `server/migrations/010_add_assignments.sql` to each existing tenant schema.
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):
