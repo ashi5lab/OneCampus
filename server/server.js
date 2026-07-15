@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const { CLIENT_ORIGIN } = require('./config/env');
 const tenantResolver = require('./middleware/tenantResolver');
 const tenantDb = require('./middleware/tenantDb');
+const { scheduleRefreshTokenCleanup } = require('./lib/refreshTokenCleanup');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -66,4 +67,6 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  // onec_refresh_tokens only grows otherwise -- see lib/refreshTokenCleanup.js.
+  scheduleRefreshTokenCleanup(24 * 60 * 60 * 1000);
 });
