@@ -162,3 +162,18 @@ CREATE TABLE onec_certificates (
     issued_by INT REFERENCES onec_users(id),
     data JSONB NOT NULL
 );
+
+-- Refresh tokens (spec Part 11: short-lived access token + httpOnly-cookie
+-- refresh token). Stores a hash of the token, never the raw value — same
+-- principle as password_hash, so a DB leak alone doesn't yield usable
+-- tokens. Rotated on every use (server/lib/refreshTokens.js): a refresh
+-- marks the old row revoked and inserts a new one, it never just extends
+-- the same row's expiry.
+CREATE TABLE onec_refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES onec_users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(64) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    revoked_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

@@ -4,6 +4,8 @@
 
 **To run:** start the server (`npm run dev` in one terminal), then `npm test` in another. `npm test` does **not** start the server itself.
 
+**Timeout:** `jest.config.js` sets `testTimeout: 15000` (Jest's default is 5000ms) — login now does a SELECT + `bcrypt.compare` + an INSERT (issuing a refresh token, see `server/lib/refreshTokens.js`), and every query is a real round trip to the Railway dev DB. Three sequential logins in one `beforeAll` measurably exceeded the 5s default; fixed by both raising the timeout and parallelizing independent logins with `Promise.all` where a test file needs more than one identity (see `permissions.test.js`).
+
 **Why this shape, not a hermetic unit-test suite:** the things most worth protecting against regression right now are cross-cutting integration concerns — tenant isolation via the per-request pinned `req.db` client, JWT tenant-scoping, the permission matrix, module-toggle gating — none of which are meaningfully testable by mocking `req.db`, since the bug class they guard against (two requests landing on different physical connections, a token replayed against the wrong tenant) only manifests against a real connection pool and real tenant schemas. Setting up a fully isolated ephemeral test database was out of scope for this pass; see `HANDOFF.md` for that as a follow-up.
 
 **Known tradeoffs:**

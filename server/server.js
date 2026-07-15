@@ -1,7 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
+const { CLIENT_ORIGIN } = require('./config/env');
 const tenantResolver = require('./middleware/tenantResolver');
 const tenantDb = require('./middleware/tenantDb');
 
@@ -10,8 +12,12 @@ const PORT = process.env.PORT || 3001;
 
 // Global middleware
 app.use(helmet());
-app.use(cors());
+// A specific origin (not '*') is required — the refresh-token flow sends an
+// httpOnly cookie cross-origin (client :5173, server :3001 in dev), and
+// browsers reject Access-Control-Allow-Origin: * on credentialed requests.
+app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 // Health check must not depend on tenant resolution — hosting platform
 // probes won't send a tenant Host header/domain.
