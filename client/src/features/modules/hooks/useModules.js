@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { modulesApi } from '../services/modulesApi';
 
-export function useModules() {
-  return useQuery({ queryKey: ['modules'], queryFn: modulesApi.list });
+// `enabled: false` lets a caller without modules.view skip the request
+// entirely (it would just 403) instead of firing it and discarding the
+// error — see EvaluationDetailPage.
+export function useModules({ enabled = true } = {}) {
+  return useQuery({ queryKey: ['modules'], queryFn: modulesApi.list, enabled });
 }

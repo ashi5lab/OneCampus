@@ -1,8 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cohortsApi } from '../services/cohortsApi';
 
-export function useCohorts() {
-  return useQuery({ queryKey: ['cohorts'], queryFn: cohortsApi.list });
+// `enabled: false` lets a caller without cohorts.view skip the request
+// entirely (it would just 403) — see DashboardPage.
+export function useCohorts({ enabled = true } = {}) {
+  return useQuery({ queryKey: ['cohorts'], queryFn: cohortsApi.list, enabled });
 }
 
 export function useCreateCohort() {

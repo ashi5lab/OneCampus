@@ -8,13 +8,21 @@ import { CertificateFormModal } from './CertificateFormModal';
 
 export function CertificatesPage() {
   const { t } = useConfig();
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const { data: certificates, isLoading, error } = useCertificates();
-  const { data: learners } = useLearners();
+  // Skip this entirely for a role without learners.view — it would just
+  // 403. A `learner` viewing this list is always looking at their own
+  // (already row-scoped) certificates, so "You" is accurate; any other
+  // role without learners.view (e.g. guardian, currently unscoped — see
+  // HANDOFF.md) isn't necessarily looking at only their own records, so
+  // it falls back to the raw id instead of guessing.
+  const canSeeLearnerNames = can('learners.view');
+  const { data: learners } = useLearners({ enabled: canSeeLearnerNames });
   const issueCertificate = useIssueCertificate();
   const [showForm, setShowForm] = useState(false);
 
   const learnerName = (learnerId) => {
+    if (!canSeeLearnerNames) return user?.role === 'learner' ? 'You' : `#${learnerId}`;
     const learner = (learners || []).find((l) => l.id === learnerId);
     return learner ? `${learner.first_name} ${learner.last_name}` : `#${learnerId}`;
   };

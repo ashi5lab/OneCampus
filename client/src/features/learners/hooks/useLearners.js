@@ -1,8 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { learnersApi } from '../services/learnersApi';
 
-export function useLearners() {
-  return useQuery({ queryKey: ['learners'], queryFn: learnersApi.list });
+// `enabled: false` lets a caller without learners.view skip the request
+// entirely (it would just 403) instead of firing it and discarding the
+// error — see CertificatesPage/KindergartenActivityPage.
+export function useLearners({ enabled = true } = {}) {
+  return useQuery({ queryKey: ['learners'], queryFn: learnersApi.list, enabled });
 }
 
 export function useCreateLearner() {

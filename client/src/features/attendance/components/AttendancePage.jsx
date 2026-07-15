@@ -1,11 +1,13 @@
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useAttendance } from '../hooks/useAttendance';
 import { AttendanceRoster } from './AttendanceRoster';
 
 const STATUS_VARIANT = { present: 'active', late: 'pending', absent: 'inactive', excused: 'pending' };
 
 export function AttendancePage() {
+  const { can } = useAuth();
   const { data: records, isLoading, error } = useAttendance();
 
   const columns = [
@@ -27,7 +29,10 @@ export function AttendancePage() {
         <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Attendance</h1>
       </div>
 
-      <AttendanceRoster />
+      {/* The marking UI (roster, cohort/date pickers) implies write access —
+          only render it for roles that actually have attendance.mark. A
+          view-only role gets just the (already row-scoped) History table. */}
+      {can('attendance.mark') && <AttendanceRoster />}
 
       <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">History</div>
       <div className="overflow-hidden rounded border border-border bg-surface">
