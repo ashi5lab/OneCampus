@@ -28,6 +28,7 @@ export function Sidebar() {
     can('instructors.view') && { to: '/instructors', label: t('instructors') },
     can('cohorts.view') && { to: '/cohorts', label: t('cohorts') },
     can('units.view') && { to: '/units', label: 'Units' },
+    can('modules.view') && { to: '/modules', label: t('topics') },
     can('guardians.view') && { to: '/guardians', label: 'Guardians' },
     hasModule('attendance') && can('attendance.view') && { to: '/attendance', label: 'Attendance' },
     hasModule('exams') && can('evaluations.view') && { to: '/evaluations', label: 'Exams' },
