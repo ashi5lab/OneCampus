@@ -22,7 +22,8 @@ const ALL_PERMISSIONS = [
   'kindergarten_activity.view', 'kindergarten_activity.log',
   'guardian_links.view', 'guardian_links.manage',
   'messages.view', 'messages.send',
-  'notices.view', 'notices.manage'
+  'notices.view', 'notices.manage',
+  'library.view', 'library.manage'
 ];
 
 // messages.view/.send are granted to every role below — unlike the
@@ -42,20 +43,21 @@ const DEFAULT_ROLE_PERMISSIONS = {
     'evaluations.view', 'evaluations.manage', 'evaluations.grade',
     'kindergarten_activity.view', 'kindergarten_activity.log',
     'messages.view', 'messages.send',
-    'notices.view'
+    'notices.view', 'library.view'
   ],
   // Coarse-grained on purpose (see the row-level-scoping note above) — kept
   // to just enough to view their own records, not the full roster/management
   // surface. Certificate issuance and kindergarten activity logging are
   // staff-side actions, not granted here. Posting notices (notices.manage)
-  // is admin/staff-only too, same reasoning.
-  learner: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view', 'messages.view', 'messages.send', 'notices.view'],
+  // and managing the library catalog/loans (library.manage) are
+  // admin/staff-only too, same reasoning.
+  learner: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view', 'messages.view', 'messages.send', 'notices.view', 'library.view'],
   // guardian_links.view lets a guardian look up which learners they're
   // linked to (lib/ownGuardianLearners.js needs this for row scoping) —
   // not .manage, since linking/unlinking a child is a staff-side action.
   guardian: [
     'attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view',
-    'guardian_links.view', 'messages.view', 'messages.send', 'notices.view'
+    'guardian_links.view', 'messages.view', 'messages.send', 'notices.view', 'library.view'
   ]
 };
 
