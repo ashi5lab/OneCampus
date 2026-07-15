@@ -21,3 +21,5 @@ Requires authentication AND the `exams` module must be enabled in the tenant's `
 **Business rules**:
 - A score is graded by the authenticated user (`graded_by`); re-submitting a score for the same learner+schedule updates it in place rather than duplicating.
 - `max_score`/`passing_score` default to 100/40 if not provided on a schedule.
+
+**Row-level scoping**: `GET /schedules/:scheduleId/scores` scopes a `learner`-role caller to only their own score for that schedule (via `lib/ownLearner.js`), not the whole roster. Other roles are unscoped. Evaluation/schedule listing (`GET /` and `GET /:evaluationId/schedules`) isn't per-learner data and isn't scoped.
