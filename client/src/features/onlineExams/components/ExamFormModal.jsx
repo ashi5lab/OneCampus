@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useModules } from '../../modules/hooks/useModules';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
+import { SearchSelect } from '../../../components/SearchSelect';
 
-function emptyQuestion() {
-  return { question_text: '', question_type: 'text', options: ['', ''], correct_option: 0, max_score: 1 };
+function emptyQuestion(type = 'text') {
+  return { question_text: '', question_type: type, options: ['', ''], correct_option: 0, max_score: 1 };
 }
 
 // Not react-hook-form here — the nested, variable-length question/option
@@ -64,7 +65,19 @@ export function ExamFormModal({ onClose, onSubmit, submitting, submitError, init
   }
 
   function addQuestion() {
-    setQuestions((prev) => [...prev, emptyQuestion()]);
+    setQuestions((prev) => [...prev, emptyQuestion(gradingType === 'auto' ? 'mcq' : 'text')]);
+  }
+
+  // Auto-graded exams require every question to be MCQ (enforced server-side
+  // too, see the zod .refine() in server/modules/onlineExams/controller.js) —
+  // force existing questions over rather than just disabling their type
+  // picker, otherwise a question left at the 'text' default becomes stuck
+  // there since the picker is disabled once grading type is 'auto'.
+  function handleGradingTypeChange(next) {
+    setGradingType(next);
+    if (next === 'auto') {
+      setQuestions((prev) => prev.map((q) => (q.question_type === 'mcq' ? q : { ...q, question_type: 'mcq' })));
+    }
   }
 
   function removeQuestion(index) {
@@ -121,28 +134,20 @@ export function ExamFormModal({ onClose, onSubmit, submitting, submitError, init
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label={t('topic')}>
-            <select className="input" value={moduleId} onChange={(e) => setModuleId(e.target.value)}>
-              <option value="" disabled>
-                Choose one…
-              </option>
-              {(modules || []).map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
+            <SearchSelect
+              options={(modules || []).map((m) => ({ value: m.id, label: m.name }))}
+              value={moduleId}
+              onChange={setModuleId}
+              placeholder={`Search ${t('topic').toLowerCase()}…`}
+            />
           </Field>
           <Field label={t('cohort')}>
-            <select className="input" value={cohortId} onChange={(e) => setCohortId(e.target.value)}>
-              <option value="" disabled>
-                Choose one…
-              </option>
-              {(cohorts || []).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <SearchSelect
+              options={(cohorts || []).map((c) => ({ value: c.id, label: c.name }))}
+              value={cohortId}
+              onChange={setCohortId}
+              placeholder={`Search ${t('cohort').toLowerCase()}…`}
+            />
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -150,7 +155,7 @@ export function ExamFormModal({ onClose, onSubmit, submitting, submitError, init
             <select
               className="input"
               value={gradingType}
-              onChange={(e) => setGradingType(e.target.value)}
+              onChange={(e) => handleGradingTypeChange(e.target.value)}
               disabled={questionsLocked}
             >
               <option value="manual">Manual valuation</option>

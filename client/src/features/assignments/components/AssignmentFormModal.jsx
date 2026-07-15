@@ -1,9 +1,10 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useModules } from '../../modules/hooks/useModules';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
+import { SearchSelect } from '../../../components/SearchSelect';
 
 const assignmentSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -21,6 +22,7 @@ export function AssignmentFormModal({ onClose, onSubmit, submitting, submitError
   const isEdit = !!initialData;
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors }
   } = useForm({
@@ -40,28 +42,32 @@ export function AssignmentFormModal({ onClose, onSubmit, submitting, submitError
           <input className="input" {...register('title')} placeholder="e.g. Chapter 5 Problem Set" />
         </Field>
         <Field label={t('topic')} error={errors.module_id}>
-          <select className="input" defaultValue="" {...register('module_id')}>
-            <option value="" disabled>
-              Choose one…
-            </option>
-            {(modules || []).map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="module_id"
+            control={control}
+            render={({ field }) => (
+              <SearchSelect
+                options={(modules || []).map((m) => ({ value: m.id, label: m.name }))}
+                value={field.value}
+                onChange={field.onChange}
+                placeholder={`Search ${t('topic').toLowerCase()}…`}
+              />
+            )}
+          />
         </Field>
         <Field label={t('cohort')} error={errors.cohort_id}>
-          <select className="input" defaultValue="" {...register('cohort_id')}>
-            <option value="" disabled>
-              Choose one…
-            </option>
-            {(cohorts || []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="cohort_id"
+            control={control}
+            render={({ field }) => (
+              <SearchSelect
+                options={(cohorts || []).map((c) => ({ value: c.id, label: c.name }))}
+                value={field.value}
+                onChange={field.onChange}
+                placeholder={`Search ${t('cohort').toLowerCase()}…`}
+              />
+            )}
+          />
         </Field>
         <Field label="Due Date" error={errors.due_date}>
           <input type="date" className="input" {...register('due_date')} />

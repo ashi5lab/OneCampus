@@ -6,7 +6,7 @@ export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg font-body text-ink-900 md:grid md:grid-cols-[248px_1fr]">
+    <div className="flex min-h-screen flex-col bg-bg font-body text-ink-900 md:grid md:h-screen md:grid-cols-[248px_1fr] md:overflow-hidden">
       {/* Mobile Header */}
       <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 md:hidden">
         <div className="text-[15px] font-semibold tracking-tight">OneCampus</div>
@@ -21,8 +21,11 @@ export function Layout() {
       </div>
 
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="mx-auto w-full max-w-[1180px] px-4 py-4 sm:px-6 md:px-9 md:py-7">
+
+      {/* Its own scroll container — the sidebar is pinned/scrolls independently
+          (see Sidebar.jsx's overflow-y-auto), so a long page here shouldn't
+          drag the nav out of view with it. */}
+      <div className="mx-auto w-full max-w-[1180px] px-4 py-4 sm:px-6 md:overflow-y-auto md:px-9 md:py-7">
         <Outlet />
       </div>
     </div>
