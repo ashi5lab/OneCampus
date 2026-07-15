@@ -13,7 +13,9 @@ export function EvaluationDetailPage() {
   const { can } = useAuth();
   const { data: evaluation } = useEvaluation(id);
   const { data: schedules, isLoading, error } = useSchedules(id);
-  const { data: modules } = useModules();
+  // Skip this entirely for a role without modules.view (e.g. a learner
+  // browsing their own evaluation schedules) — it would just 403.
+  const { data: modules } = useModules({ enabled: can('modules.view') });
   const createSchedule = useCreateSchedule(id);
   const [showForm, setShowForm] = useState(false);
 

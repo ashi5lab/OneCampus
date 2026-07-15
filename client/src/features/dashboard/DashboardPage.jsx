@@ -1,4 +1,5 @@
 import { useConfig } from '../../contexts/ConfigContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { StatCard } from '../../components/StatCard';
 import { useLearners } from '../learners/hooks/useLearners';
 import { useInstructors } from '../instructors/hooks/useInstructors';
@@ -6,9 +7,24 @@ import { useCohorts } from '../cohorts/hooks/useCohorts';
 
 export function DashboardPage() {
   const { config, t } = useConfig();
-  const { data: learners } = useLearners();
-  const { data: instructors } = useInstructors();
-  const { data: cohorts } = useCohorts();
+  const { can } = useAuth();
+
+  const canSeeLearners = can('learners.view');
+  const canSeeInstructors = can('instructors.view');
+  const canSeeCohorts = can('cohorts.view');
+
+  // Every authenticated user lands here regardless of role — a role
+  // without learners.view/etc. must not even fire those requests (they'd
+  // just 403 and leave the stat card stuck at "—" forever).
+  const { data: learners } = useLearners({ enabled: canSeeLearners });
+  const { data: instructors } = useInstructors({ enabled: canSeeInstructors });
+  const { data: cohorts } = useCohorts({ enabled: canSeeCohorts });
+
+  const stats = [
+    canSeeLearners && { label: `Total ${t('learners')}`, value: learners?.length ?? '—' },
+    canSeeInstructors && { label: `Total ${t('instructors')}`, value: instructors?.length ?? '—' },
+    canSeeCohorts && { label: `Total ${t('cohorts')}`, value: cohorts?.length ?? '—' }
+  ].filter(Boolean);
 
   return (
     <div>
@@ -24,11 +40,17 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3.5">
-        <StatCard label={`Total ${t('learners')}`} value={learners?.length ?? '—'} />
-        <StatCard label={`Total ${t('instructors')}`} value={instructors?.length ?? '—'} />
-        <StatCard label={`Total ${t('cohorts')}`} value={cohorts?.length ?? '—'} />
-      </div>
+      {stats.length > 0 ? (
+        <div className="grid grid-cols-4 gap-3.5">
+          {stats.map((stat) => (
+            <StatCard key={stat.label} label={stat.label} value={stat.value} />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded border border-border bg-surface p-8 text-center text-sm text-ink-500">
+          Use the sidebar to get started.
+        </div>
+      )}
     </div>
   );
 }

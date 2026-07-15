@@ -8,13 +8,18 @@ import { ActivityLogFormModal } from './ActivityLogFormModal';
 
 export function KindergartenActivityPage() {
   const { t } = useConfig();
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const { data: logs, isLoading, error } = useKindergartenActivity();
-  const { data: learners } = useLearners();
+  // Skip this entirely for a role without learners.view — see
+  // CertificatesPage for the same pattern and why "You" is only safe for
+  // the learner role specifically.
+  const canSeeLearnerNames = can('learners.view');
+  const { data: learners } = useLearners({ enabled: canSeeLearnerNames });
   const logActivity = useLogActivity();
   const [showForm, setShowForm] = useState(false);
 
   const learnerName = (learnerId) => {
+    if (!canSeeLearnerNames) return user?.role === 'learner' ? 'You' : `#${learnerId}`;
     const learner = (learners || []).find((l) => l.id === learnerId);
     return learner ? `${learner.first_name} ${learner.last_name}` : `#${learnerId}`;
   };
