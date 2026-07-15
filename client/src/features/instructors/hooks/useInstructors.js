@@ -30,3 +30,11 @@ export function useDeleteInstructor() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['instructors'] })
   });
 }
+
+export function useInstructorProfile(id) {
+  return useQuery({
+    queryKey: ['instructors', id, 'profile'],
+    queryFn: () => instructorsApi.getProfile(id),
+    enabled: id !== undefined && id !== null
+  });
+}

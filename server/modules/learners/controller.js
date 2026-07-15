@@ -2,6 +2,8 @@ const { z } = require('zod');
 const bcrypt = require('bcrypt');
 const { logAudit } = require('../../lib/audit');
 const { parsePagination } = require('../../lib/pagination');
+const { hasPermission } = require('../../lib/permissions');
+const { getScopedLearnerIds } = require('../../lib/rowScope');
 
 const learnerCreateSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -135,4 +137,90 @@ async function remove(req, res) {
   }
 }
 
-module.exports = { getAll, getById, create, update, remove };
+// A richer, aggregated view for a single learner: cohort/unit, guardians,
+// attendance summary, exam scores, certificates — the "insights" profile
+// page. Not gated by requirePermission('learners.view') at the route level
+// like the rest of this module (see routes.js) — a learner/guardian who
+// lacks roster access should still be able to view their own/their linked
+// child's profile, the same self-scoping concept every other per-learner
+// endpoint (attendance, certificates, scores) already applies. Roster-level
+// roles (admin/staff/instructor) can view anyone's via learners.view.
+async function getProfile(req, res) {
+  try {
+    const learnerId = Number(req.params.id);
+
+    const hasRosterAccess = await hasPermission(req, 'learners.view');
+    if (!hasRosterAccess) {
+      const scopedIds = await getScopedLearnerIds(req);
+      if (scopedIds === null || !scopedIds.includes(learnerId)) {
+        return res.status(403).json({ error: 'Missing permission: learners.view' });
+      }
+    }
+
+    const learnerResult = await req.db.query(
+      `SELECT l.*, c.name AS cohort_name, c.time_block AS cohort_time_block, un.name AS unit_name,
+              usr.email, usr.profile_picture_url
+       FROM onec_learners l
+       LEFT JOIN onec_cohorts c ON l.cohort_id = c.id
+       LEFT JOIN onec_units un ON c.unit_id = un.id
+       LEFT JOIN onec_users usr ON l.user_id = usr.id
+       WHERE l.id = $1`,
+      [learnerId]
+    );
+    if (learnerResult.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+
+    // Queued on the same tenant-pinned connection (req.db), not parallel
+    // connections — node-postgres serializes queries issued on one client,
+    // so Promise.all here is safe and just avoids one round trip of latency
+    // per query rather than running them concurrently on the wire.
+    const [guardians, attendanceSummary, recentAttendance, scores, certificates] = await Promise.all([
+      req.db.query(
+        `SELECT g.id, g.first_name, g.last_name, g.phone, g.address, usr.profile_picture_url
+         FROM onec_learner_guardian_map map
+         JOIN onec_guardians g ON map.guardian_id = g.id
+         LEFT JOIN onec_users usr ON g.user_id = usr.id
+         WHERE map.learner_id = $1
+         ORDER BY g.last_name, g.first_name`,
+        [learnerId]
+      ),
+      req.db.query(
+        'SELECT status, COUNT(*)::int AS count FROM onec_attendance WHERE learner_id = $1 GROUP BY status',
+        [learnerId]
+      ),
+      req.db.query(
+        'SELECT id, date, status, remarks FROM onec_attendance WHERE learner_id = $1 ORDER BY date DESC LIMIT 20',
+        [learnerId]
+      ),
+      req.db.query(
+        `SELECT s.id, s.score_obtained, s.remarks, sch.eval_date, sch.max_score, sch.passing_score,
+                ev.name AS evaluation_name, ev.type AS evaluation_type, m.name AS module_name
+         FROM onec_learner_scores s
+         JOIN onec_evaluation_schedules sch ON s.eval_schedule_id = sch.id
+         JOIN onec_evaluations ev ON sch.evaluation_id = ev.id
+         JOIN onec_modules m ON sch.module_id = m.id
+         WHERE s.learner_id = $1
+         ORDER BY sch.eval_date DESC`,
+        [learnerId]
+      ),
+      req.db.query(
+        'SELECT id, type, certificate_no, issue_date FROM onec_certificates WHERE learner_id = $1 ORDER BY issue_date DESC',
+        [learnerId]
+      )
+    ]);
+
+    res.json({
+      data: {
+        learner: learnerResult.rows[0],
+        guardians: guardians.rows,
+        attendance: { summary: attendanceSummary.rows, recent: recentAttendance.rows },
+        scores: scores.rows,
+        certificates: certificates.rows
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getAll, getById, create, update, remove, getProfile };

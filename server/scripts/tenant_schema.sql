@@ -6,6 +6,7 @@ CREATE TABLE onec_users (
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL,  -- 'admin', 'staff', 'instructor', 'learner', 'guardian'
     is_active BOOLEAN DEFAULT TRUE,
+    profile_picture_url VARCHAR(500),  -- Cloudinary secure_url, see server/lib/cloudinary.js
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

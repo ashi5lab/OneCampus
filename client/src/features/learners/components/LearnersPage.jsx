@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
@@ -29,7 +30,7 @@ export function LearnersPage() {
       key: 'name',
       header: t('learner'),
       render: (row) => (
-        <div className="flex items-center gap-2.5">
+        <Link to={`/app/learners/${row.id}`} className="flex items-center gap-2.5 hover:underline">
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-[11.5px] font-bold text-ink-700">
             {initials(row.first_name, row.last_name)}
           </div>
@@ -37,7 +38,7 @@ export function LearnersPage() {
             <div className="font-semibold">{row.first_name} {row.last_name}</div>
             <div className="font-mono text-[11.5px] text-ink-500">{row.registry_no}</div>
           </div>
-        </div>
+        </Link>
       )
     },
     { key: 'status', header: 'Status', render: (row) => (

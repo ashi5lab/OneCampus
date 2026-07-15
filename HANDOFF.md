@@ -36,6 +36,21 @@ Built per explicit user request, not from the spec (the spec's Phase 1 only cove
 
 ---
 
+## 1b. This session: learner/instructor profile ("insights") pages + Cloudinary profile pictures
+
+Also per explicit user request. Two things:
+
+1. **Profile/insights pages**: `GET /api/v1/learners/:id/profile` and `GET /api/v1/instructors/:id/profile` (see `server/modules/learners/README.md` / `instructors/README.md`) — aggregated views joining cohort/unit/guardians/attendance-summary/exam-scores/certificates for a learner, and activity stats (attendance marked, scores graded) for an instructor. Frontend: `LearnerProfilePage`/`InstructorProfilePage` at `/app/learners/:id` and `/app/instructors/:id`, linked from the roster tables' name column and from a new "My Profile" sidebar link (self-service, using `GET /auth/me`'s new `profile: {learnerId, instructorId, guardianId}` field). The learner profile route is **not** `RequirePermission`-gated in `App.jsx` — a learner/guardian without roster access can still reach their own/linked child's profile, same self-scoping concept as attendance/certificates; the backend enforces it (`getProfile`'s own permission-or-self-scope check), not the route.
+2. **Profile pictures via Cloudinary**: `POST /api/v1/profile/picture` (multipart, field `picture`, 5MB cap, image mimetypes only) and `DELETE /api/v1/profile/picture` — self-service only, sets `onec_users.profile_picture_url`. `server/lib/cloudinary.js` wraps the Cloudinary SDK; **the Cloudinary account is shared across multiple unrelated apps**, so every upload is namespaced under `onecampus/<tenant_schema>/profile-pictures/`. Frontend: `ProfilePictureUploader` (shown only when viewing your own profile) + a generic `Avatar` component (picture or initials fallback) used everywhere a profile picture might show (profile pages, guardian cards).
+
+**Must run before this works** (same DB-access constraint as §1a — not applied to Railway yet):
+1. Apply `server/migrations/006_add_profile_picture_url.sql` (adds `onec_users.profile_picture_url`, additive) to every existing tenant schema that should support picture uploads — the `pending` Q School tenant plus any other already-provisioned tenant.
+2. Set `CLOUDINARY_CLOUD_NAME`/`CLOUDINARY_API_KEY`/`CLOUDINARY_API_SECRET` as real environment variables directly on the Railway server service — **never commit real values**, `.env.example` only has blank placeholders. The Cloudinary integration itself (upload, folder namespacing, cleanup) was verified working end-to-end against the real Cloudinary account this session (uploaded + destroyed a throwaway test asset) — only the DB column and the deployment's env vars are outstanding.
+
+**Explicitly out of scope this pass, requested but not yet built** (the user asked for all of these in the same message — noting them here so they're not lost, not because they were skipped by accident): **Messaging**, **Notice board**, **Library**, **Homework/Assignments**, **Online exams** (two grading modes — manual and auto-graded MCQ — with a draft/publish workflow), and a cross-feature **Reports** page. Each is a real, independently-scoped feature (Online Exams in particular is comparable in size to the entire Evaluations module) — see whichever session picks this back up to work through them one at a time, same pattern as everything else in this doc: schema/migration → backend module → frontend → verify → ship as its own PR.
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):

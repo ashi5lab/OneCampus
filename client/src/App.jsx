@@ -11,7 +11,9 @@ import { SuperAdminLoginPage } from './features/superAdmin/components/SuperAdmin
 import { SuperAdminDashboardPage } from './features/superAdmin/components/SuperAdminDashboardPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { LearnersPage } from './features/learners/components/LearnersPage';
+import { LearnerProfilePage } from './features/learners/components/LearnerProfilePage';
 import { InstructorsPage } from './features/instructors/components/InstructorsPage';
+import { InstructorProfilePage } from './features/instructors/components/InstructorProfilePage';
 import { CohortsPage } from './features/cohorts/components/CohortsPage';
 import { AttendancePage } from './features/attendance/components/AttendancePage';
 import { EvaluationsPage } from './features/evaluations/components/EvaluationsPage';
@@ -62,11 +64,24 @@ export default function App() {
             </RequirePermission>
           }
         />
+        {/* Not RequirePermission-gated like the roster above — a learner or
+            guardian without learners.view can still view their own/linked
+            child's profile; the endpoint itself enforces that (see
+            server/modules/learners/controller.js's getProfile). */}
+        <Route path="learners/:id" element={<LearnerProfilePage />} />
         <Route
           path="instructors"
           element={
             <RequirePermission permission="instructors.view">
               <InstructorsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="instructors/:id"
+          element={
+            <RequirePermission permission="instructors.view">
+              <InstructorProfilePage />
             </RequirePermission>
           }
         />

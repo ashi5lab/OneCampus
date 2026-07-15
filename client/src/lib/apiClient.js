@@ -170,3 +170,37 @@ export async function downloadFile(path, filename, _retried = false) {
   link.remove();
   URL.revokeObjectURL(url);
 }
+
+// Separate from request() for the same reason downloadFile is: a
+// multipart/form-data body can't go through JSON.stringify, and — just as
+// important — must NOT set a 'Content-Type' header manually, since the
+// browser needs to add its own boundary parameter to it. Mirrors request()'s
+// auth/tenant headers and one-shot 401-refresh-retry logic.
+export async function uploadFile(path, formData, { method = 'POST', _retried = false } = {}) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method,
+    credentials: 'include',
+    headers: {
+      ...tenantHeaders(),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+    },
+    body: formData
+  });
+
+  const isJson = res.headers.get('content-type')?.includes('application/json');
+  const payload = isJson ? await res.json() : null;
+
+  if (!res.ok) {
+    if (res.status === 401 && !_retried) {
+      try {
+        await refreshAccessToken();
+        return uploadFile(path, formData, { method, _retried: true });
+      } catch {
+        // Refresh failed too — fall through to surface the original 401.
+      }
+    }
+    throw new ApiError(payload?.error || res.statusText, res.status, payload?.details);
+  }
+
+  return payload;
+}
