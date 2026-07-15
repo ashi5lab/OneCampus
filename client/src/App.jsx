@@ -31,6 +31,7 @@ import { AssignmentsPage } from './features/assignments/components/AssignmentsPa
 import { AssignmentDetailPage } from './features/assignments/components/AssignmentDetailPage';
 import { OnlineExamsPage } from './features/onlineExams/components/OnlineExamsPage';
 import { OnlineExamDetailPage } from './features/onlineExams/components/OnlineExamDetailPage';
+import { ReportsPage } from './features/reports/components/ReportsPage';
 
 export default function App() {
   return (
@@ -137,6 +138,14 @@ export default function App() {
         <Route path="assignments/:id" element={<AssignmentDetailPage />} />
         <Route path="online-exams" element={<OnlineExamsPage />} />
         <Route path="online-exams/:id" element={<OnlineExamDetailPage />} />
+        <Route
+          path="reports"
+          element={
+            <RequirePermission permission="reports.view">
+              <ReportsPage />
+            </RequirePermission>
+          }
+        />
       </Route>
     </Routes>
   );

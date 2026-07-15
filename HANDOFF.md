@@ -104,6 +104,20 @@ Permissions: `online_exams.view` (everyone), `online_exams.manage` (admin/staff/
 
 ---
 
+## 1h. This session: reports module (final item from the "add few more" batch)
+
+`server/modules/reports` — no new tables, just read-only `SELECT`/`GROUP BY` aggregation across every other module: roster counts, 30-day attendance rate, evaluation score averages, assignment completion/average-score, online-exam started/submitted/graded/pass-rate, library borrow counts + overdue loans, and certificate counts/recent list. Seven endpoints (`overview`, `attendance`, `academic-performance`, `assignments`, `online-exams`, `library`, `certificates`), all gated by a single `reports.view` permission (migration `012`).
+
+`reports.view` is deliberately **admin/staff only** — not granted to `instructor`/`learner`/`guardian` like most other `.view` permissions this session, because every query here is a cross-cohort/tenant-wide rollup with nothing to row-scope (unlike e.g. `assignments.view`, which a learner gets because their own submissions are meaningfully "theirs"). Frontend: `ReportsPage` with 7 tabs, one per endpoint, each its own component under `client/src/features/reports/components/` (`OverviewTab`, `AttendanceTab`, `AcademicPerformanceTab`, `AssignmentsTab`, `OnlineExamsTab`, `LibraryTab`, `CertificatesTab`) — split out rather than one giant file given how much per-tab query/filter logic each has.
+
+**Important**: because this module aggregates across assignments/online-exams/library, most of its endpoints will `500` on a tenant that hasn't yet run migrations `009` (library), `010` (assignments), and `011` (online exams) — there's no defensive fallback for missing tables, consistent with how every other cross-feature query in this codebase behaves.
+
+**Must run before this works**: apply `server/migrations/012_add_reports_permission.sql`, and make sure `009`/`010`/`011` have already been applied too (the Reports page queries all of those tables).
+
+This closes out every item from the original "add few more" feature request (profile views + Cloudinary → messaging → notices → library → assignments → online exams → reports).
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):
