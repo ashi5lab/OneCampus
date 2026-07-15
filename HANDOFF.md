@@ -77,9 +77,9 @@ Each frontend feature's `README.md` already states its own known limitation — 
 - ~~No user-creation UI anywhere~~ — fixed in PR #4: learner/instructor creation now creates the `onec_users` row inline, in the same form.
 - **No permission-awareness in the frontend.** With Phase 7 now enforcing role permissions server-side, an `instructor`- or `learner`-role user will see "+ Add" buttons and nav items they'll get a `403` on if clicked — `useConfig()`/a new permissions context should expose `can(permission)` so the UI can hide/disable what a role can't do, mirroring `hasModule()`'s existing pattern.
 - ~~No attendance-marking UI~~ — fixed in PR #6: `AttendanceRoster` (cohort + date picker, per-learner status, batch save).
-- No score-entry UI for evaluations (backend upsert endpoint exists and works; frontend is read-only).
+- ~~No score-entry UI for evaluations~~ — fixed in PR #7: create evaluation → schedule → record scores (`ScoreEntryPage`), all end-to-end. Known gap of its own: shows all learners tenant-wide, not scoped to the schedule's module/cohort (no enrollment relationship in the schema to filter by).
 - No unit picker for cohort creation (`unit_id` is a raw number field).
-- No frontend at all for Units, Modules (subjects/courses), or Guardians, despite full backend CRUD existing.
+- No frontend at all for Units or Guardians, despite full backend CRUD existing. (Modules/subjects now has a minimal read-only slice — `client/src/features/modules` — added only to power the evaluation-schedule form's dropdown; still no list/create page of its own.)
 - No pagination anywhere (`GET` list endpoints return everything; fine at current data volumes, will need `meta: {total, page, pageSize}` per spec §8 once tenants have real data).
 - No password-reset / signup flow — tenants are provisioned via CLI script only, users are seeded via CLI script only.
 

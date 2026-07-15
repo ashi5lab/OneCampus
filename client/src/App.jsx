@@ -8,6 +8,8 @@ import { InstructorsPage } from './features/instructors/components/InstructorsPa
 import { CohortsPage } from './features/cohorts/components/CohortsPage';
 import { AttendancePage } from './features/attendance/components/AttendancePage';
 import { EvaluationsPage } from './features/evaluations/components/EvaluationsPage';
+import { EvaluationDetailPage } from './features/evaluations/components/EvaluationDetailPage';
+import { ScoreEntryPage } from './features/evaluations/components/ScoreEntryPage';
 
 export default function App() {
   return (
@@ -27,6 +29,8 @@ export default function App() {
         <Route path="cohorts" element={<CohortsPage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="evaluations" element={<EvaluationsPage />} />
+        <Route path="evaluations/:id" element={<EvaluationDetailPage />} />
+        <Route path="evaluations/schedules/:scheduleId/scores" element={<ScoreEntryPage />} />
       </Route>
     </Routes>
   );
