@@ -11,4 +11,6 @@
 
 **Permissions**: Requires authentication AND the `certificates` module must be enabled in the tenant's `active_modules` (school/college; not enabled for kindergarten in v1), AND `certificates.view` (GET) or `certificates.issue` (POST), checked against `onec_role_permissions`.
 
+**Row-level scoping**: a `learner`-role caller only ever sees their own certificates — `GET /` forces the `learner_id` filter from their linked `onec_learners` row regardless of `?learner_id=`, and `GET /:id` returns `404` (not `403`, to avoid confirming a certificate id belongs to someone else) for any certificate that isn't theirs. Other roles are unscoped.
+
 **Business rules**: Issuance is logged via `logAudit` (action `certificate.issued`) per spec §11's explicit call-out of certificate issuance as a sensitive action requiring an audit trail.

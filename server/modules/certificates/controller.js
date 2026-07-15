@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
+const { getOwnLearnerId } = require('../../lib/ownLearner');
 
 const issueSchema = z.object({
   learner_id: z.number().int(),
@@ -15,11 +16,16 @@ const issueSchema = z.object({
 
 async function getAll(req, res) {
   try {
-    const { learner_id } = req.query;
+    // Row-level self-scoping for the learner role (see lib/ownLearner.js) —
+    // forces the filter regardless of the ?learner_id= query param, so a
+    // learner can't request someone else's certificates by id.
+    const ownLearnerId = await getOwnLearnerId(req);
+    const learnerId = ownLearnerId !== null ? ownLearnerId : req.query.learner_id;
+
     let query = 'SELECT * FROM onec_certificates';
     const params = [];
-    if (learner_id) {
-      params.push(learner_id);
+    if (learnerId) {
+      params.push(learnerId);
       query += ` WHERE learner_id = $${params.length}`;
     }
     query += ' ORDER BY issue_date DESC, id DESC';
@@ -38,6 +44,15 @@ async function getById(req, res) {
     const result = await req.db.query('SELECT * FROM onec_certificates WHERE id = $1', [id]);
 
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+
+    // A learner fetching a certificate by id that isn't theirs gets the
+    // same 404 as a nonexistent one — a plain 403 would confirm the id
+    // belongs to *someone*, leaking more than necessary.
+    const ownLearnerId = await getOwnLearnerId(req);
+    if (ownLearnerId !== null && result.rows[0].learner_id !== ownLearnerId) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
     res.json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);

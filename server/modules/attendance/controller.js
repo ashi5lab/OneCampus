@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { getOwnLearnerId } = require('../../lib/ownLearner');
 
 const attendanceSchema = z.object({
   learner_id: z.number().int(),
@@ -15,6 +16,15 @@ async function getAll(req, res) {
     const { cohort_id, date } = req.query;
     const conditions = [];
     const params = [];
+
+    // Row-level self-scoping for the learner role (see lib/ownLearner.js) —
+    // forces the filter regardless of any query params, so a learner can't
+    // widen the result set by simply omitting cohort_id/date.
+    const ownLearnerId = await getOwnLearnerId(req);
+    if (ownLearnerId !== null) {
+      params.push(ownLearnerId);
+      conditions.push(`learner_id = $${params.length}`);
+    }
 
     if (cohort_id) {
       params.push(cohort_id);

@@ -84,4 +84,28 @@ describe('Permission gating', () => {
     const { status } = await apiRequest(TENANT, null, 'GET', '/learners');
     expect(status).toBe(401);
   });
+
+  test('row-level scoping: a learner sees only their own attendance, not the whole tenant\'s', async () => {
+    const adminView = await apiRequest(TENANT, adminToken, 'GET', '/attendance');
+    const learnerView = await apiRequest(TENANT, learnerToken, 'GET', '/attendance');
+
+    expect(learnerView.status).toBe(200);
+    // Admin sees at least as many records as the learner does (the tenant's
+    // full set vs. one learner's subset) — a regression that scopes admin
+    // down too, or fails to scope the learner at all, would violate this.
+    expect(adminView.body.data.length).toBeGreaterThanOrEqual(learnerView.body.data.length);
+    // Every record the learner sees must be their own, whatever their
+    // learner_id turns out to be in this environment.
+    const learnerIds = new Set(learnerView.body.data.map((r) => r.learner_id));
+    expect(learnerIds.size).toBeLessThanOrEqual(1);
+  });
+
+  test('row-level scoping: a learner cannot widen attendance results via query params', async () => {
+    const scoped = await apiRequest(TENANT, learnerToken, 'GET', '/attendance');
+    const bypassAttempt = await apiRequest(TENANT, learnerToken, 'GET', '/attendance?cohort_id=1');
+    // Adding an unrelated filter must not change which learner_id(s) show up.
+    const scopedIds = new Set(scoped.body.data.map((r) => r.learner_id));
+    const bypassIds = new Set(bypassAttempt.body.data.map((r) => r.learner_id));
+    expect(bypassIds).toEqual(scopedIds);
+  });
 });
