@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useConfig } from '../contexts/ConfigContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useUnreadCount } from '../features/messages/hooks/useMessages';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
 function initials(name) {
@@ -43,8 +44,12 @@ export function Sidebar({ isOpen, onClose }) {
     hasModule('attendance') && can('attendance.view') && { to: '/app/attendance', label: 'Attendance' },
     hasModule('exams') && can('evaluations.view') && { to: '/app/evaluations', label: 'Exams' },
     hasModule('certificates') && can('certificates.view') && { to: '/app/certificates', label: 'Certificates' },
-    hasModule('kindergarten_activity') && can('kindergarten_activity.view') && { to: '/app/kindergarten-activity', label: 'Daily Activity' }
+    hasModule('kindergarten_activity') && can('kindergarten_activity.view') && { to: '/app/kindergarten-activity', label: 'Daily Activity' },
+    hasModule('messaging') && can('messages.view') && { to: '/app/messages', label: 'Messages', showUnreadBadge: true }
   ].filter(Boolean);
+
+  const messagingEnabled = hasModule('messaging') && can('messages.view');
+  const { data: unreadCount } = useUnreadCount({ enabled: messagingEnabled });
 
   return (
     <>
@@ -93,7 +98,14 @@ export function Sidebar({ isOpen, onClose }) {
           </div>
           {managementLinks.map((link) => (
             <NavLink key={link.to} to={link.to} className={navItemClass} onClick={onClose}>
-              {link.label}
+              <span className="flex flex-1 items-center justify-between">
+                {link.label}
+                {link.showUnreadBadge && unreadCount > 0 && (
+                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-ink">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </span>
             </NavLink>
           ))}
         </>

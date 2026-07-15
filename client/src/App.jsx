@@ -24,6 +24,7 @@ import { ModulesPage } from './features/modules/components/ModulesPage';
 import { GuardiansPage } from './features/guardians/components/GuardiansPage';
 import { CertificatesPage } from './features/certificates/components/CertificatesPage';
 import { KindergartenActivityPage } from './features/kindergartenActivity/components/KindergartenActivityPage';
+import { MessagesPage } from './features/messages/components/MessagesPage';
 
 export default function App() {
   return (
@@ -123,6 +124,7 @@ export default function App() {
         <Route path="evaluations/schedules/:scheduleId/scores" element={<ScoreEntryPage />} />
         <Route path="certificates" element={<CertificatesPage />} />
         <Route path="kindergarten-activity" element={<KindergartenActivityPage />} />
+        <Route path="messages" element={<MessagesPage />} />
       </Route>
     </Routes>
   );

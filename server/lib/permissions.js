@@ -20,9 +20,17 @@ const ALL_PERMISSIONS = [
   'evaluations.view', 'evaluations.manage', 'evaluations.grade',
   'certificates.view', 'certificates.issue',
   'kindergarten_activity.view', 'kindergarten_activity.log',
-  'guardian_links.view', 'guardian_links.manage'
+  'guardian_links.view', 'guardian_links.manage',
+  'messages.view', 'messages.send'
 ];
 
+// messages.view/.send are granted to every role below — unlike the
+// roster-style permissions above, there's no "manage vs. view" split for
+// messaging: everyone can see their own inbox and send a message, the same
+// way every role can already see their own attendance/scores. There's
+// nothing to self-scope by learner_id here either (a message is already
+// inherently "mine" — sender_id/recipient_id = the caller), so this is the
+// one permission pair with no row-scoping concern at all.
 const DEFAULT_ROLE_PERMISSIONS = {
   admin: ALL_PERMISSIONS,
   staff: ALL_PERMISSIONS,
@@ -31,19 +39,20 @@ const DEFAULT_ROLE_PERMISSIONS = {
     'learners.view', 'guardians.view',
     'attendance.view', 'attendance.mark',
     'evaluations.view', 'evaluations.manage', 'evaluations.grade',
-    'kindergarten_activity.view', 'kindergarten_activity.log'
+    'kindergarten_activity.view', 'kindergarten_activity.log',
+    'messages.view', 'messages.send'
   ],
   // Coarse-grained on purpose (see the row-level-scoping note above) — kept
   // to just enough to view their own records, not the full roster/management
   // surface. Certificate issuance and kindergarten activity logging are
   // staff-side actions, not granted here.
-  learner: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view'],
+  learner: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view', 'messages.view', 'messages.send'],
   // guardian_links.view lets a guardian look up which learners they're
   // linked to (lib/ownGuardianLearners.js needs this for row scoping) —
   // not .manage, since linking/unlinking a child is a staff-side action.
   guardian: [
     'attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view',
-    'guardian_links.view'
+    'guardian_links.view', 'messages.view', 'messages.send'
   ]
 };
 

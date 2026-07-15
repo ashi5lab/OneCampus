@@ -47,7 +47,20 @@ Also per explicit user request. Two things:
 1. Apply `server/migrations/006_add_profile_picture_url.sql` (adds `onec_users.profile_picture_url`, additive) to every existing tenant schema that should support picture uploads — the `pending` Q School tenant plus any other already-provisioned tenant.
 2. Set `CLOUDINARY_CLOUD_NAME`/`CLOUDINARY_API_KEY`/`CLOUDINARY_API_SECRET` as real environment variables directly on the Railway server service — **never commit real values**, `.env.example` only has blank placeholders. The Cloudinary integration itself (upload, folder namespacing, cleanup) was verified working end-to-end against the real Cloudinary account this session (uploaded + destroyed a throwaway test asset) — only the DB column and the deployment's env vars are outstanding.
 
-**Explicitly out of scope this pass, requested but not yet built** (the user asked for all of these in the same message — noting them here so they're not lost, not because they were skipped by accident): **Messaging**, **Notice board**, **Library**, **Homework/Assignments**, **Online exams** (two grading modes — manual and auto-graded MCQ — with a draft/publish workflow), and a cross-feature **Reports** page. Each is a real, independently-scoped feature (Online Exams in particular is comparable in size to the entire Evaluations module) — see whichever session picks this back up to work through them one at a time, same pattern as everything else in this doc: schema/migration → backend module → frontend → verify → ship as its own PR.
+**Explicitly out of scope this pass, requested but not yet built**: ~~Messaging~~ (done, see §1c), **Notice board**, **Library**, **Homework/Assignments**, **Online exams** (two grading modes — manual and auto-graded MCQ — with a draft/publish workflow), and a cross-feature **Reports** page. Each is a real, independently-scoped feature (Online Exams in particular is comparable in size to the entire Evaluations module) — work through them one at a time, same pattern as everything else in this doc: schema/migration → backend module → frontend → verify → ship as its own PR.
+
+---
+
+## 1c. This session: direct messaging module
+
+The last stub finally has an implementation behind it — `messaging` has been sitting in `moduleDefaults.js`'s default `active_modules` list (kindergarten/school tenants) since long before this session, with nothing built for it.
+
+- `onec_messages` table (migration 007) — simple one-to-one messages (`sender_id`, `recipient_id`, `subject`, `body`, `is_read`). No group/broadcast, no attachments.
+- `server/modules/messages`: inbox/sent lists, unread count, a recipient picker (every other active user in the tenant), send, mark-read. See its `README.md`.
+- `messages.view`/`messages.send` added to **every** role's default permissions (`server/lib/permissions.js`) — unlike roster permissions, there's no view/manage split and no row-scoping question (a message's sender/recipient *is* the caller by construction).
+- Frontend: `MessagesPage` (Inbox/Sent tabs, click-to-expand-and-mark-read) + `ComposeMessageModal`, a new sidebar "Messages" link with a polled (30s) unread-count badge. `apiClient` gained a `patch()` method — this is the first tenant-scoped route to need one (`PATCH /messages/:id/read`).
+
+**Must run before this works** (same pattern as §1a/§1b): apply `server/migrations/007_add_messages.sql` to each existing tenant schema — it also retrofits the new `messages.*` permission rows via `INSERT ... ON CONFLICT DO NOTHING`, so a plain re-run of `server/scripts/seedPermissionsForExistingTenants.js` would achieve the same permission part (not the table) if preferred.
 
 ---
 

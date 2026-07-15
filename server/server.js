@@ -55,6 +55,7 @@ const evaluationsRoutes = require('./modules/evaluations/routes');
 const certificatesRoutes = require('./modules/certificates/routes');
 const kindergartenActivityRoutes = require('./modules/kindergartenActivity/routes');
 const profileRoutes = require('./modules/profile/routes');
+const messagesRoutes = require('./modules/messages/routes');
 
 app.use('/api/v1/tenant', tenantRoutes);
 app.use('/api/v1/auth', authRoutes);
@@ -70,6 +71,7 @@ app.use('/api/v1/evaluations', evaluationsRoutes);
 app.use('/api/v1/certificates', certificatesRoutes);
 app.use('/api/v1/kindergarten-activity', kindergartenActivityRoutes);
 app.use('/api/v1/profile', profileRoutes);
+app.use('/api/v1/messages', messagesRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
