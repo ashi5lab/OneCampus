@@ -59,6 +59,7 @@ const messagesRoutes = require('./modules/messages/routes');
 const noticesRoutes = require('./modules/notices/routes');
 const libraryRoutes = require('./modules/library/routes');
 const assignmentsRoutes = require('./modules/assignments/routes');
+const onlineExamsRoutes = require('./modules/onlineExams/routes');
 
 app.use('/api/v1/tenant', tenantRoutes);
 app.use('/api/v1/auth', authRoutes);
@@ -78,6 +79,7 @@ app.use('/api/v1/messages', messagesRoutes);
 app.use('/api/v1/notices', noticesRoutes);
 app.use('/api/v1/library', libraryRoutes);
 app.use('/api/v1/assignments', assignmentsRoutes);
+app.use('/api/v1/online-exams', onlineExamsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

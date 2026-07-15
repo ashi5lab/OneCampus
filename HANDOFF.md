@@ -90,6 +90,20 @@ The last stub finally has an implementation behind it — `messaging` has been s
 
 ---
 
+## 1g. This session: online exams module
+
+`onec_online_exams` + `onec_exam_questions` + `onec_exam_submissions` + `onec_exam_answers` (migration 011). Distinct from both Evaluations (offline/paper exam score entry) and Assignments (no answer key) — a learner actually takes this exam in-app. `grading_type` is set per-exam at creation: `'manual'` (any question type, a grader scores every answer afterwards) or `'auto'` (every question must be MCQ with a `correct_option`, scored immediately on submit — enforced by a zod `.refine()` in `server/modules/onlineExams/controller.js`). `correct_option` is stripped from `GET /:id` for non-graders so an exam-taker's own network tab never reveals the answer key. Results (score/feedback) are only revealed to a learner once a manager explicitly publishes the exam (`PUT /:id/publish`) — matches the spec's "results can be published" requirement as a distinct step from grading itself.
+
+Once a submission exists for an exam, editing it only updates metadata (title/description/module/cohort/duration) — the question set is frozen, since `onec_exam_questions` cascades to `onec_exam_answers` on delete and replacing questions would silently wipe learners' in-progress/graded answers. Delete and recreate the exam instead if the question set needs to change; the frontend surfaces this via an alert after a locked-question edit succeeds.
+
+Permissions: `online_exams.view` (everyone), `online_exams.manage` (admin/staff/instructor — create/edit/delete/publish, the "teachers or people who have given access" case from the spec), `online_exams.grade` (admin/staff/instructor — manual grading, kept separate from `.manage` in case a tenant wants to grant grading without exam-authoring rights), `online_exams.take` (learner only). Frontend: `OnlineExamDetailPage` dispatches to `ExamSubmissionsRoster` (grader) or `ExamTaker` (learner: start → answer → submit → see results once published), same dispatch pattern as `AssignmentDetailPage`/`ScoreEntryPage`.
+
+**Known gap** (same shape as Assignments'): a `guardian` has `online_exams.view` but no row-scoping is wired for a guardian to see their linked child's submission/results.
+
+**Must run before this works**: apply `server/migrations/011_add_online_exams.sql` to each existing tenant schema.
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):

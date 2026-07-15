@@ -1,0 +1,156 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useConfig } from '../../../contexts/ConfigContext';
+import { StatCard } from '../../../components/StatCard';
+import { DataTable } from '../../../components/DataTable';
+import { Badge } from '../../../components/Badge';
+import { useOnlineExams, useOnlineExam, useCreateOnlineExam, useUpdateOnlineExam, useDeleteOnlineExam } from '../hooks/useOnlineExams';
+import { ExamFormModal } from './ExamFormModal';
+
+const STATUS_LABEL = { in_progress: 'In progress', submitted: 'Submitted', graded: 'Graded' };
+
+export function OnlineExamsPage() {
+  const { can } = useAuth();
+  const { t } = useConfig();
+  const { data: exams, isLoading, error } = useOnlineExams();
+  const createExam = useCreateOnlineExam();
+  const updateExam = useUpdateOnlineExam();
+  const deleteExam = useDeleteOnlineExam();
+  const isManager = can('online_exams.manage');
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingExamId, setEditingExamId] = useState(null);
+
+  const columns = [
+    {
+      key: 'title',
+      header: 'Title',
+      render: (row) => (
+        <Link to={`/app/online-exams/${row.id}`} className="font-semibold text-accent-dark hover:underline">
+          {row.title}
+        </Link>
+      )
+    },
+    { key: 'module', header: t('topic'), render: (row) => row.module_name },
+    { key: 'cohort', header: t('cohort'), render: (row) => row.cohort_name },
+    { key: 'grading_type', header: 'Grading', render: (row) => (row.grading_type === 'auto' ? 'Automatic' : 'Manual') },
+    { key: 'questions', header: 'Questions', render: (row) => row.question_count },
+    {
+      key: 'status',
+      header: isManager ? 'Published' : 'Your Status',
+      render: (row) =>
+        isManager ? (
+          <Badge variant={row.published ? 'active' : 'pending'}>{row.published ? 'Published' : 'Draft'}</Badge>
+        ) : row.my_status ? (
+          <Badge variant={row.my_status === 'in_progress' ? 'pending' : 'active'}>{STATUS_LABEL[row.my_status]}</Badge>
+        ) : (
+          <Badge variant="inactive">Not started</Badge>
+        )
+    }
+  ];
+  if (isManager) {
+    columns.push({
+      key: 'actions',
+      header: '',
+      render: (row) => (
+        <div className="flex justify-end gap-3">
+          <button onClick={() => setEditingExamId(row.id)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
+            Edit
+          </button>
+          <button
+            onClick={() => {
+              if (window.confirm(`Delete "${row.title}"?`)) deleteExam.mutate(row.id);
+            }}
+            className="text-xs font-semibold text-danger hover:opacity-80"
+          >
+            Delete
+          </button>
+        </div>
+      )
+    });
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Online Exams</div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Online Exams</h1>
+        </div>
+        {isManager && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+          >
+            + Create Exam
+          </button>
+        )}
+      </div>
+
+      <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total Exams" value={isLoading ? '—' : exams.length} />
+      </div>
+
+      <div className="overflow-hidden rounded border border-border bg-surface">
+        {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
+        {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
+        {exams && <DataTable columns={columns} rows={exams} rowKey={(row) => row.id} emptyMessage="No exams yet." />}
+      </div>
+
+      {showForm && (
+        <ExamFormModal
+          onClose={() => setShowForm(false)}
+          submitting={createExam.isPending}
+          submitError={createExam.error?.message}
+          onSubmit={(values) => createExam.mutate(values, { onSuccess: () => setShowForm(false) })}
+        />
+      )}
+
+      {editingExamId && (
+        <EditExamModal
+          examId={editingExamId}
+          onClose={() => setEditingExamId(null)}
+          updateExam={updateExam}
+        />
+      )}
+    </div>
+  );
+}
+
+// Separate from the list row — the row only carries `question_count`, so
+// editing needs the full detail fetch (including each question's text/
+// options/correct_option) before the form can prefill.
+function EditExamModal({ examId, onClose, updateExam }) {
+  const { data: exam, isLoading } = useOnlineExam(examId);
+
+  if (isLoading || !exam) {
+    return (
+      <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4">
+        <div className="rounded border border-border bg-surface p-6 text-sm text-ink-500">Loading…</div>
+      </div>
+    );
+  }
+
+  return (
+    <ExamFormModal
+      initialData={exam}
+      onClose={onClose}
+      submitting={updateExam.isPending}
+      submitError={updateExam.error?.message}
+      onSubmit={(values) =>
+        updateExam.mutate(
+          { id: examId, payload: values },
+          {
+            onSuccess: (updated) => {
+              if (updated.questionsLocked) {
+                window.alert('Learners have already started this exam, so only the title/subject/class/duration were updated — the questions were left as-is.');
+              }
+              onClose();
+            }
+          }
+        )
+      }
+    />
+  );
+}

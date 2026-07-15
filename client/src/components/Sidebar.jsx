@@ -48,6 +48,7 @@ export function Sidebar({ isOpen, onClose }) {
     can('notices.view') && { to: '/app/notices', label: 'Notices' },
     can('library.view') && { to: '/app/library', label: 'Library' },
     can('assignments.view') && { to: '/app/assignments', label: 'Assignments' },
+    can('online_exams.view') && { to: '/app/online-exams', label: 'Online Exams' },
     hasModule('messaging') && can('messages.view') && { to: '/app/messages', label: 'Messages', showUnreadBadge: true }
   ].filter(Boolean);
 
