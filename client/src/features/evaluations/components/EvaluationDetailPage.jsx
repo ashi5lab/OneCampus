@@ -26,7 +26,7 @@ export function EvaluationDetailPage() {
       key: 'module',
       header: t('topic'),
       render: (row) => (
-        <Link to={`/evaluations/schedules/${row.id}/scores`} className="font-semibold text-accent-dark hover:underline">
+        <Link to={`/app/evaluations/schedules/${row.id}/scores`} className="font-semibold text-accent-dark hover:underline">
           {moduleName(row.module_id)}
         </Link>
       )
@@ -41,7 +41,7 @@ export function EvaluationDetailPage() {
       <div className="mb-6 flex items-start justify-between">
         <div>
           <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            <Link to="/evaluations" className="hover:underline">Exams</Link> / {evaluation?.name || '…'}
+            <Link to="/app/evaluations" className="hover:underline">Exams</Link> / {evaluation?.name || '…'}
           </div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
             {evaluation?.name}

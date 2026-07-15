@@ -24,16 +24,16 @@ export function Sidebar({ isOpen, onClose }) {
   const { user, logout, can } = useAuth();
 
   const managementLinks = [
-    can('learners.view') && { to: '/learners', label: t('learners') },
-    can('instructors.view') && { to: '/instructors', label: t('instructors') },
-    can('cohorts.view') && { to: '/cohorts', label: t('cohorts') },
-    can('units.view') && { to: '/units', label: 'Units' },
-    can('modules.view') && { to: '/modules', label: t('topics') },
-    can('guardians.view') && { to: '/guardians', label: 'Guardians' },
-    hasModule('attendance') && can('attendance.view') && { to: '/attendance', label: 'Attendance' },
-    hasModule('exams') && can('evaluations.view') && { to: '/evaluations', label: 'Exams' },
-    hasModule('certificates') && can('certificates.view') && { to: '/certificates', label: 'Certificates' },
-    hasModule('kindergarten_activity') && can('kindergarten_activity.view') && { to: '/kindergarten-activity', label: 'Daily Activity' }
+    can('learners.view') && { to: '/app/learners', label: t('learners') },
+    can('instructors.view') && { to: '/app/instructors', label: t('instructors') },
+    can('cohorts.view') && { to: '/app/cohorts', label: t('cohorts') },
+    can('units.view') && { to: '/app/units', label: 'Units' },
+    can('modules.view') && { to: '/app/modules', label: t('topics') },
+    can('guardians.view') && { to: '/app/guardians', label: 'Guardians' },
+    hasModule('attendance') && can('attendance.view') && { to: '/app/attendance', label: 'Attendance' },
+    hasModule('exams') && can('evaluations.view') && { to: '/app/evaluations', label: 'Exams' },
+    hasModule('certificates') && can('certificates.view') && { to: '/app/certificates', label: 'Certificates' },
+    hasModule('kindergarten_activity') && can('kindergarten_activity.view') && { to: '/app/kindergarten-activity', label: 'Daily Activity' }
   ].filter(Boolean);
 
   return (
@@ -67,7 +67,7 @@ export function Sidebar({ isOpen, onClose }) {
       <div className="px-3 pb-1.5 text-[10.5px] font-bold uppercase tracking-wide text-sidebar-text">
         Overview
       </div>
-      <NavLink to="/" end className={navItemClass} onClick={onClose}>
+      <NavLink to="/app" end className={navItemClass} onClick={onClose}>
         Dashboard
       </NavLink>
 
