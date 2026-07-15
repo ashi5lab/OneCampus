@@ -14,3 +14,19 @@ export function useCreateCohort() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cohorts'] })
   });
 }
+
+export function useUpdateCohort() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => cohortsApi.update(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cohorts'] })
+  });
+}
+
+export function useDeleteCohort() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: cohortsApi.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cohorts'] })
+  });
+}

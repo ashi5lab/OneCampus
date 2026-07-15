@@ -2,19 +2,45 @@ import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
-import { useUnits, useCreateUnit } from '../hooks/useUnits';
+import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit } from '../hooks/useUnits';
 import { UnitFormModal } from './UnitFormModal';
 
 export function UnitsPage() {
   const { can } = useAuth();
   const { data: units, isLoading, error } = useUnits();
   const createUnit = useCreateUnit();
+  const updateUnit = useUpdateUnit();
+  const deleteUnit = useDeleteUnit();
+  
   const [showForm, setShowForm] = useState(false);
+  const [editingUnit, setEditingUnit] = useState(null);
 
   const columns = [
     { key: 'name', header: 'Name', render: (row) => <span className="font-semibold">{row.name}</span> },
     { key: 'type', header: 'Type', render: (row) => row.type }
   ];
+
+  if (can('units.manage')) {
+    columns.push({
+      key: 'actions',
+      header: '',
+      render: (row) => (
+        <div className="flex justify-end gap-3">
+          <button onClick={() => setEditingUnit(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
+          <button 
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete ${row.name}?`)) {
+                deleteUnit.mutate(row.id);
+              }
+            }} 
+            className="text-xs font-semibold text-danger hover:opacity-80"
+          >
+            Delete
+          </button>
+        </div>
+      )
+    });
+  }
 
   return (
     <div>
@@ -54,6 +80,18 @@ export function UnitsPage() {
           submitError={createUnit.error?.message}
           onSubmit={(values) =>
             createUnit.mutate(values, { onSuccess: () => setShowForm(false) })
+          }
+        />
+      )}
+
+      {editingUnit && (
+        <UnitFormModal
+          initialData={editingUnit}
+          onClose={() => setEditingUnit(null)}
+          submitting={updateUnit.isPending}
+          submitError={updateUnit.error?.message}
+          onSubmit={(values) =>
+            updateUnit.mutate({ id: editingUnit.id, payload: values }, { onSuccess: () => setEditingUnit(null) })
           }
         />
       )}

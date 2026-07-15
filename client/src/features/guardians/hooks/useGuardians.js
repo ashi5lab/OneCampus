@@ -12,3 +12,19 @@ export function useCreateGuardian() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guardians'] })
   });
 }
+
+export function useUpdateGuardian() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => guardiansApi.update(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guardians'] })
+  });
+}
+
+export function useDeleteGuardian() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: guardiansApi.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guardians'] })
+  });
+}

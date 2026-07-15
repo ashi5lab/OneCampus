@@ -4,7 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { useUnits } from '../../units/hooks/useUnits';
-import { useModules, useCreateModule } from '../hooks/useModules';
+import { useModules, useCreateModule, useUpdateModule, useDeleteModule } from '../hooks/useModules';
 import { ModuleFormModal } from './ModuleFormModal';
 
 export function ModulesPage() {
@@ -13,7 +13,11 @@ export function ModulesPage() {
   const { data: modules, isLoading, error } = useModules();
   const { data: units } = useUnits({ enabled: can('units.view') });
   const createModule = useCreateModule();
+  const updateModule = useUpdateModule();
+  const deleteModule = useDeleteModule();
+  
   const [showForm, setShowForm] = useState(false);
+  const [editingModule, setEditingModule] = useState(null);
 
   function unitName(unitId) {
     if (!unitId) return '—';
@@ -26,6 +30,28 @@ export function ModulesPage() {
     { key: 'unit', header: 'Unit', render: (row) => unitName(row.unit_id) },
     { key: 'credits', header: 'Credits', render: (row) => row.credits }
   ];
+
+  if (can('modules.manage')) {
+    columns.push({
+      key: 'actions',
+      header: '',
+      render: (row) => (
+        <div className="flex justify-end gap-3">
+          <button onClick={() => setEditingModule(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
+          <button 
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete ${row.name}?`)) {
+                deleteModule.mutate(row.id);
+              }
+            }} 
+            className="text-xs font-semibold text-danger hover:opacity-80"
+          >
+            Delete
+          </button>
+        </div>
+      )
+    });
+  }
 
   return (
     <div>
@@ -65,6 +91,18 @@ export function ModulesPage() {
           submitError={createModule.error?.message}
           onSubmit={(values) =>
             createModule.mutate(values, { onSuccess: () => setShowForm(false) })
+          }
+        />
+      )}
+
+      {editingModule && (
+        <ModuleFormModal
+          initialData={editingModule}
+          onClose={() => setEditingModule(null)}
+          submitting={updateModule.isPending}
+          submitError={updateModule.error?.message}
+          onSubmit={(values) =>
+            updateModule.mutate({ id: editingModule.id, payload: values }, { onSuccess: () => setEditingModule(null) })
           }
         />
       )}

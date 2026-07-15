@@ -1,15 +1,19 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { learnerFormSchema } from '../types';
+import { learnerFormSchema, learnerUpdateSchema } from '../types';
 import { useConfig } from '../../../contexts/ConfigContext';
 
-export function LearnerFormModal({ onClose, onSubmit, submitting, submitError }) {
+export function LearnerFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
   const { t } = useConfig();
+  const isEdit = !!initialData;
   const {
     register,
     handleSubmit,
     formState: { errors }
-  } = useForm({ resolver: zodResolver(learnerFormSchema), defaultValues: { status: 'active' } });
+  } = useForm({
+    resolver: zodResolver(isEdit ? learnerUpdateSchema : learnerFormSchema),
+    defaultValues: initialData || { status: 'active' }
+  });
 
   function handleFormSubmit(values) {
     onSubmit({
@@ -19,33 +23,47 @@ export function LearnerFormModal({ onClose, onSubmit, submitting, submitError })
   }
 
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40">
+    <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
       <form
         onSubmit={handleSubmit(handleFormSubmit)}
-        className="w-[420px] rounded border border-border bg-surface p-6"
+        className="w-full max-w-[420px] rounded border border-border bg-surface p-6 my-auto"
       >
-        <div className="mb-4 text-base font-bold text-ink-900">Add {t('learner')}</div>
+        <div className="mb-4 text-base font-bold text-ink-900">
+          {isEdit ? 'Edit' : 'Add'} {t('learner')}
+        </div>
 
-        <Field label="Username" error={errors.username}>
-          <input className="input" {...register('username')} />
-        </Field>
-        <Field label="Email" error={errors.email}>
-          <input type="email" className="input" {...register('email')} />
-        </Field>
-        <Field label="Password" error={errors.password}>
-          <input type="password" className="input" {...register('password')} />
-        </Field>
+        {!isEdit && (
+          <>
+            <Field label="Username" error={errors.username}>
+              <input className="input w-full" {...register('username')} />
+            </Field>
+            <Field label="Email" error={errors.email}>
+              <input type="email" className="input w-full" {...register('email')} />
+            </Field>
+            <Field label="Password" error={errors.password}>
+              <input type="password" className="input w-full" {...register('password')} />
+            </Field>
+          </>
+        )}
+        
         <Field label="Registry No." error={errors.registry_no}>
-          <input className="input" {...register('registry_no')} />
+          <input className="input w-full" {...register('registry_no')} />
         </Field>
         <Field label="First Name" error={errors.first_name}>
-          <input className="input" {...register('first_name')} />
+          <input className="input w-full" {...register('first_name')} />
         </Field>
         <Field label="Last Name" error={errors.last_name}>
-          <input className="input" {...register('last_name')} />
+          <input className="input w-full" {...register('last_name')} />
         </Field>
         <Field label="Cohort ID (optional)" error={errors.cohort_id}>
-          <input type="number" className="input" {...register('cohort_id')} />
+          <input type="number" className="input w-full" {...register('cohort_id')} />
+        </Field>
+        <Field label="Status" error={errors.status}>
+          <select className="input w-full" {...register('status')}>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="inactive">Inactive</option>
+          </select>
         </Field>
 
         {submitError && (

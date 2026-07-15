@@ -3,7 +3,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
-import { useGuardians, useCreateGuardian } from '../hooks/useGuardians';
+import { useGuardians, useCreateGuardian, useUpdateGuardian, useDeleteGuardian } from '../hooks/useGuardians';
 import { useGuardianLinks } from '../hooks/useGuardianLinks';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { GuardianFormModal } from './GuardianFormModal';
@@ -14,7 +14,11 @@ export function GuardiansPage() {
   const { can } = useAuth();
   const { data: guardians, isLoading, error } = useGuardians();
   const createGuardian = useCreateGuardian();
+  const updateGuardian = useUpdateGuardian();
+  const deleteGuardian = useDeleteGuardian();
+  
   const [showForm, setShowForm] = useState(false);
+  const [editingGuardian, setEditingGuardian] = useState(null);
   const [linksTarget, setLinksTarget] = useState(null);
 
   const canManageLinks = can('guardian_links.manage');
@@ -53,13 +57,35 @@ export function GuardiansPage() {
             </span>
             <button
               onClick={() => setLinksTarget(row)}
-              className="whitespace-nowrap text-[11.5px] font-semibold text-accent"
+              className="whitespace-nowrap text-[11.5px] font-semibold text-accent hover:opacity-80"
             >
               Manage
             </button>
           </div>
         );
       }
+    });
+  }
+
+  if (can('guardians.manage')) {
+    columns.push({
+      key: 'actions',
+      header: '',
+      render: (row) => (
+        <div className="flex justify-end gap-3">
+          <button onClick={() => setEditingGuardian(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
+          <button 
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete ${row.first_name} ${row.last_name}?`)) {
+                deleteGuardian.mutate(row.id);
+              }
+            }} 
+            className="text-xs font-semibold text-danger hover:opacity-80"
+          >
+            Delete
+          </button>
+        </div>
+      )
     });
   }
 
@@ -101,6 +127,18 @@ export function GuardiansPage() {
           submitError={createGuardian.error?.message}
           onSubmit={(values) =>
             createGuardian.mutate(values, { onSuccess: () => setShowForm(false) })
+          }
+        />
+      )}
+
+      {editingGuardian && (
+        <GuardianFormModal
+          initialData={editingGuardian}
+          onClose={() => setEditingGuardian(null)}
+          submitting={updateGuardian.isPending}
+          submitError={updateGuardian.error?.message}
+          onSubmit={(values) =>
+            updateGuardian.mutate({ id: editingGuardian.id, payload: values }, { onSuccess: () => setEditingGuardian(null) })
           }
         />
       )}

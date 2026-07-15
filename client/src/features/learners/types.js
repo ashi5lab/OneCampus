@@ -9,9 +9,17 @@ export const learnerFormSchema = z.object({
   registry_no: z.string().min(1, 'Registry number is required'),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
-  // z.coerce.number() on '' would coerce to 0 (a valid, but wrong, cohort id)
-  // before a union ever reaches a z.literal('') fallback — preprocess first
-  // so an empty field becomes "not provided" instead of 0.
+  cohort_id: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
+    z.number().int().optional()
+  ),
+  status: z.string().default('active')
+});
+
+export const learnerUpdateSchema = z.object({
+  registry_no: z.string().min(1, 'Registry number is required'),
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
   cohort_id: z.preprocess(
     (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
     z.number().int().optional()

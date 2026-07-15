@@ -14,3 +14,19 @@ export function useCreateInstructor() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['instructors'] })
   });
 }
+
+export function useUpdateInstructor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => instructorsApi.update(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['instructors'] })
+  });
+}
+
+export function useDeleteInstructor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: instructorsApi.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['instructors'] })
+  });
+}

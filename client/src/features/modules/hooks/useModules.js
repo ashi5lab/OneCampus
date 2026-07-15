@@ -15,3 +15,19 @@ export function useCreateModule() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['modules'] })
   });
 }
+
+export function useUpdateModule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => modulesApi.update(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['modules'] })
+  });
+}
+
+export function useDeleteModule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: modulesApi.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['modules'] })
+  });
+}

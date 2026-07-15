@@ -15,3 +15,19 @@ export function useCreateLearner() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['learners'] })
   });
 }
+
+export function useUpdateLearner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => learnersApi.update(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['learners'] })
+  });
+}
+
+export function useDeleteLearner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: learnersApi.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['learners'] })
+  });
+}

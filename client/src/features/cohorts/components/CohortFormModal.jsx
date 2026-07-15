@@ -3,30 +3,36 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { cohortFormSchema } from '../types';
 import { useConfig } from '../../../contexts/ConfigContext';
 
-export function CohortFormModal({ onClose, onSubmit, submitting, submitError }) {
+export function CohortFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
   const { t } = useConfig();
+  const isEdit = !!initialData;
   const {
     register,
     handleSubmit,
     formState: { errors }
-  } = useForm({ resolver: zodResolver(cohortFormSchema) });
+  } = useForm({
+    resolver: zodResolver(cohortFormSchema),
+    defaultValues: initialData || {}
+  });
 
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40">
+    <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-[420px] rounded border border-border bg-surface p-6"
+        className="w-full max-w-[420px] rounded border border-border bg-surface p-6 my-auto"
       >
-        <div className="mb-4 text-base font-bold text-ink-900">Add {t('cohort')}</div>
+        <div className="mb-4 text-base font-bold text-ink-900">
+          {isEdit ? 'Edit' : 'Add'} {t('cohort')}
+        </div>
 
         <Field label="Name" error={errors.name}>
-          <input className="input" {...register('name')} placeholder="e.g. Grade 9 - B" />
+          <input className="input w-full" {...register('name')} placeholder="e.g. Grade 9 - B" />
         </Field>
         <Field label="Unit ID" error={errors.unit_id}>
-          <input type="number" className="input" {...register('unit_id')} />
+          <input type="number" className="input w-full" {...register('unit_id')} />
         </Field>
         <Field label="Time Block" error={errors.time_block}>
-          <input className="input" {...register('time_block')} placeholder="e.g. 2026-2027" />
+          <input className="input w-full" {...register('time_block')} placeholder="e.g. 2026-2027" />
         </Field>
 
         {submitError && (

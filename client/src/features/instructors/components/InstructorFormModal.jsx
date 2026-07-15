@@ -1,44 +1,54 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { instructorFormSchema } from '../types';
+import { instructorFormSchema, instructorUpdateSchema } from '../types';
 import { useConfig } from '../../../contexts/ConfigContext';
 
-export function InstructorFormModal({ onClose, onSubmit, submitting, submitError }) {
+export function InstructorFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
   const { t } = useConfig();
+  const isEdit = !!initialData;
   const {
     register,
     handleSubmit,
     formState: { errors }
-  } = useForm({ resolver: zodResolver(instructorFormSchema) });
+  } = useForm({
+    resolver: zodResolver(isEdit ? instructorUpdateSchema : instructorFormSchema),
+    defaultValues: initialData || {}
+  });
 
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40">
+    <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-[420px] rounded border border-border bg-surface p-6"
+        className="w-full max-w-[420px] rounded border border-border bg-surface p-6 my-auto"
       >
-        <div className="mb-4 text-base font-bold text-ink-900">Add {t('instructor')}</div>
+        <div className="mb-4 text-base font-bold text-ink-900">
+          {isEdit ? 'Edit' : 'Add'} {t('instructor')}
+        </div>
 
-        <Field label="Username" error={errors.username}>
-          <input className="input" {...register('username')} />
-        </Field>
-        <Field label="Email" error={errors.email}>
-          <input type="email" className="input" {...register('email')} />
-        </Field>
-        <Field label="Password" error={errors.password}>
-          <input type="password" className="input" {...register('password')} />
-        </Field>
+        {!isEdit && (
+          <>
+            <Field label="Username" error={errors.username}>
+              <input className="input w-full" {...register('username')} />
+            </Field>
+            <Field label="Email" error={errors.email}>
+              <input type="email" className="input w-full" {...register('email')} />
+            </Field>
+            <Field label="Password" error={errors.password}>
+              <input type="password" className="input w-full" {...register('password')} />
+            </Field>
+          </>
+        )}
         <Field label="Staff ID" error={errors.staff_id}>
-          <input className="input" {...register('staff_id')} />
+          <input className="input w-full" {...register('staff_id')} />
         </Field>
         <Field label="First Name" error={errors.first_name}>
-          <input className="input" {...register('first_name')} />
+          <input className="input w-full" {...register('first_name')} />
         </Field>
         <Field label="Last Name" error={errors.last_name}>
-          <input className="input" {...register('last_name')} />
+          <input className="input w-full" {...register('last_name')} />
         </Field>
         <Field label="Phone (optional)" error={errors.phone}>
-          <input className="input" {...register('phone')} />
+          <input className="input w-full" {...register('phone')} />
         </Field>
 
         {submitError && (

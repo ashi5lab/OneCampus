@@ -4,7 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
-import { useLearners, useCreateLearner } from '../hooks/useLearners';
+import { useLearners, useCreateLearner, useUpdateLearner, useDeleteLearner } from '../hooks/useLearners';
 import { LearnerFormModal } from './LearnerFormModal';
 
 const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive' };
@@ -18,7 +18,11 @@ export function LearnersPage() {
   const { can } = useAuth();
   const { data: learners, isLoading, error } = useLearners();
   const createLearner = useCreateLearner();
+  const updateLearner = useUpdateLearner();
+  const deleteLearner = useDeleteLearner();
+  
   const [showForm, setShowForm] = useState(false);
+  const [editingLearner, setEditingLearner] = useState(null);
 
   const columns = [
     {
@@ -41,6 +45,28 @@ export function LearnersPage() {
     ) },
     { key: 'cohort_id', header: t('cohort'), render: (row) => row.cohort_id ?? '—' }
   ];
+
+  if (can('learners.manage')) {
+    columns.push({
+      key: 'actions',
+      header: '',
+      render: (row) => (
+        <div className="flex justify-end gap-3">
+          <button onClick={() => setEditingLearner(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
+          <button 
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete ${row.first_name} ${row.last_name}?`)) {
+                deleteLearner.mutate(row.id);
+              }
+            }} 
+            className="text-xs font-semibold text-danger hover:opacity-80"
+          >
+            Delete
+          </button>
+        </div>
+      )
+    });
+  }
 
   return (
     <div>
@@ -86,6 +112,18 @@ export function LearnersPage() {
           submitError={createLearner.error?.message}
           onSubmit={(values) =>
             createLearner.mutate(values, { onSuccess: () => setShowForm(false) })
+          }
+        />
+      )}
+
+      {editingLearner && (
+        <LearnerFormModal
+          initialData={editingLearner}
+          onClose={() => setEditingLearner(null)}
+          submitting={updateLearner.isPending}
+          submitError={updateLearner.error?.message}
+          onSubmit={(values) =>
+            updateLearner.mutate({ id: editingLearner.id, payload: values }, { onSuccess: () => setEditingLearner(null) })
           }
         />
       )}

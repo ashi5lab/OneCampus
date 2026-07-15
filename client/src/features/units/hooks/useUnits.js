@@ -15,3 +15,19 @@ export function useCreateUnit() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['units'] })
   });
 }
+
+export function useUpdateUnit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => unitsApi.update(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['units'] })
+  });
+}
+
+export function useDeleteUnit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: unitsApi.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['units'] })
+  });
+}

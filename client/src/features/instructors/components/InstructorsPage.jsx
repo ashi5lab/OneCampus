@@ -3,7 +3,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
-import { useInstructors, useCreateInstructor } from '../hooks/useInstructors';
+import { useInstructors, useCreateInstructor, useUpdateInstructor, useDeleteInstructor } from '../hooks/useInstructors';
 import { InstructorFormModal } from './InstructorFormModal';
 
 export function InstructorsPage() {
@@ -11,7 +11,11 @@ export function InstructorsPage() {
   const { can } = useAuth();
   const { data: instructors, isLoading, error } = useInstructors();
   const createInstructor = useCreateInstructor();
+  const updateInstructor = useUpdateInstructor();
+  const deleteInstructor = useDeleteInstructor();
+  
   const [showForm, setShowForm] = useState(false);
+  const [editingInstructor, setEditingInstructor] = useState(null);
 
   const columns = [
     {
@@ -26,6 +30,28 @@ export function InstructorsPage() {
     },
     { key: 'phone', header: 'Phone', render: (row) => row.phone || '—' }
   ];
+
+  if (can('instructors.manage')) {
+    columns.push({
+      key: 'actions',
+      header: '',
+      render: (row) => (
+        <div className="flex justify-end gap-3">
+          <button onClick={() => setEditingInstructor(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
+          <button 
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete ${row.first_name} ${row.last_name}?`)) {
+                deleteInstructor.mutate(row.id);
+              }
+            }} 
+            className="text-xs font-semibold text-danger hover:opacity-80"
+          >
+            Delete
+          </button>
+        </div>
+      )
+    });
+  }
 
   return (
     <div>
@@ -69,6 +95,18 @@ export function InstructorsPage() {
           submitError={createInstructor.error?.message}
           onSubmit={(values) =>
             createInstructor.mutate(values, { onSuccess: () => setShowForm(false) })
+          }
+        />
+      )}
+
+      {editingInstructor && (
+        <InstructorFormModal
+          initialData={editingInstructor}
+          onClose={() => setEditingInstructor(null)}
+          submitting={updateInstructor.isPending}
+          submitError={updateInstructor.error?.message}
+          onSubmit={(values) =>
+            updateInstructor.mutate({ id: editingInstructor.id, payload: values }, { onSuccess: () => setEditingInstructor(null) })
           }
         />
       )}

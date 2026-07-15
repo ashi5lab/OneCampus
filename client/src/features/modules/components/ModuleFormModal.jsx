@@ -4,31 +4,37 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useUnits } from '../../units/hooks/useUnits';
 import { moduleFormSchema } from '../types';
 
-export function ModuleFormModal({ onClose, onSubmit, submitting, submitError }) {
+export function ModuleFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
   const { t } = useConfig();
   const { data: units } = useUnits();
+  const isEdit = !!initialData;
   const {
     register,
     handleSubmit,
     formState: { errors }
-  } = useForm({ resolver: zodResolver(moduleFormSchema) });
+  } = useForm({
+    resolver: zodResolver(moduleFormSchema),
+    defaultValues: initialData || {}
+  });
 
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40">
+    <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-[420px] rounded border border-border bg-surface p-6"
+        className="w-full max-w-[420px] rounded border border-border bg-surface p-6 my-auto"
       >
-        <div className="mb-4 text-base font-bold text-ink-900">Add {t('topic')}</div>
+        <div className="mb-4 text-base font-bold text-ink-900">
+          {isEdit ? 'Edit' : 'Add'} {t('topic')}
+        </div>
 
         <Field label="Name" error={errors.name}>
-          <input className="input" {...register('name')} placeholder="e.g. Physics" />
+          <input className="input w-full" {...register('name')} placeholder="e.g. Physics" />
         </Field>
         <Field label="Code" error={errors.code}>
-          <input className="input" {...register('code')} placeholder="e.g. PHY101" />
+          <input className="input w-full" {...register('code')} placeholder="e.g. PHY101" />
         </Field>
         <Field label="Unit" error={errors.unit_id}>
-          <select className="input" {...register('unit_id')}>
+          <select className="input w-full" {...register('unit_id')}>
             <option value="">None</option>
             {(units || []).map((unit) => (
               <option key={unit.id} value={unit.id}>
@@ -38,7 +44,7 @@ export function ModuleFormModal({ onClose, onSubmit, submitting, submitError }) 
           </select>
         </Field>
         <Field label="Credits" error={errors.credits}>
-          <input type="number" className="input" {...register('credits')} placeholder="0" />
+          <input type="number" className="input w-full" {...register('credits')} placeholder="0" />
         </Field>
 
         {submitError && (

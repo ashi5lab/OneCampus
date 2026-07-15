@@ -10,3 +10,10 @@ export const guardianFormSchema = z.object({
   phone: z.string().min(1, 'Phone is required'),
   address: z.string().min(1, 'Address is required')
 });
+
+export const guardianUpdateSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  phone: z.string().min(1, 'Phone is required'),
+  address: z.string().min(1, 'Address is required')
+});
