@@ -41,7 +41,7 @@ export function DashboardPage() {
       </div>
 
       {stats.length > 0 ? (
-        <div className="grid grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {stats.map((stat) => (
             <StatCard key={stat.label} label={stat.label} value={stat.value} />
           ))}

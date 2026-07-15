@@ -19,7 +19,7 @@ const navItemClass = ({ isActive }) =>
       : 'text-sidebar-text hover:bg-sidebar-hover'
   }`;
 
-export function Sidebar() {
+export function Sidebar({ isOpen, onClose }) {
   const { config, t, hasModule } = useConfig();
   const { user, logout, can } = useAuth();
 
@@ -37,20 +37,37 @@ export function Sidebar() {
   ].filter(Boolean);
 
   return (
-    <div className="flex flex-col border-r border-sidebar-border bg-sidebar-bg px-4 py-6 text-sidebar-textStrong">
-      <div className="mb-7 px-2">
-        <div className="text-[15px] font-semibold tracking-tight">
-          {config?.org_name || 'OneCampus'}
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 md:hidden" 
+          onClick={onClose}
+        />
+      )}
+      
+      {/* Sidebar Content */}
+      <div className={`fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col border-r border-sidebar-border bg-sidebar-bg px-4 py-6 text-sidebar-textStrong transition-transform duration-300 md:relative md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="mb-7 flex items-center justify-between px-2">
+          <div>
+            <div className="text-[15px] font-semibold tracking-tight">
+              {config?.org_name || 'OneCampus'}
+            </div>
+            <div className="mt-0.5 text-[11px] text-sidebar-text">
+              {config?.org_type ? `${config.org_type[0].toUpperCase()}${config.org_type.slice(1)} Management` : ''}
+            </div>
+          </div>
+          <button onClick={onClose} className="text-sidebar-text hover:text-sidebar-textStrong md:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <div className="mt-0.5 text-[11px] text-sidebar-text">
-          {config?.org_type ? `${config.org_type[0].toUpperCase()}${config.org_type.slice(1)} Management` : ''}
-        </div>
-      </div>
 
       <div className="px-3 pb-1.5 text-[10.5px] font-bold uppercase tracking-wide text-sidebar-text">
         Overview
       </div>
-      <NavLink to="/" end className={navItemClass}>
+      <NavLink to="/" end className={navItemClass} onClick={onClose}>
         Dashboard
       </NavLink>
 
@@ -60,7 +77,7 @@ export function Sidebar() {
             Management
           </div>
           {managementLinks.map((link) => (
-            <NavLink key={link.to} to={link.to} className={navItemClass}>
+            <NavLink key={link.to} to={link.to} className={navItemClass} onClick={onClose}>
               {link.label}
             </NavLink>
           ))}
@@ -86,5 +103,6 @@ export function Sidebar() {
         </div>
       </div>
     </div>
+    </>
   );
 }

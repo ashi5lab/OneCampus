@@ -407,6 +407,7 @@ server/
 - Always validate input with Zod before it touches the database.
 - Always check module toggles server-side, not just in the UI.
 - Always use permission helpers (can/cannot/hasPermission), never inline role checks.
+- All data tables must render as cards on mobile screens (instead of using horizontal scrolling tables) to ensure maximum visibility and usability.
 - No `any` type in TypeScript (if using TS).
 - No `console.log` left in committed code — use the shared logger.
 - No destructive database migrations without an explicit rollback plan.

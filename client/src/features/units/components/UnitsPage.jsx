@@ -35,7 +35,7 @@ export function UnitsPage() {
         )}
       </div>
 
-      <div className="mb-6 grid grid-cols-4 gap-3.5">
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard label="Total Units" value={isLoading ? '—' : units.length} />
       </div>
 
