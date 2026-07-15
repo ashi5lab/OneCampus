@@ -21,7 +21,17 @@ const navItemClass = ({ isActive }) =>
 
 export function Sidebar({ isOpen, onClose }) {
   const { config, t, hasModule } = useConfig();
-  const { user, logout, can } = useAuth();
+  const { user, logout, can, profile } = useAuth();
+
+  // "My Profile" — only meaningful for roles that have a row in
+  // onec_learners/onec_instructors to link to (see AuthContext's `profile`,
+  // populated from GET /auth/me). Admin/staff/guardian have nowhere to
+  // link to yet.
+  const ownProfileLink = profile?.learnerId
+    ? { to: `/app/learners/${profile.learnerId}`, label: 'My Profile' }
+    : profile?.instructorId
+      ? { to: `/app/instructors/${profile.instructorId}`, label: 'My Profile' }
+      : null;
 
   const managementLinks = [
     can('learners.view') && { to: '/app/learners', label: t('learners') },
@@ -70,6 +80,11 @@ export function Sidebar({ isOpen, onClose }) {
       <NavLink to="/app" end className={navItemClass} onClick={onClose}>
         Dashboard
       </NavLink>
+      {ownProfileLink && (
+        <NavLink to={ownProfileLink.to} className={navItemClass} onClick={onClose}>
+          {ownProfileLink.label}
+        </NavLink>
+      )}
 
       {managementLinks.length > 0 && (
         <>

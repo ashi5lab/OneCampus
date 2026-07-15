@@ -7,6 +7,10 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState([]);
+  // { learnerId, instructorId, guardianId } — whichever applies to the
+  // caller's role, null otherwise. Lets the frontend link to "my profile"
+  // (see LearnerProfilePage/InstructorProfilePage) without a separate call.
+  const [profile, setProfile] = useState(null);
   // True until the initial silent-session-restore attempt finishes — needed
   // so ProtectedRoute doesn't redirect to /login before we've even asked
   // the server whether the httpOnly refresh-token cookie is still valid.
@@ -23,14 +27,17 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
     setPermissions([]);
+    setProfile(null);
   }, []);
 
   const refreshPermissions = useCallback(async () => {
     try {
       const res = await apiClient.get('/auth/me');
       setPermissions(res.data.permissions || []);
+      setProfile(res.data.profile || null);
     } catch {
       setPermissions([]);
+      setProfile(null);
     }
   }, []);
 
@@ -69,7 +76,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ token, user, isAuthenticated: !!token, initializing, login, logout, permissions, can }}
+      value={{ token, user, isAuthenticated: !!token, initializing, login, logout, permissions, can, profile }}
     >
       {children}
     </AuthContext.Provider>

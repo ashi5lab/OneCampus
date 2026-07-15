@@ -6,6 +6,26 @@ const { getPermissionsForRole } = require('../../lib/permissions');
 const { issueRefreshToken, rotateRefreshToken, revokeRefreshToken } = require('../../lib/refreshTokens');
 const { setAuthCookies, clearAuthCookies, REFRESH_COOKIE_NAME } = require('../../lib/authCookies');
 
+// Lets the frontend link to "my profile" (see learners/instructors
+// getProfile) without a separate lookup — a learner/instructor/guardian's
+// own row id in their respective table, keyed off which role the caller
+// actually has. Null for roles with no such row (admin, staff).
+const OWN_PROFILE_TABLE_BY_ROLE = {
+  learner: { key: 'learnerId', table: 'onec_learners' },
+  instructor: { key: 'instructorId', table: 'onec_instructors' },
+  guardian: { key: 'guardianId', table: 'onec_guardians' }
+};
+
+async function getOwnProfileIds(req) {
+  const ids = { learnerId: null, instructorId: null, guardianId: null };
+  const entry = OWN_PROFILE_TABLE_BY_ROLE[req.user?.role];
+  if (!entry) return ids;
+
+  const result = await req.db.query(`SELECT id FROM ${entry.table} WHERE user_id = $1`, [req.user.userId]);
+  ids[entry.key] = result.rows[0]?.id ?? null;
+  return ids;
+}
+
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required")
@@ -120,8 +140,8 @@ async function logout(req, res) {
 // any tenant-specific customization to a role's access.
 async function me(req, res) {
   try {
-    const permissions = await getPermissionsForRole(req);
-    res.json({ data: { userId: req.user.userId, role: req.user.role, permissions } });
+    const [permissions, profile] = await Promise.all([getPermissionsForRole(req), getOwnProfileIds(req)]);
+    res.json({ data: { userId: req.user.userId, role: req.user.role, permissions, profile } });
   } catch (err) {
     console.error('Failed to load current user permissions:', err);
     res.status(500).json({ error: 'Internal server error' });

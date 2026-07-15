@@ -31,3 +31,11 @@ export function useDeleteLearner() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['learners'] })
   });
 }
+
+export function useLearnerProfile(id) {
+  return useQuery({
+    queryKey: ['learners', id, 'profile'],
+    queryFn: () => learnersApi.getProfile(id),
+    enabled: id !== undefined && id !== null
+  });
+}

@@ -12,4 +12,9 @@ router.get('/:id', requirePermission('learners.view'), controller.getById);
 router.put('/:id', requirePermission('learners.manage'), controller.update);
 router.delete('/:id', requirePermission('learners.manage'), controller.remove);
 
+// No requirePermission('learners.view') here on purpose — getProfile does
+// its own access check (roster access OR own/linked-child self-view), see
+// controller.js for why.
+router.get('/:id/profile', controller.getProfile);
+
 module.exports = router;
