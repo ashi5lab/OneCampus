@@ -14,5 +14,11 @@ function required(name, devFallback) {
 
 module.exports = {
   JWT_SECRET: required('JWT_SECRET', 'fallback-secret-for-dev'),
+  // The frontend's origin — CORS must echo this exact origin (not '*') for
+  // credentialed (cookie-carrying) requests to work at all; browsers reject
+  // Access-Control-Allow-Origin: * when a request includes credentials.
+  CLIENT_ORIGIN: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  ACCESS_TOKEN_TTL: process.env.ACCESS_TOKEN_TTL || '15m',
+  REFRESH_TOKEN_TTL_DAYS: Number(process.env.REFRESH_TOKEN_TTL_DAYS) || 7,
   isProd,
 };

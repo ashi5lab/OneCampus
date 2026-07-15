@@ -6,9 +6,16 @@ describe('Permission gating', () => {
   let adminToken, instructorToken, learnerToken;
 
   beforeAll(async () => {
-    adminToken = await getToken(TENANT, 'test_admin', 'password123');
-    instructorToken = await getToken(TENANT, 'ui_test_teacher', 'uitestpass2');
-    learnerToken = await getToken(TENANT, 'ui_test_student', 'uitestpass');
+    // Each login now does an extra INSERT (issuing a refresh token) on top
+    // of the existing SELECT + bcrypt.compare, and every query is a real
+    // round trip to the Railway dev DB — three sequential logins can push
+    // past Jest's default hook timeout. Independent identities, so fetch
+    // them concurrently instead of one at a time.
+    [adminToken, instructorToken, learnerToken] = await Promise.all([
+      getToken(TENANT, 'test_admin', 'password123'),
+      getToken(TENANT, 'ui_test_teacher', 'uitestpass2'),
+      getToken(TENANT, 'ui_test_student', 'uitestpass')
+    ]);
   });
 
   test('GET /auth/me returns the correct permission set per role', async () => {

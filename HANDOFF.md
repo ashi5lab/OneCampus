@@ -2,15 +2,15 @@
 
 > **How to use this document:** This is a status snapshot and task list for continuing the OneCampus build, written for an AI coding agent picking up work with no memory of prior sessions. Read `OneCampus_App_Specification.md` first — it's the source-of-truth technical spec (stack, schema, phase order, coding rules). This document tells you what's actually been built against that spec, what broke and how it was fixed, and what to do next. Where this doc and the spec disagree on status, trust this doc — the spec describes the target, this describes reality as of the last commit.
 
-Last updated: end of the overnight session that produced PR #10 (backend automated test suite). Server and client dev servers are running live and persistent on the developer's own machine (not this doc's author's sandbox) so the user can test in a real browser at http://localhost:5173 in parallel with continued work.
+Last updated: end of the overnight session that produced PR #11 (refresh tokens + CSRF protection — the last spec §11 security-baseline item). Server and client dev servers are running live and persistent on the developer's own machine (not this doc's author's sandbox) so the user can test in a real browser at http://localhost:5173 in parallel with continued work.
 
 ---
 
 ## 1. Repo state
 
 - Remote: `https://github.com/ashi5lab/OneCampus`, default branch `main`.
-- Merged: PR #1 (evaluations module), PR #2 (frontend scaffold + tenant config endpoint), PR #3 (purple theme), PR #4 (inline user creation), PR #5 (Phase 7 permissions), PR #6 (attendance-marking UI), PR #7 (score-entry UI), PR #8 (rate limiting + audit log), PR #9 (frontend permission-awareness, Units/Guardians frontend, Phase 8 kindergarten activity, Phase 9 certificates — also fixed a real IPv6 rate-limit bypass bug, see §5b).
-- Open: PR #10 `feature/automated-test-suite` — `server/tests/` (Jest integration suite against the real dev tenants; see `server/tests/README.md` for why it's shaped the way it is).
+- Merged: PR #1 (evaluations module), PR #2 (frontend scaffold + tenant config endpoint), PR #3 (purple theme), PR #4 (inline user creation), PR #5 (Phase 7 permissions), PR #6 (attendance-marking UI), PR #7 (score-entry UI), PR #8 (rate limiting + audit log), PR #9 (frontend permission-awareness, Units/Guardians frontend, Phase 8 kindergarten activity, Phase 9 certificates — also fixed a real IPv6 rate-limit bypass bug, see §5b), PR #10 (backend automated test suite).
+- Open: PR #11 `feature/refresh-tokens-csrf` — refresh tokens + CSRF (see §5b for the two real bugs found building this: a stale-CSRF-token frontend bug, and a test-suite timeout from added DB latency).
 - Workflow convention used throughout: one feature branch per logical change, pushed, PR opened against `main` via the GitHub API (no `gh` CLI installed on this machine — see §7). Keep following this pattern: don't commit straight to `main`.
 - `OneCampus.dc.html` (repo root) is intentionally untracked — a design reference file (see §6). Don't delete it; don't feel obligated to commit it either.
 - Both dev servers (`server/` on :3001, `client/` on :5173) were started as detached background processes directly on the developer's machine (not tied to any tool's ephemeral session) so the user can test locally at any time. If they've since been stopped, `cd server && node server.js` and `cd client && npm run dev` bring them back — see §2 for login credentials.
@@ -42,7 +42,7 @@ To run locally: `cd server && npm run dev` (port 3001), `cd client && npm run de
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Tenant resolver + provisioning + `public.onec_tenants` | ✅ Done |
-| 2 | Auth (users, login, JWT, roles) | ✅ Done — login only; no signup/password-reset flow |
+| 2 | Auth (users, login, JWT, roles) | ✅ Done, including short-lived access tokens + rotating httpOnly refresh tokens + CSRF (PR #11, closes the last spec §11 baseline item — see §5b). Still no standalone signup/password-reset flow (accounts are created via the Learners/Instructors/Guardians "+ Add" forms or CLI scripts). |
 | 3 | Core entities: units, cohorts, modules, instructors, learners, guardians | ✅ Backend CRUD done for all six. Frontend: Learners/Instructors/Guardians (full CRUD, inline user creation), Cohorts/Units (list + create). **Only Modules (subjects/courses) has no dedicated frontend page** — a minimal read-only slice exists (`client/src/features/modules`) purely to power the evaluation-schedule dropdown. |
 | 4 | Attendance + module toggle system | ✅ Backend + frontend done, including a marking UI (`AttendanceRoster`: cohort+date picker, batch save). |
 | 5 | Exams/evaluations + learner scores | ✅ Backend + frontend done end-to-end: create evaluation → schedule → record scores. Known gap: score entry shows all learners tenant-wide, not scoped to the schedule's module/cohort (no enrollment relationship in the schema to filter by). |
@@ -86,11 +86,13 @@ Each frontend feature's `README.md` already states its own known limitation — 
 
 ## 5b. Security gaps vs. spec §11 (non-negotiable baseline) not yet closed
 
-- Refresh tokens: spec calls for short-lived access token + httpOnly-cookie refresh token. Currently only a long-lived (`1d`) access token exists, stored in `localStorage` (XSS-exposed, no refresh/rotation).
+- ~~Refresh tokens + CSRF~~ — fixed in PR #11. `POST /auth/login` now issues a short-lived (`15m`) access token plus an httpOnly `refreshToken` cookie (`7d`, opaque random value, only its SHA-256 hash stored in `onec_refresh_tokens` — see `server/lib/refreshTokens.js`). `POST /auth/refresh` trades it for a new access token and **rotates** the refresh token (old one revoked, new one issued — single-use, replay fails). `POST /auth/logout` revokes it and clears cookies. Both refresh/logout are CSRF-protected via a double-submit cookie (`server/middleware/csrf.js`) since they act on an ambient cookie the browser sends automatically. CORS was changed from wildcard to an explicit `CLIENT_ORIGIN` with `credentials: true` — required for cookies to work cross-origin at all. See `server/modules/auth/README.md` for full endpoint/token mechanics.
+  - **Real bug found while building this**: the CSRF token was cached in a JS module variable in `apiClient.js`, set only after a successful login/refresh response. On a page reload, that JS variable resets to empty — but the actual `csrfToken` cookie (deliberately non-httpOnly so the frontend *can* read it) survives the reload. Every silent session-restore attempt on mount sent an empty CSRF header against a real cookie value and failed (403), logging the user out on every reload despite a perfectly valid refresh-token cookie. Fixed by reading the CSRF value directly from `document.cookie` at call time instead of caching it — see `client/src/features/auth/README.md`.
+  - **Second-order effect on the test suite**: login now does an extra `INSERT` (issuing the refresh token) on top of the existing `SELECT` + `bcrypt.compare`, and each is a real round trip to the Railway dev DB — `server/tests/permissions.test.js`'s three sequential logins in one `beforeAll` started exceeding Jest's 5000ms default hook timeout. Fixed by raising the suite's timeout (`server/jest.config.js`, `testTimeout: 15000`) and parallelizing the three independent logins with `Promise.all`.
 - ~~No rate limiting on `/api/v1/auth/login`~~ — fixed in PR #8: 10 attempts/15min, keyed by tenant+IP (`server/middleware/rateLimiters.js`). **Note:** the first version of this had a real bug — the custom `keyGenerator` didn't run the IP through `express-rate-limit`'s `ipKeyGenerator` helper, so IPv6 clients could bypass the limit by varying their address's textual representation. `express-rate-limit` throws a `ValidationError` logged (not thrown fatally) at server startup when this happens — if you ever see that warning in server logs again, it means a rate limiter was added/changed without using `ipKeyGenerator`. Fixed in PR #9.
-- No CSRF protection (moot until cookies are introduced for the refresh token above).
 - ~~No audit log table~~ — fixed in PR #8: `onec_audit_logs` + `server/lib/audit.js`. PR #9 added a fourth call site: certificate issuance (`certificate.issued`) — the exact action spec §11 calls out by name. Role changes still aren't built (no endpoint to change a user's role exists), so there's nothing to log there yet.
 - ~~No automated test suite~~ — fixed in PR #10: `server/tests/` (Jest, `npm test` in `server/`). **Read `server/tests/README.md` before adding to this** — it's an integration suite hitting the real running server + real dev tenants (no mocking, no isolated test DB), and it hits the real login rate limiter, which shaped its design non-obviously (token caching per test file in `tests/helpers.js`, `getToken()` vs. raw `login()`). Discovered mid-build: running the suite twice within 15 minutes trips the rate limiter and fails — documented, not fixed, since fixing it properly needs a disposable per-run tenant (out of scope for this pass). Frontend still has zero test coverage.
+- **Every spec §11 baseline item is now closed.** What's left in this area is deeper than a checklist item — see §8 item 2 (row-level permission scoping).
 
 ---
 
@@ -120,14 +122,14 @@ Don't guess on this — it's a significant scope expansion, not a bug fix.
 
 ## 8. Recommended next-steps task list, in priority order
 
-Every numbered spec phase (1–9) is now implemented backend + frontend, with a backend integration test suite covering the highest-regression-risk paths. What's left is hardening and a handful of scope decisions:
+Every numbered spec phase (1–9) is now implemented backend + frontend, every spec §11 security-baseline item is closed, and a backend integration test suite covers the highest-regression-risk paths. What's left is deeper hardening and a handful of scope decisions:
 
-1. **Merge PR #10** (`feature/automated-test-suite`), or rebase new work on top of it.
-2. **Refresh tokens + CSRF** (remaining spec §11 items, see §5b) — the only security-baseline item left unaddressed.
-3. **Row-level permission scoping** (a `learner` seeing only their own attendance/scores/certificates, not the whole tenant's) — noted as a known limitation throughout §3 and §5, not yet designed. This is more important than it sounds: right now a `learner`-role account can see every other learner's attendance and certificates via `GET /api/v1/attendance` / `GET /api/v1/certificates`, just not the roster-management screens. Worth prioritizing before this app has real (non-test) student data in it.
-4. Live-verify `KindergartenActivityPage` in a browser against the actual kindergarten tenant — it was only checked via curl + static code review this session (see §3's Phase 8 row for why). Low risk (mirrors the verified Certificates page exactly) but not zero.
-5. **Get the open decision in §6 resolved** before touching the Purple-portal screens/modules.
-6. Frontend test coverage — `server/tests/` only covers the backend. Nothing in `client/` has any automated coverage yet.
-7. Modules (subjects/courses) frontend — the one core entity (§3 Phase 3) still without a dedicated page.
-8. UI (and a backend endpoint) to link a guardian to a learner via `onec_learner_guardian_map` — currently has neither.
-9. PDF rendering for issued certificates (§3 Phase 6/9) — `onec_certificates.data` is captured but nothing turns it into a downloadable document.
+1. **Merge PR #11** (`feature/refresh-tokens-csrf`), or rebase new work on top of it.
+2. **Row-level permission scoping** (a `learner` seeing only their own attendance/scores/certificates, not the whole tenant's) — noted as a known limitation throughout §3 and §5, not yet designed. This is more important than it sounds: right now a `learner`-role account can see every other learner's attendance and certificates via `GET /api/v1/attendance` / `GET /api/v1/certificates`, just not the roster-management screens. Worth prioritizing before this app has real (non-test) student data in it. Now the single biggest remaining correctness gap.
+3. Live-verify `KindergartenActivityPage` in a browser against the actual kindergarten tenant — it was only checked via curl + static code review this session (see §3's Phase 8 row for why). Low risk (mirrors the verified Certificates page exactly) but not zero.
+4. **Get the open decision in §6 resolved** before touching the Purple-portal screens/modules.
+5. Frontend test coverage — `server/tests/` only covers the backend. Nothing in `client/` has any automated coverage yet. Would also want a test for the new refresh/rotation flow itself (§5b) — the current suite doesn't cover it since Node's native `fetch` in the test helpers doesn't carry a cookie jar between calls the way a browser does; would need explicit `Set-Cookie`/`Cookie` header plumbing (`response.headers.getSetCookie()` in Node 20's `undici`) to test properly. Verified manually via `curl -c/-b` this session instead.
+6. Modules (subjects/courses) frontend — the one core entity (§3 Phase 3) still without a dedicated page.
+7. UI (and a backend endpoint) to link a guardian to a learner via `onec_learner_guardian_map` — currently has neither.
+8. PDF rendering for issued certificates (§3 Phase 6/9) — `onec_certificates.data` is captured but nothing turns it into a downloadable document.
+9. A cleanup job for expired/revoked rows in `onec_refresh_tokens` — nothing currently prunes them, so the table grows unboundedly over the life of a tenant. Low urgency at current scale, but a real future TODO.
