@@ -23,7 +23,8 @@ const ALL_PERMISSIONS = [
   'guardian_links.view', 'guardian_links.manage',
   'messages.view', 'messages.send',
   'notices.view', 'notices.manage',
-  'library.view', 'library.manage'
+  'library.view', 'library.manage',
+  'assignments.view', 'assignments.manage', 'assignments.grade', 'assignments.submit'
 ];
 
 // messages.view/.send are granted to every role below — unlike the
@@ -43,21 +44,24 @@ const DEFAULT_ROLE_PERMISSIONS = {
     'evaluations.view', 'evaluations.manage', 'evaluations.grade',
     'kindergarten_activity.view', 'kindergarten_activity.log',
     'messages.view', 'messages.send',
-    'notices.view', 'library.view'
+    'notices.view', 'library.view',
+    'assignments.view', 'assignments.manage', 'assignments.grade'
   ],
   // Coarse-grained on purpose (see the row-level-scoping note above) — kept
   // to just enough to view their own records, not the full roster/management
   // surface. Certificate issuance and kindergarten activity logging are
   // staff-side actions, not granted here. Posting notices (notices.manage)
   // and managing the library catalog/loans (library.manage) are
-  // admin/staff-only too, same reasoning.
-  learner: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view', 'messages.view', 'messages.send', 'notices.view', 'library.view'],
+  // admin/staff-only too, same reasoning. assignments.submit (not
+  // .manage/.grade) is the learner-side counterpart of a teacher posting
+  // and grading homework.
+  learner: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view', 'messages.view', 'messages.send', 'notices.view', 'library.view', 'assignments.view', 'assignments.submit'],
   // guardian_links.view lets a guardian look up which learners they're
   // linked to (lib/ownGuardianLearners.js needs this for row scoping) —
   // not .manage, since linking/unlinking a child is a staff-side action.
   guardian: [
     'attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view',
-    'guardian_links.view', 'messages.view', 'messages.send', 'notices.view', 'library.view'
+    'guardian_links.view', 'messages.view', 'messages.send', 'notices.view', 'library.view', 'assignments.view'
   ]
 };
 
