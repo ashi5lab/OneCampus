@@ -207,6 +207,60 @@ CREATE TABLE onec_messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Online exams (see server/modules/onlineExams). Distinct from Evaluations'
+-- offline/paper exam score entry — a learner actually takes this exam
+-- in-app. grading_type drives whether submit() auto-scores MCQ answers on
+-- the spot or leaves them for a grader to score manually afterwards.
+CREATE TABLE onec_online_exams (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    module_id INT REFERENCES onec_modules(id) ON DELETE CASCADE,
+    cohort_id INT REFERENCES onec_cohorts(id) ON DELETE CASCADE,
+    grading_type VARCHAR(20) NOT NULL DEFAULT 'manual', -- 'manual' | 'auto'
+    duration_minutes INT NOT NULL DEFAULT 60,
+    max_score DECIMAL(6,2) NOT NULL DEFAULT 0,
+    published BOOLEAN NOT NULL DEFAULT false,
+    published_at TIMESTAMP,
+    created_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE onec_exam_questions (
+    id SERIAL PRIMARY KEY,
+    exam_id INT REFERENCES onec_online_exams(id) ON DELETE CASCADE,
+    question_text TEXT NOT NULL,
+    question_type VARCHAR(20) NOT NULL DEFAULT 'text', -- 'mcq' | 'text'
+    options JSONB,        -- array of option strings, 'mcq' only
+    correct_option INT,   -- index into options, 'mcq' only — never sent to non-managers
+    max_score DECIMAL(6,2) NOT NULL DEFAULT 1,
+    order_index INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE onec_exam_submissions (
+    id SERIAL PRIMARY KEY,
+    exam_id INT REFERENCES onec_online_exams(id) ON DELETE CASCADE,
+    learner_id INT REFERENCES onec_learners(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'in_progress', -- 'in_progress' | 'submitted' | 'graded'
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    submitted_at TIMESTAMP,
+    total_score DECIMAL(6,2),
+    graded_by INT REFERENCES onec_users(id), -- NULL when grading_type='auto' (system-graded)
+    graded_at TIMESTAMP,
+    UNIQUE(exam_id, learner_id)
+);
+
+CREATE TABLE onec_exam_answers (
+    id SERIAL PRIMARY KEY,
+    submission_id INT REFERENCES onec_exam_submissions(id) ON DELETE CASCADE,
+    question_id INT REFERENCES onec_exam_questions(id) ON DELETE CASCADE,
+    answer_text TEXT,
+    selected_option INT,
+    score_obtained DECIMAL(6,2),
+    feedback TEXT,
+    UNIQUE(submission_id, question_id)
+);
+
 -- Role -> permission mapping (Phase 7). Presence of a (role, permission) row
 -- means that role has that permission for this tenant. Absence means it
 -- doesn't — this is an allow-list, not a deny-list. Tenant-overridable: a

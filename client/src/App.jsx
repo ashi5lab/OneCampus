@@ -29,6 +29,8 @@ import { NoticesPage } from './features/notices/components/NoticesPage';
 import { LibraryPage } from './features/library/components/LibraryPage';
 import { AssignmentsPage } from './features/assignments/components/AssignmentsPage';
 import { AssignmentDetailPage } from './features/assignments/components/AssignmentDetailPage';
+import { OnlineExamsPage } from './features/onlineExams/components/OnlineExamsPage';
+import { OnlineExamDetailPage } from './features/onlineExams/components/OnlineExamDetailPage';
 
 export default function App() {
   return (
@@ -133,6 +135,8 @@ export default function App() {
         <Route path="library" element={<LibraryPage />} />
         <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="assignments/:id" element={<AssignmentDetailPage />} />
+        <Route path="online-exams" element={<OnlineExamsPage />} />
+        <Route path="online-exams/:id" element={<OnlineExamDetailPage />} />
       </Route>
     </Routes>
   );
