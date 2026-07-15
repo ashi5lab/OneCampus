@@ -32,9 +32,13 @@ app.get('/health', (req, res) => {
 const platformRoutes = require('./modules/platform/routes');
 app.use('/api/v1/platform', platformRoutes);
 
-// Resolve the tenant, then pin a dedicated DB connection to that tenant's schema
-app.use(tenantResolver);
-app.use(tenantDb);
+// Resolve the tenant, then pin a dedicated DB connection to that tenant's schema.
+// Scoped to /api/v1 only — mounting this with no path (as it originally was)
+// intercepted *every* request, including the landing page and static assets
+// served below, so visiting the bare production domain (which isn't itself a
+// registered tenant) 404'd/500'd before Express ever reached the SPA catch-all.
+app.use('/api/v1', tenantResolver);
+app.use('/api/v1', tenantDb);
 
 // Setup API routes
 const tenantRoutes = require('./modules/tenant/routes');
