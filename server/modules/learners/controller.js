@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const bcrypt = require('bcrypt');
 const { logAudit } = require('../../lib/audit');
+const { parsePagination } = require('../../lib/pagination');
 
 const learnerCreateSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -23,10 +24,23 @@ const learnerUpdateSchema = z.object({
   meta: z.record(z.any()).optional().default({})
 });
 
+// ?page=&pageSize= are optional — omitting both returns every row exactly
+// as before pagination existed (see lib/pagination.js).
 async function getAll(req, res) {
   try {
-    const result = await req.db.query('SELECT * FROM onec_learners ORDER BY id DESC');
-    res.json({ data: result.rows });
+    const { pagination, error } = parsePagination(req.query);
+    if (error) return res.status(400).json({ error: 'Invalid pagination parameters', details: error });
+
+    if (!pagination) {
+      const result = await req.db.query('SELECT * FROM onec_learners ORDER BY id DESC');
+      return res.json({ data: result.rows });
+    }
+
+    const [rows, count] = await Promise.all([
+      req.db.query('SELECT * FROM onec_learners ORDER BY id DESC LIMIT $1 OFFSET $2', [pagination.limit, pagination.offset]),
+      req.db.query('SELECT COUNT(*)::int AS total FROM onec_learners')
+    ]);
+    return res.json({ data: rows.rows, meta: { total: count.rows[0].total, page: pagination.page, pageSize: pagination.pageSize } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
