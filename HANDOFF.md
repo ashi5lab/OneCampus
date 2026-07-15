@@ -2,15 +2,15 @@
 
 > **How to use this document:** This is a status snapshot and task list for continuing the OneCampus build, written for an AI coding agent picking up work with no memory of prior sessions. Read `OneCampus_App_Specification.md` first — it's the source-of-truth technical spec (stack, schema, phase order, coding rules). This document tells you what's actually been built against that spec, what broke and how it was fixed, and what to do next. Where this doc and the spec disagree on status, trust this doc — the spec describes the target, this describes reality as of the last commit.
 
-Last updated: mid-session that produced PR #5 (Phase 7 permissions system, not yet merged) — server and client dev servers are running live and persistent on the developer's own machine (not this doc's author's sandbox) so the user can test in a real browser at http://localhost:5173 in parallel with continued work.
+Last updated: end of the session that produced PR #8 (rate limiting + audit log). Server and client dev servers are running live and persistent on the developer's own machine (not this doc's author's sandbox) so the user can test in a real browser at http://localhost:5173 in parallel with continued work.
 
 ---
 
 ## 1. Repo state
 
 - Remote: `https://github.com/ashi5lab/OneCampus`, default branch `main`.
-- Merged: PR #1 (evaluations module), PR #2 (frontend scaffold + tenant config endpoint), PR #3 (purple theme), PR #4 (inline user creation on learner/instructor forms).
-- Open: PR #5 (Phase 7 permissions system) — merge before starting new work, or rebase onto it.
+- Merged: PR #1 (evaluations module), PR #2 (frontend scaffold + tenant config endpoint), PR #3 (purple theme).
+- Open, stacked in this order (each branches off the previous — **merge in order**): PR #4 `feature/inline-user-creation` → PR #5 `feature/permissions-system` → PR #6 `feature/attendance-marking-ui` → PR #7 `feature/score-entry-ui` → PR #8 `feature/security-baseline`. Each PR's diff shrinks to just its own changes as the ones below it merge.
 - Workflow convention used throughout: one feature branch per logical change, pushed, PR opened against `main` via the GitHub API (no `gh` CLI installed on this machine — see §7). Keep following this pattern: don't commit straight to `main`.
 - `OneCampus.dc.html` (repo root) is intentionally untracked — a design reference file (see §6). Don't delete it; don't feel obligated to commit it either.
 - Both dev servers (`server/` on :3001, `client/` on :5173) were started as detached background processes directly on the developer's machine (not tied to any tool's ephemeral session) so the user can test locally at any time. If they've since been stopped, `cd server && node server.js` and `cd client && npm run dev` bring them back — see §2 for login credentials.
@@ -86,9 +86,9 @@ Each frontend feature's `README.md` already states its own known limitation — 
 ## 5b. Security gaps vs. spec §11 (non-negotiable baseline) not yet closed
 
 - Refresh tokens: spec calls for short-lived access token + httpOnly-cookie refresh token. Currently only a long-lived (`1d`) access token exists, stored in `localStorage` (XSS-exposed, no refresh/rotation).
-- No rate limiting on `/api/v1/auth/login` (or anywhere else) — brute-force is currently unmitigated.
+- ~~No rate limiting on `/api/v1/auth/login`~~ — fixed in PR #8: 10 attempts/15min, keyed by tenant+IP (`server/middleware/rateLimiters.js`).
 - No CSRF protection (moot until cookies are introduced for the refresh token above).
-- No audit log table for sensitive actions (grading, certificate issuance, role changes) — table doesn't exist yet, spec requires one.
+- ~~No audit log table~~ — fixed in PR #8: `onec_audit_logs` + `server/lib/audit.js`, currently logging permission denials, score recording, and learner/instructor deletion. Certificate issuance and role changes aren't built yet (nothing to log); add call sites when those land.
 - No automated test suite exists (no test framework installed in either `client/` or `server/`). Everything so far has been verified manually (curl for the backend, an in-browser walkthrough via the Claude Browser preview tool for the frontend). Worth setting up before Phase 7's permission matrix grows the surface area that needs regression coverage.
 
 ---
@@ -119,11 +119,13 @@ Don't guess on this — it's a significant scope expansion, not a bug fix.
 
 ## 8. Recommended next-steps task list, in priority order
 
-1. **Merge PR #5**, or rebase new work on top of it.
-2. **Frontend permission-awareness.** `ConfigContext` has `hasModule()`; add the equivalent for permissions (fetch the caller's own permission set, or just derive from `user.role` client-side against a shared list, and expose `can(permission)`), then use it to hide/disable nav items and "+ Add" buttons a role can't use. Right now a non-admin just gets a raw 403 error string.
-3. **Attendance-marking and score-entry UI** — backend already supports both; this is pure frontend work following the existing feature patterns. Natural next target now that permissions gate who's allowed to do it.
-4. **Security baseline items from §5b** — at minimum rate-limiting on `/auth/login` and an audit log table are cheap, high-value, and explicitly required by spec §11. (An audit log fits naturally with Phase 7 — consider logging permission denials and grading/certificate actions through the same table.)
-5. **Get the open decision in §6 resolved** before touching the Purple-portal screens/modules.
-6. Phase 8 (kindergarten activity log) and Phase 9 (certificates) — spec-scoped, not started, lower urgency than 2–4 above.
-7. Basic test coverage — pick a framework (nothing installed yet) and at minimum cover tenant isolation, cross-tenant-JWT-rejection, and the new permission-gating behavior in §4, since those are the things most likely to silently regress.
-8. Row-level permission scoping (a `learner` seeing only their own attendance/scores, not the whole tenant's) — noted as a known limitation in §3's Phase 7 row, not yet designed.
+Everything that was in this list at the start of the session that produced PR #8 is now done: inline user creation, Phase 7 permissions, attendance-marking UI, score-entry UI, rate limiting, and the audit log. What's left:
+
+1. **Merge PRs #4–#8 in order** (they're stacked — see §1), or rebase new work on top of `feature/security-baseline`.
+2. **Frontend permission-awareness.** `ConfigContext` has `hasModule()`; add the equivalent for permissions (fetch the caller's own permission set, or derive from `user.role` client-side against a shared list, and expose `can(permission)`), then use it to hide/disable nav items and "+ Add" buttons a role can't use. Right now a non-admin just gets a raw 403 error string on click — every mutating form already surfaces `err.message` as `submitError`, so this is UI-only work, no new backend needed.
+3. Refresh tokens + CSRF (remaining spec §11 items, see §5b) — the only security-baseline items left unaddressed.
+4. **Get the open decision in §6 resolved** before touching the Purple-portal screens/modules.
+5. Phase 8 (kindergarten activity log) and Phase 9 (certificates) — spec-scoped, not started. Certificates would also be the first real use of `logAudit` beyond what's wired up now (issuance is explicitly called out in spec §11 as sensitive).
+6. Basic test coverage — pick a framework (nothing installed yet) and at minimum cover tenant isolation, cross-tenant-JWT-rejection, and permission-gating (§4), since those are the things most likely to silently regress and hardest to eyeball-verify after the fact.
+7. Row-level permission scoping (a `learner` seeing only their own attendance/scores, not the whole tenant's) — noted as a known limitation in §3's Phase 7 row and in the evaluations/attendance feature READMEs, not yet designed.
+8. No frontend at all for Units or Guardians (full backend CRUD exists) — same gap noted in §5, lowest urgency of what's listed here since nothing else depends on it yet.

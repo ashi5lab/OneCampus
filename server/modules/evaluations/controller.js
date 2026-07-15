@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { logAudit } = require('../../lib/audit');
 
 const evaluationSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -217,6 +218,10 @@ async function recordScore(req, res) {
         [scheduleId, learner_id, score_obtained, remarks, graded_by]
       );
     }
+
+    logAudit(req, 'evaluation.score_recorded', {
+      eval_schedule_id: Number(scheduleId), learner_id, score_obtained
+    });
 
     res.status(200).json({ data: result.rows[0] });
   } catch (err) {
