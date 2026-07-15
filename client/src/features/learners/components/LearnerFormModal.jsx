@@ -2,9 +2,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { learnerFormSchema, learnerUpdateSchema } from '../types';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useCohorts } from '../../cohorts/hooks/useCohorts';
 
 export function LearnerFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
   const { t } = useConfig();
+  const { data: cohorts } = useCohorts();
   const isEdit = !!initialData;
   const {
     register,
@@ -55,8 +57,15 @@ export function LearnerFormModal({ onClose, onSubmit, submitting, submitError, i
         <Field label="Last Name" error={errors.last_name}>
           <input className="input w-full" {...register('last_name')} />
         </Field>
-        <Field label="Cohort ID (optional)" error={errors.cohort_id}>
-          <input type="number" className="input w-full" {...register('cohort_id')} />
+        <Field label={`${t('cohort')} (optional)`} error={errors.cohort_id}>
+          <select className="input w-full" {...register('cohort_id')}>
+            <option value="">None</option>
+            {(cohorts || []).map((cohort) => (
+              <option key={cohort.id} value={cohort.id}>
+                {cohort.name}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Status" error={errors.status}>
           <select className="input w-full" {...register('status')}>

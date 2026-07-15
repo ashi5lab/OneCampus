@@ -7,6 +7,13 @@ import { useAttendanceForCohortDate, useMarkAttendance } from '../hooks/useAtten
 
 const STATUS_OPTIONS = ['present', 'absent', 'late', 'excused'];
 
+const STATUS_COLORS = {
+  present: 'text-success font-semibold',
+  absent: 'text-danger font-semibold',
+  late: 'text-accent font-semibold',
+  excused: 'text-ink-900 font-semibold'
+};
+
 function todayIso() {
   // toISOString() converts to UTC, which is a day behind local "today" for
   // any timezone ahead of UTC — build the date string from local components.
@@ -134,7 +141,7 @@ export function AttendanceRoster() {
                 </td>
                 <td className="border-b border-surface-muted px-5 py-2.5 text-right last:border-b-0">
                   <select
-                    className="input w-auto disabled:opacity-60"
+                    className={`input w-auto disabled:opacity-60 ${STATUS_COLORS[statuses[learner.id] || 'present']}`}
                     value={statuses[learner.id] || 'present'}
                     disabled={!canMark}
                     onChange={(e) =>
