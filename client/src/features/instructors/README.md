@@ -6,4 +6,4 @@
 
 **Business rules**: creating an instructor creates its `onec_users` row (role `instructor`) and `onec_instructors` row together in one transaction — the form collects username/email/password directly, no separate user-creation step needed.
 
-**Known limitation**: no permissions system yet (Phase 7) — any authenticated user can create/edit/delete instructors regardless of role.
+**Permissions**: server-enforced via `instructors.view`/`instructors.manage` (see `server/modules/instructors/README.md`) — a `403` from the API surfaces as `submitError` in the form/page, but there's no UI-level hiding of the "+ Add" button for roles that lack `instructors.manage` yet.

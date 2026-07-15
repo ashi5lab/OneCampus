@@ -82,6 +82,7 @@ async function mark(req, res) {
     res.status(200).json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
+    if (err.code === '23503') return res.status(400).json({ error: 'Learner, cohort, or allocation does not exist' });
     res.status(500).json({ error: 'Internal server error' });
   }
 }

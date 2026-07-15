@@ -16,7 +16,7 @@
 - `POST /api/v1/evaluations/schedules/:scheduleId/scores` — record/update one learner's score (upsert on `eval_schedule_id` + `learner_id`)
 
 **Permissions**:
-Requires authentication AND the `exams` module must be enabled in the tenant's `active_modules` configuration (school/college tenants; not enabled for kindergarten in v1). Role-based permissions to be added in Phase 7.
+Requires authentication AND the `exams` module must be enabled in the tenant's `active_modules` configuration (school/college tenants; not enabled for kindergarten in v1), AND `evaluations.view` (GET), `evaluations.manage` (evaluation/schedule CRUD), or `evaluations.grade` (recording a score) — checked against `onec_role_permissions` for the caller's role.
 
 **Business rules**:
 - A score is graded by the authenticated user (`graded_by`); re-submitting a score for the same learner+schedule updates it in place rather than duplicating.

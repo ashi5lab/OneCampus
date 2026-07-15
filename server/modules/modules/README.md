@@ -5,5 +5,5 @@
 **API Endpoints**: 
 Standard CRUD on `/api/v1/modules`
 
-**Permissions**: 
-Requires authentication. Role-based permissions to be added in Phase 7.
+**Permissions**:
+Requires authentication plus `modules.view` (GET routes) or `modules.manage` (POST/PUT/DELETE), checked against `onec_role_permissions` for the caller's role. See `server/lib/permissions.js`.

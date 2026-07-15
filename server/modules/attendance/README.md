@@ -6,5 +6,5 @@
 - `GET /api/v1/attendance`
 - `POST /api/v1/attendance` (Upserts attendance record)
 
-**Permissions**: 
-Requires authentication AND the `attendance` module must be enabled in the tenant's `active_modules` configuration.
+**Permissions**:
+Requires authentication AND the `attendance` module must be enabled in the tenant's `active_modules` configuration, AND `attendance.view` (GET) or `attendance.mark` (POST), checked against `onec_role_permissions` for the caller's role.
