@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { DataTable } from '../../../components/DataTable';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useModules } from '../../modules/hooks/useModules';
 import { useEvaluation, useSchedules, useCreateSchedule } from '../hooks/useEvaluations';
 import { ScheduleFormModal } from './ScheduleFormModal';
@@ -9,6 +10,7 @@ import { ScheduleFormModal } from './ScheduleFormModal';
 export function EvaluationDetailPage() {
   const { id } = useParams();
   const { t } = useConfig();
+  const { can } = useAuth();
   const { data: evaluation } = useEvaluation(id);
   const { data: schedules, isLoading, error } = useSchedules(id);
   const { data: modules } = useModules();
@@ -46,12 +48,14 @@ export function EvaluationDetailPage() {
             <div className="mt-1 text-[13.5px] text-ink-500">{evaluation.type} · {evaluation.time_block}</div>
           )}
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-        >
-          + Add Schedule
-        </button>
+        {can('evaluations.manage') && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+          >
+            + Add Schedule
+          </button>
+        )}
       </div>
 
       <div className="overflow-hidden rounded border border-border bg-surface">

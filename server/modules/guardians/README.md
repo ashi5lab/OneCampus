@@ -1,6 +1,6 @@
 # Guardians Module
 
-**Purpose**: Manage guardians (e.g. Parent, Guardian). Links a guardian profile to a user record.
+**Purpose**: Manage guardians (e.g. Parent, Guardian). Creates the linked `onec_users` row (role `guardian`) and the `onec_guardians` row together in one transaction, same pattern as learners/instructors — the create form collects username/email/password directly.
 
 **API Endpoints**: 
 Standard CRUD on `/api/v1/guardians`

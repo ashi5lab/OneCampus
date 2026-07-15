@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
@@ -14,6 +15,7 @@ function initials(first, last) {
 
 export function LearnersPage() {
   const { t } = useConfig();
+  const { can } = useAuth();
   const { data: learners, isLoading, error } = useLearners();
   const createLearner = useCreateLearner();
   const [showForm, setShowForm] = useState(false);
@@ -51,12 +53,14 @@ export function LearnersPage() {
             {t('learners')}
           </h1>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-        >
-          + Add {t('learner')}
-        </button>
+        {can('learners.manage') && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+          >
+            + Add {t('learner')}
+          </button>
+        )}
       </div>
 
       <div className="mb-6 grid grid-cols-4 gap-3.5">

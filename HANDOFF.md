@@ -2,15 +2,15 @@
 
 > **How to use this document:** This is a status snapshot and task list for continuing the OneCampus build, written for an AI coding agent picking up work with no memory of prior sessions. Read `OneCampus_App_Specification.md` first — it's the source-of-truth technical spec (stack, schema, phase order, coding rules). This document tells you what's actually been built against that spec, what broke and how it was fixed, and what to do next. Where this doc and the spec disagree on status, trust this doc — the spec describes the target, this describes reality as of the last commit.
 
-Last updated: end of the session that produced PR #8 (rate limiting + audit log). Server and client dev servers are running live and persistent on the developer's own machine (not this doc's author's sandbox) so the user can test in a real browser at http://localhost:5173 in parallel with continued work.
+Last updated: end of the overnight session that produced PR #9 (frontend permission-awareness, Units/Guardians frontend, Phase 8 kindergarten activity, Phase 9 certificates). Server and client dev servers are running live and persistent on the developer's own machine (not this doc's author's sandbox) so the user can test in a real browser at http://localhost:5173 in parallel with continued work.
 
 ---
 
 ## 1. Repo state
 
 - Remote: `https://github.com/ashi5lab/OneCampus`, default branch `main`.
-- Merged: PR #1 (evaluations module), PR #2 (frontend scaffold + tenant config endpoint), PR #3 (purple theme).
-- Open, stacked in this order (each branches off the previous — **merge in order**): PR #4 `feature/inline-user-creation` → PR #5 `feature/permissions-system` → PR #6 `feature/attendance-marking-ui` → PR #7 `feature/score-entry-ui` → PR #8 `feature/security-baseline`. Each PR's diff shrinks to just its own changes as the ones below it merge.
+- Merged: PR #1 (evaluations module), PR #2 (frontend scaffold + tenant config endpoint), PR #3 (purple theme), PR #4 (inline user creation), PR #5 (Phase 7 permissions), PR #6 (attendance-marking UI), PR #7 (score-entry UI), PR #8 (rate limiting + audit log).
+- Open: PR #9 `feature/phase8-9-and-permission-ui` — frontend permission-awareness (`can()` on `AuthContext`, nav/buttons hidden per-role), Units + Guardians frontend, Phase 9 certificates (backend + frontend), Phase 8 kindergarten activity log (backend + frontend). Also fixes a real bug found at server startup: the rate limiter's custom `keyGenerator` didn't normalize IPv6 addresses through `express-rate-limit`'s `ipKeyGenerator` helper (a real bypass vector), caught by a `ValidationError` logged on boot.
 - Workflow convention used throughout: one feature branch per logical change, pushed, PR opened against `main` via the GitHub API (no `gh` CLI installed on this machine — see §7). Keep following this pattern: don't commit straight to `main`.
 - `OneCampus.dc.html` (repo root) is intentionally untracked — a design reference file (see §6). Don't delete it; don't feel obligated to commit it either.
 - Both dev servers (`server/` on :3001, `client/` on :5173) were started as detached background processes directly on the developer's machine (not tied to any tool's ephemeral session) so the user can test locally at any time. If they've since been stopped, `cd server && node server.js` and `cd client && npm run dev` bring them back — see §2 for login credentials.
@@ -43,13 +43,13 @@ To run locally: `cd server && npm run dev` (port 3001), `cd client && npm run de
 |---|---|---|
 | 1 | Tenant resolver + provisioning + `public.onec_tenants` | ✅ Done |
 | 2 | Auth (users, login, JWT, roles) | ✅ Done — login only; no signup/password-reset flow |
-| 3 | Core entities: units, cohorts, modules, instructors, learners, guardians | ✅ Backend CRUD done for all six. Frontend only has Learners/Instructors (full CRUD) and Cohorts (list + create). **Units, Modules (subjects/courses), and Guardians have no frontend at all.** |
-| 4 | Attendance + module toggle system | ✅ Backend done (mark/list, upsert). Frontend is list-only — no marking UI. |
-| 5 | Exams/evaluations + learner scores | ✅ Backend done (`server/modules/evaluations`). Frontend is list-only for evaluations — no schedule or score-entry UI. |
-| 6 | Vocabulary Provider through frontend + PDF/certificate exports | 🟡 Vocabulary provider done and wired through nav/titles/buttons. **PDF/certificate export not started at all.** |
-| 7 | Permissions system (replace inline role checks) | ✅ Done, backend only (PR #5). `onec_role_permissions` table (role → permission, tenant-overridable), `server/lib/permissions.js` (`can`/`cannot`/`hasPermission`/`seedDefaultPermissions`), `server/middleware/permissionGuard.js` (`requirePermission(permission)`), wired into every route in units/cohorts/modules/instructors/learners/guardians/attendance/evaluations. Verified end-to-end across admin/instructor/learner roles. **Known limitation: role-level only, not row-level** — a role with `learners.view` sees every learner tenant-wide, there's no "a learner can only see their own record" scoping. **Frontend doesn't read permissions at all** — no hiding of buttons/nav a role can't use; a `403` just surfaces as an error string in whatever form triggered it. |
-| 8 | Kindergarten-specific module (activity log) | ❌ Not started. Table exists (`onec_kindergarten_daily_activity`), no module. |
-| 9 | Certificates module | ❌ Not started. Table exists (`onec_certificates`), no module. |
+| 3 | Core entities: units, cohorts, modules, instructors, learners, guardians | ✅ Backend CRUD done for all six. Frontend: Learners/Instructors/Guardians (full CRUD, inline user creation), Cohorts/Units (list + create). **Only Modules (subjects/courses) has no dedicated frontend page** — a minimal read-only slice exists (`client/src/features/modules`) purely to power the evaluation-schedule dropdown. |
+| 4 | Attendance + module toggle system | ✅ Backend + frontend done, including a marking UI (`AttendanceRoster`: cohort+date picker, batch save). |
+| 5 | Exams/evaluations + learner scores | ✅ Backend + frontend done end-to-end: create evaluation → schedule → record scores. Known gap: score entry shows all learners tenant-wide, not scoped to the schedule's module/cohort (no enrollment relationship in the schema to filter by). |
+| 6 | Vocabulary Provider through frontend + PDF/certificate exports | 🟡 Vocabulary provider done and wired through nav/titles/buttons. Certificates can now be *issued and listed* (Phase 9, see below) but there's no PDF export/rendering — `onec_certificates.data` (JSONB) is captured but nothing turns it into a document yet. |
+| 7 | Permissions system (replace inline role checks) | ✅ Done, backend **and frontend** (PR #5, #9). `onec_role_permissions` table (role → permission, tenant-overridable), `server/lib/permissions.js`, `server/middleware/permissionGuard.js`, wired into every route across all modules. Frontend: `GET /api/v1/auth/me` returns the caller's live permission set, `AuthContext.can(permission)` gates nav items and every "+ Add"/"Save" button — verified end-to-end (admin sees everything, instructor/learner see only what their role's `onec_role_permissions` rows grant). **Known limitation: still role-level, not row-level** — a role with `learners.view` sees every learner tenant-wide, no "a learner can only see their own record" scoping yet. |
+| 8 | Kindergarten-specific module (activity log) | ✅ Done (PR #9). `server/modules/kindergartenActivity` (upsert-by-learner+date, mirrors `attendance.mark()`'s pattern) + `client/src/features/kindergartenActivity`. Gated by the `kindergarten_activity` module toggle — verified via curl against the kindergarten dev tenant (upsert, module-gate rejection for non-kindergarten tenants); the frontend page was **not** re-verified live in-browser (would have required switching the shared dev tenant's `.env` mid-session) — only via curl + static review against the already-verified Certificates page's identical structure. |
+| 9 | Certificates module | ✅ Done (PR #9). `server/modules/certificates` — issue/list/get only, **deliberately no update or delete** (certificates are immutable official records; the fix for an error is issuing a corrected one). Issuance is logged via `logAudit` (`certificate.issued`) per spec §11's explicit call-out. Gated by the `certificates` module toggle (school/college; not kindergarten) — verified end-to-end in-browser. |
 | 10+ | Notifications, reporting, billing, mobile | ❌ Explicitly deferred per spec — don't start unless asked. |
 
 Design system (spec Part 15): all **4** themes now exist (Slate & Amber default, Chalkboard Fresh, Blueprint Precision, and a new **Purple** theme sourced from `OneCampus.dc.html` — see §6). Theme switcher works, tokens are fully decoupled from components.
@@ -74,22 +74,23 @@ Design system (spec Part 15): all **4** themes now exist (Slate & Amber default,
 
 Each frontend feature's `README.md` already states its own known limitation — read those before assuming a feature is complete:
 
-- ~~No user-creation UI anywhere~~ — fixed in PR #4: learner/instructor creation now creates the `onec_users` row inline, in the same form.
-- **No permission-awareness in the frontend.** With Phase 7 now enforcing role permissions server-side, an `instructor`- or `learner`-role user will see "+ Add" buttons and nav items they'll get a `403` on if clicked — `useConfig()`/a new permissions context should expose `can(permission)` so the UI can hide/disable what a role can't do, mirroring `hasModule()`'s existing pattern.
+- ~~No user-creation UI anywhere~~ — fixed in PR #4: learner/instructor creation now creates the `onec_users` row inline, in the same form. PR #9 extended this to guardians too.
+- ~~No permission-awareness in the frontend~~ — fixed in PR #9: `AuthContext.can(permission)`, fed by `GET /api/v1/auth/me` (reads live from `onec_role_permissions`, not a hardcoded copy — reflects tenant-specific customization). Gates `Sidebar` nav items and every "+ Add"/"Save" button across every feature.
 - ~~No attendance-marking UI~~ — fixed in PR #6: `AttendanceRoster` (cohort + date picker, per-learner status, batch save).
 - ~~No score-entry UI for evaluations~~ — fixed in PR #7: create evaluation → schedule → record scores (`ScoreEntryPage`), all end-to-end. Known gap of its own: shows all learners tenant-wide, not scoped to the schedule's module/cohort (no enrollment relationship in the schema to filter by).
 - No unit picker for cohort creation (`unit_id` is a raw number field).
-- No frontend at all for Units or Guardians, despite full backend CRUD existing. (Modules/subjects now has a minimal read-only slice — `client/src/features/modules` — added only to power the evaluation-schedule form's dropdown; still no list/create page of its own.)
+- ~~No frontend at all for Units or Guardians~~ — fixed in PR #9. **Modules (subjects/courses) is still the one core entity with no dedicated frontend page** — only a read-only slice powering the evaluation-schedule dropdown.
 - No pagination anywhere (`GET` list endpoints return everything; fine at current data volumes, will need `meta: {total, page, pageSize}` per spec §8 once tenants have real data).
-- No password-reset / signup flow — tenants are provisioned via CLI script only, users are seeded via CLI script only.
+- No password-reset / signup flow — tenants are provisioned via CLI script only. User accounts can now be created through the Learners/Instructors/Guardians "+ Add" forms; there's still no standalone self-signup or password-reset flow.
+- No UI to link a guardian to a learner — `onec_learner_guardian_map` has no frontend (or backend endpoint) at all.
 
 ## 5b. Security gaps vs. spec §11 (non-negotiable baseline) not yet closed
 
 - Refresh tokens: spec calls for short-lived access token + httpOnly-cookie refresh token. Currently only a long-lived (`1d`) access token exists, stored in `localStorage` (XSS-exposed, no refresh/rotation).
-- ~~No rate limiting on `/api/v1/auth/login`~~ — fixed in PR #8: 10 attempts/15min, keyed by tenant+IP (`server/middleware/rateLimiters.js`).
+- ~~No rate limiting on `/api/v1/auth/login`~~ — fixed in PR #8: 10 attempts/15min, keyed by tenant+IP (`server/middleware/rateLimiters.js`). **Note:** the first version of this had a real bug — the custom `keyGenerator` didn't run the IP through `express-rate-limit`'s `ipKeyGenerator` helper, so IPv6 clients could bypass the limit by varying their address's textual representation. `express-rate-limit` throws a `ValidationError` logged (not thrown fatally) at server startup when this happens — if you ever see that warning in server logs again, it means a rate limiter was added/changed without using `ipKeyGenerator`. Fixed in PR #9.
 - No CSRF protection (moot until cookies are introduced for the refresh token above).
-- ~~No audit log table~~ — fixed in PR #8: `onec_audit_logs` + `server/lib/audit.js`, currently logging permission denials, score recording, and learner/instructor deletion. Certificate issuance and role changes aren't built yet (nothing to log); add call sites when those land.
-- No automated test suite exists (no test framework installed in either `client/` or `server/`). Everything so far has been verified manually (curl for the backend, an in-browser walkthrough via the Claude Browser preview tool for the frontend). Worth setting up before Phase 7's permission matrix grows the surface area that needs regression coverage.
+- ~~No audit log table~~ — fixed in PR #8: `onec_audit_logs` + `server/lib/audit.js`. PR #9 added a fourth call site: certificate issuance (`certificate.issued`) — the exact action spec §11 calls out by name. Role changes still aren't built (no endpoint to change a user's role exists), so there's nothing to log there yet.
+- No automated test suite exists (no test framework installed in either `client/` or `server/`). Everything so far has been verified manually (curl for the backend, an in-browser walkthrough via the Claude Browser preview tool for the frontend). This is now the single largest gap in verification confidence, given how much surface area (8+ modules, full permission matrix) exists with zero regression coverage.
 
 ---
 
@@ -119,13 +120,14 @@ Don't guess on this — it's a significant scope expansion, not a bug fix.
 
 ## 8. Recommended next-steps task list, in priority order
 
-Everything that was in this list at the start of the session that produced PR #8 is now done: inline user creation, Phase 7 permissions, attendance-marking UI, score-entry UI, rate limiting, and the audit log. What's left:
+Every numbered spec phase (1–9) is now implemented backend + frontend. What's left is hardening and a handful of scope decisions:
 
-1. **Merge PRs #4–#8 in order** (they're stacked — see §1), or rebase new work on top of `feature/security-baseline`.
-2. **Frontend permission-awareness.** `ConfigContext` has `hasModule()`; add the equivalent for permissions (fetch the caller's own permission set, or derive from `user.role` client-side against a shared list, and expose `can(permission)`), then use it to hide/disable nav items and "+ Add" buttons a role can't use. Right now a non-admin just gets a raw 403 error string on click — every mutating form already surfaces `err.message` as `submitError`, so this is UI-only work, no new backend needed.
-3. Refresh tokens + CSRF (remaining spec §11 items, see §5b) — the only security-baseline items left unaddressed.
-4. **Get the open decision in §6 resolved** before touching the Purple-portal screens/modules.
-5. Phase 8 (kindergarten activity log) and Phase 9 (certificates) — spec-scoped, not started. Certificates would also be the first real use of `logAudit` beyond what's wired up now (issuance is explicitly called out in spec §11 as sensitive).
-6. Basic test coverage — pick a framework (nothing installed yet) and at minimum cover tenant isolation, cross-tenant-JWT-rejection, and permission-gating (§4), since those are the things most likely to silently regress and hardest to eyeball-verify after the fact.
-7. Row-level permission scoping (a `learner` seeing only their own attendance/scores, not the whole tenant's) — noted as a known limitation in §3's Phase 7 row and in the evaluations/attendance feature READMEs, not yet designed.
-8. No frontend at all for Units or Guardians (full backend CRUD exists) — same gap noted in §5, lowest urgency of what's listed here since nothing else depends on it yet.
+1. **Merge PR #9** (`feature/phase8-9-and-permission-ui`), or rebase new work on top of it.
+2. **Automated test suite** — now the single biggest gap (see §5b). No framework installed anywhere. At minimum, cover: tenant isolation (the pinned-`req.db`-per-request pattern in §4), cross-tenant JWT rejection, and the full permission matrix (admin/instructor/learner/guardian × every `.view`/`.manage`/`.mark`/`.grade`/`.issue`/`.log` permission) — that matrix is now large enough that manual curl verification (what's been done so far) won't reliably catch a regression.
+3. **Refresh tokens + CSRF** (remaining spec §11 items, see §5b).
+4. Live-verify `KindergartenActivityPage` in a browser against the actual kindergarten tenant — it was only checked via curl + static code review this session (see §3's Phase 8 row for why). Low risk (mirrors the verified Certificates page exactly) but not zero.
+5. **Get the open decision in §6 resolved** before touching the Purple-portal screens/modules.
+6. Row-level permission scoping (a `learner` seeing only their own attendance/scores/certificates, not the whole tenant's) — noted as a known limitation throughout §3 and §5, not yet designed. This is arguably more important than it sounds: right now a `learner`-role account can see every other learner's attendance and certificates via `GET /api/v1/attendance` / `GET /api/v1/certificates`, just not the roster-management screens. Worth prioritizing before this app has real (non-test) student data in it.
+7. Modules (subjects/courses) frontend — the one core entity (§3 Phase 3) still without a dedicated page.
+8. UI (and a backend endpoint) to link a guardian to a learner via `onec_learner_guardian_map` — currently has neither.
+9. PDF rendering for issued certificates (§3 Phase 6/9) — `onec_certificates.data` is captured but nothing turns it into a downloadable document.

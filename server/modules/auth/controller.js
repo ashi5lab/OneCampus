@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { JWT_SECRET } = require('../../config/env');
+const { getPermissionsForRole } = require('../../lib/permissions');
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -63,6 +64,21 @@ async function login(req, res) {
   }
 }
 
+// Lets the frontend know the caller's actual permission set, so it can
+// hide/disable UI a role can't use instead of surfacing raw 403s. Reads
+// live from onec_role_permissions (not a hardcoded copy), so it reflects
+// any tenant-specific customization to a role's access.
+async function me(req, res) {
+  try {
+    const permissions = await getPermissionsForRole(req);
+    res.json({ data: { userId: req.user.userId, role: req.user.role, permissions } });
+  } catch (err) {
+    console.error('Failed to load current user permissions:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
-  login
+  login,
+  me
 };

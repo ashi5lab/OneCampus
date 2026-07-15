@@ -6,10 +6,11 @@
 - `POST /api/v1/auth/login`
   - Body: `{ "username": "...", "password": "..." }`
   - Returns: `{ "data": { "token": "...", "user": { ... } } }`
+- `GET /api/v1/auth/me` — returns `{ data: { userId, role, permissions: [...] } }` for the caller's own role, read live from `onec_role_permissions`. This is what the frontend uses to hide/disable UI a role can't use (see `client/src/contexts/AuthContext.jsx`) instead of hardcoding a copy of the permission matrix that could drift from a tenant's actual (possibly customized) permissions.
 
 **Permissions**:
-- Publicly accessible (no authentication required to attempt login).
-- Resolves tenant context first to check credentials against the correct schema.
+- `POST /login` is publicly accessible (no authentication required to attempt login); resolves tenant context first to check credentials against the correct schema.
+- `GET /me` requires a valid JWT (just `auth`, no specific permission — every authenticated user can see their own permission set).
 
 **Business Rules**:
 - Verifies password against hashed password in `onec_users` using `bcrypt`.

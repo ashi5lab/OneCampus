@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { useInstructors, useCreateInstructor } from '../hooks/useInstructors';
@@ -7,6 +8,7 @@ import { InstructorFormModal } from './InstructorFormModal';
 
 export function InstructorsPage() {
   const { t } = useConfig();
+  const { can } = useAuth();
   const { data: instructors, isLoading, error } = useInstructors();
   const createInstructor = useCreateInstructor();
   const [showForm, setShowForm] = useState(false);
@@ -36,12 +38,14 @@ export function InstructorsPage() {
             {t('instructors')}
           </h1>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-        >
-          + Add {t('instructor')}
-        </button>
+        {can('instructors.manage') && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+          >
+            + Add {t('instructor')}
+          </button>
+        )}
       </div>
 
       <div className="mb-6 grid grid-cols-4 gap-3.5">

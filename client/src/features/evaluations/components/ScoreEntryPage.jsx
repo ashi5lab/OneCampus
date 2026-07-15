@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useScores, useRecordScore } from '../hooks/useEvaluations';
 
@@ -10,6 +11,8 @@ import { useScores, useRecordScore } from '../hooks/useEvaluations';
 export function ScoreEntryPage() {
   const { scheduleId } = useParams();
   const { t } = useConfig();
+  const { can } = useAuth();
+  const canGrade = can('evaluations.grade');
   const { data: learners } = useLearners();
   const { data: existingScores, isLoading } = useScores(scheduleId);
   const recordScore = useRecordScore(scheduleId);
@@ -59,13 +62,15 @@ export function ScoreEntryPage() {
           </div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Record Scores</h1>
         </div>
-        <button
-          onClick={handleSaveAll}
-          disabled={recordScore.isPending || !learners?.length}
-          className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60"
-        >
-          {recordScore.isPending ? 'Saving…' : 'Save All'}
-        </button>
+        {canGrade && (
+          <button
+            onClick={handleSaveAll}
+            disabled={recordScore.isPending || !learners?.length}
+            className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60"
+          >
+            {recordScore.isPending ? 'Saving…' : 'Save All'}
+          </button>
+        )}
       </div>
       {savedAt && <div className="mb-3 text-xs font-semibold text-success">Saved</div>}
       {saveError && <div className="mb-3 text-xs font-semibold text-danger">{saveError}</div>}
@@ -98,8 +103,9 @@ export function ScoreEntryPage() {
                     <input
                       type="number"
                       step="0.01"
-                      className="input w-24"
+                      className="input w-24 disabled:opacity-60"
                       value={values[learner.id] ?? ''}
+                      disabled={!canGrade}
                       onChange={(e) =>
                         setValues((prev) => ({ ...prev, [learner.id]: e.target.value }))
                       }
