@@ -1,8 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { unitsApi } from '../services/unitsApi';
 
-export function useUnits() {
-  return useQuery({ queryKey: ['units'], queryFn: unitsApi.list });
+// `enabled: false` lets a caller without units.view skip the request
+// entirely (it would just 403) instead of firing it and discarding the
+// error — see ModulesPage.
+export function useUnits({ enabled = true } = {}) {
+  return useQuery({ queryKey: ['units'], queryFn: unitsApi.list, enabled });
 }
 
 export function useCreateUnit() {

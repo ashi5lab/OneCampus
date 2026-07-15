@@ -1,5 +1,7 @@
 # Modules Feature (Frontend)
 
-**Purpose**: Read-only access to `onec_modules` (Subject/Course/Activity, vocabulary-driven), used so far only as a dropdown data source for the evaluations schedule form. No list/create page of its own yet — full CRUD exists on the backend (`server/modules/modules`) but has no dedicated frontend, same gap as Units and Guardians (see HANDOFF.md).
+**Purpose**: List and create `onec_modules` rows (Subject/Course/Activity, vocabulary-driven via `t('topic')`/`t('topics')`). Also used as a dropdown data source elsewhere (the evaluations schedule form).
 
-**API Endpoints used**: `GET /api/v1/modules`.
+**API Endpoints used**: `GET /api/v1/modules`, `POST /api/v1/modules`.
+
+**Permissions**: server-enforced via `modules.view`/`modules.manage` — see `server/modules/modules/README.md`.

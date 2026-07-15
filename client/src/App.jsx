@@ -12,6 +12,7 @@ import { EvaluationsPage } from './features/evaluations/components/EvaluationsPa
 import { EvaluationDetailPage } from './features/evaluations/components/EvaluationDetailPage';
 import { ScoreEntryPage } from './features/evaluations/components/ScoreEntryPage';
 import { UnitsPage } from './features/units/components/UnitsPage';
+import { ModulesPage } from './features/modules/components/ModulesPage';
 import { GuardiansPage } from './features/guardians/components/GuardiansPage';
 import { CertificatesPage } from './features/certificates/components/CertificatesPage';
 import { KindergartenActivityPage } from './features/kindergartenActivity/components/KindergartenActivityPage';
@@ -58,6 +59,14 @@ export default function App() {
           element={
             <RequirePermission permission="units.view">
               <UnitsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="modules"
+          element={
+            <RequirePermission permission="modules.view">
+              <ModulesPage />
             </RequirePermission>
           }
         />
