@@ -131,6 +131,30 @@ CREATE TABLE onec_kindergarten_daily_activity (
     logged_by INT REFERENCES onec_users(id)
 );
 
+-- Library catalog + loans (see server/modules/library). borrower_id is any
+-- onec_users row, not just onec_learners — staff/instructors borrow books
+-- too, not only students.
+CREATE TABLE onec_library_books (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    author VARCHAR(255),
+    isbn VARCHAR(50),
+    category VARCHAR(100),
+    total_copies INT NOT NULL DEFAULT 1,
+    available_copies INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE onec_library_loans (
+    id SERIAL PRIMARY KEY,
+    book_id INT REFERENCES onec_library_books(id) ON DELETE CASCADE,
+    borrower_id INT REFERENCES onec_users(id) ON DELETE CASCADE,
+    borrowed_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    due_date DATE NOT NULL,
+    returned_date DATE,
+    issued_by INT REFERENCES onec_users(id)
+);
+
 -- School-wide announcements (see server/modules/notices). A core feature,
 -- not gated by a module toggle like attendance/exams/messaging — every
 -- institution type wants a notice board, unlike e.g. kindergarten_activity.

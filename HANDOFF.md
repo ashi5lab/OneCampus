@@ -72,6 +72,14 @@ The last stub finally has an implementation behind it — `messaging` has been s
 
 ---
 
+## 1e. This session: library module
+
+`onec_library_books` + `onec_library_loans` (migration 009). `borrower_id` references `onec_users`, not `onec_learners` — staff/instructors can borrow too, not just students. Issuing a loan decrements `available_copies` inside the same transaction as the loan insert (`SELECT ... FOR UPDATE` on the book row first, rejects with 400 if none available); returning increments it back. Editing a book's `total_copies` adjusts `available_copies` by the delta rather than overwriting, so it doesn't clobber copies currently on loan. Same permission split as Notices: `library.view` on every role, `library.manage` (catalog CRUD + issue/return) admin/staff-only. Non-managers see only their own loans on `GET /loans`. Also a core (non-module-gated) feature, same reasoning as Notices. Frontend: `LibraryPage` (Catalog/Loans tabs) + `BookFormModal` + `IssueLoanModal`, sidebar "Library" link.
+
+**Must run before this works**: apply `server/migrations/009_add_library.sql` to each existing tenant schema.
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):
