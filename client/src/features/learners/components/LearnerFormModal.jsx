@@ -14,7 +14,7 @@ export function LearnerFormModal({ onClose, onSubmit, submitting, submitError })
   function handleFormSubmit(values) {
     onSubmit({
       ...values,
-      cohort_id: values.cohort_id === '' ? null : values.cohort_id
+      cohort_id: values.cohort_id ?? null
     });
   }
 
@@ -26,13 +26,14 @@ export function LearnerFormModal({ onClose, onSubmit, submitting, submitError })
       >
         <div className="mb-4 text-base font-bold text-ink-900">Add {t('learner')}</div>
 
-        <div className="mb-3 rounded bg-surface-muted p-2.5 text-[11.5px] text-ink-500">
-          Requires an existing user account's ID — user creation isn't wired
-          up in the UI yet, so use the id of a user seeded via the backend.
-        </div>
-
-        <Field label="User ID" error={errors.user_id}>
-          <input type="number" className="input" {...register('user_id')} />
+        <Field label="Username" error={errors.username}>
+          <input className="input" {...register('username')} />
+        </Field>
+        <Field label="Email" error={errors.email}>
+          <input type="email" className="input" {...register('email')} />
+        </Field>
+        <Field label="Password" error={errors.password}>
+          <input type="password" className="input" {...register('password')} />
         </Field>
         <Field label="Registry No." error={errors.registry_no}>
           <input className="input" {...register('registry_no')} />

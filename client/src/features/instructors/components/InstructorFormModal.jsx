@@ -19,13 +19,14 @@ export function InstructorFormModal({ onClose, onSubmit, submitting, submitError
       >
         <div className="mb-4 text-base font-bold text-ink-900">Add {t('instructor')}</div>
 
-        <div className="mb-3 rounded bg-surface-muted p-2.5 text-[11.5px] text-ink-500">
-          Requires an existing user account's ID — user creation isn't wired
-          up in the UI yet.
-        </div>
-
-        <Field label="User ID" error={errors.user_id}>
-          <input type="number" className="input" {...register('user_id')} />
+        <Field label="Username" error={errors.username}>
+          <input className="input" {...register('username')} />
+        </Field>
+        <Field label="Email" error={errors.email}>
+          <input type="email" className="input" {...register('email')} />
+        </Field>
+        <Field label="Password" error={errors.password}>
+          <input type="password" className="input" {...register('password')} />
         </Field>
         <Field label="Staff ID" error={errors.staff_id}>
           <input className="input" {...register('staff_id')} />
