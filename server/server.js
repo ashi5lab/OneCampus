@@ -65,6 +65,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+  const path = require('path');
+  app.use(express.static(path.join(__dirname, '../client/dist')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  });
+}
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   // onec_refresh_tokens only grows otherwise -- see lib/refreshTokenCleanup.js.
