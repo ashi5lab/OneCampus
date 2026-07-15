@@ -131,6 +131,18 @@ CREATE TABLE onec_kindergarten_daily_activity (
     logged_by INT REFERENCES onec_users(id)
 );
 
+-- Direct messages between two users (see server/modules/messages). No
+-- broadcast/group messaging in v1 — recipient_id is always a single user.
+CREATE TABLE onec_messages (
+    id SERIAL PRIMARY KEY,
+    sender_id INT REFERENCES onec_users(id) ON DELETE CASCADE,
+    recipient_id INT REFERENCES onec_users(id) ON DELETE CASCADE,
+    subject VARCHAR(255),
+    body TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Role -> permission mapping (Phase 7). Presence of a (role, permission) row
 -- means that role has that permission for this tenant. Absence means it
 -- doesn't — this is an allow-list, not a deny-list. Tenant-overridable: a
