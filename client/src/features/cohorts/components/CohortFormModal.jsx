@@ -2,9 +2,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cohortFormSchema } from '../types';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useUnits } from '../../units/hooks/useUnits';
 
 export function CohortFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
   const { t } = useConfig();
+  const { data: units } = useUnits();
   const isEdit = !!initialData;
   const {
     register,
@@ -28,8 +30,17 @@ export function CohortFormModal({ onClose, onSubmit, submitting, submitError, in
         <Field label="Name" error={errors.name}>
           <input className="input w-full" {...register('name')} placeholder="e.g. Grade 9 - B" />
         </Field>
-        <Field label="Unit ID" error={errors.unit_id}>
-          <input type="number" className="input w-full" {...register('unit_id')} />
+        <Field label="Unit" error={errors.unit_id}>
+          <select className="input w-full" defaultValue="" {...register('unit_id')}>
+            <option value="" disabled>
+              Choose one…
+            </option>
+            {(units || []).map((unit) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.name}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Time Block" error={errors.time_block}>
           <input className="input w-full" {...register('time_block')} placeholder="e.g. 2026-2027" />

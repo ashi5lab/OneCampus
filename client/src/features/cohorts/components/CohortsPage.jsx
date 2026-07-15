@@ -3,6 +3,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
+import { useUnits } from '../../units/hooks/useUnits';
 import { useCohorts, useCreateCohort, useUpdateCohort, useDeleteCohort } from '../hooks/useCohorts';
 import { CohortFormModal } from './CohortFormModal';
 
@@ -10,15 +11,22 @@ export function CohortsPage() {
   const { t } = useConfig();
   const { can } = useAuth();
   const { data: cohorts, isLoading, error } = useCohorts();
+  const { data: units } = useUnits({ enabled: can('units.view') });
   const createCohort = useCreateCohort();
   const updateCohort = useUpdateCohort();
   const deleteCohort = useDeleteCohort();
-  
+
   const [showForm, setShowForm] = useState(false);
   const [editingCohort, setEditingCohort] = useState(null);
 
+  function unitName(unitId) {
+    if (!unitId) return '—';
+    return (units || []).find((unit) => unit.id === unitId)?.name || `#${unitId}`;
+  }
+
   const columns = [
     { key: 'name', header: t('cohort'), render: (row) => <span className="font-semibold">{row.name}</span> },
+    { key: 'unit', header: 'Unit', render: (row) => unitName(row.unit_id) },
     { key: 'time_block', header: t('term'), render: (row) => row.time_block }
   ];
 
