@@ -2,15 +2,15 @@
 
 > **How to use this document:** This is a status snapshot and task list for continuing the OneCampus build, written for an AI coding agent picking up work with no memory of prior sessions. Read `OneCampus_App_Specification.md` first — it's the source-of-truth technical spec (stack, schema, phase order, coding rules). This document tells you what's actually been built against that spec, what broke and how it was fixed, and what to do next. Where this doc and the spec disagree on status, trust this doc — the spec describes the target, this describes reality as of the last commit.
 
-Last updated: end of the overnight session that produced PR #9 (frontend permission-awareness, Units/Guardians frontend, Phase 8 kindergarten activity, Phase 9 certificates). Server and client dev servers are running live and persistent on the developer's own machine (not this doc's author's sandbox) so the user can test in a real browser at http://localhost:5173 in parallel with continued work.
+Last updated: end of the overnight session that produced PR #10 (backend automated test suite). Server and client dev servers are running live and persistent on the developer's own machine (not this doc's author's sandbox) so the user can test in a real browser at http://localhost:5173 in parallel with continued work.
 
 ---
 
 ## 1. Repo state
 
 - Remote: `https://github.com/ashi5lab/OneCampus`, default branch `main`.
-- Merged: PR #1 (evaluations module), PR #2 (frontend scaffold + tenant config endpoint), PR #3 (purple theme), PR #4 (inline user creation), PR #5 (Phase 7 permissions), PR #6 (attendance-marking UI), PR #7 (score-entry UI), PR #8 (rate limiting + audit log).
-- Open: PR #9 `feature/phase8-9-and-permission-ui` — frontend permission-awareness (`can()` on `AuthContext`, nav/buttons hidden per-role), Units + Guardians frontend, Phase 9 certificates (backend + frontend), Phase 8 kindergarten activity log (backend + frontend). Also fixes a real bug found at server startup: the rate limiter's custom `keyGenerator` didn't normalize IPv6 addresses through `express-rate-limit`'s `ipKeyGenerator` helper (a real bypass vector), caught by a `ValidationError` logged on boot.
+- Merged: PR #1 (evaluations module), PR #2 (frontend scaffold + tenant config endpoint), PR #3 (purple theme), PR #4 (inline user creation), PR #5 (Phase 7 permissions), PR #6 (attendance-marking UI), PR #7 (score-entry UI), PR #8 (rate limiting + audit log), PR #9 (frontend permission-awareness, Units/Guardians frontend, Phase 8 kindergarten activity, Phase 9 certificates — also fixed a real IPv6 rate-limit bypass bug, see §5b).
+- Open: PR #10 `feature/automated-test-suite` — `server/tests/` (Jest integration suite against the real dev tenants; see `server/tests/README.md` for why it's shaped the way it is).
 - Workflow convention used throughout: one feature branch per logical change, pushed, PR opened against `main` via the GitHub API (no `gh` CLI installed on this machine — see §7). Keep following this pattern: don't commit straight to `main`.
 - `OneCampus.dc.html` (repo root) is intentionally untracked — a design reference file (see §6). Don't delete it; don't feel obligated to commit it either.
 - Both dev servers (`server/` on :3001, `client/` on :5173) were started as detached background processes directly on the developer's machine (not tied to any tool's ephemeral session) so the user can test locally at any time. If they've since been stopped, `cd server && node server.js` and `cd client && npm run dev` bring them back — see §2 for login credentials.
@@ -90,7 +90,7 @@ Each frontend feature's `README.md` already states its own known limitation — 
 - ~~No rate limiting on `/api/v1/auth/login`~~ — fixed in PR #8: 10 attempts/15min, keyed by tenant+IP (`server/middleware/rateLimiters.js`). **Note:** the first version of this had a real bug — the custom `keyGenerator` didn't run the IP through `express-rate-limit`'s `ipKeyGenerator` helper, so IPv6 clients could bypass the limit by varying their address's textual representation. `express-rate-limit` throws a `ValidationError` logged (not thrown fatally) at server startup when this happens — if you ever see that warning in server logs again, it means a rate limiter was added/changed without using `ipKeyGenerator`. Fixed in PR #9.
 - No CSRF protection (moot until cookies are introduced for the refresh token above).
 - ~~No audit log table~~ — fixed in PR #8: `onec_audit_logs` + `server/lib/audit.js`. PR #9 added a fourth call site: certificate issuance (`certificate.issued`) — the exact action spec §11 calls out by name. Role changes still aren't built (no endpoint to change a user's role exists), so there's nothing to log there yet.
-- No automated test suite exists (no test framework installed in either `client/` or `server/`). Everything so far has been verified manually (curl for the backend, an in-browser walkthrough via the Claude Browser preview tool for the frontend). This is now the single largest gap in verification confidence, given how much surface area (8+ modules, full permission matrix) exists with zero regression coverage.
+- ~~No automated test suite~~ — fixed in PR #10: `server/tests/` (Jest, `npm test` in `server/`). **Read `server/tests/README.md` before adding to this** — it's an integration suite hitting the real running server + real dev tenants (no mocking, no isolated test DB), and it hits the real login rate limiter, which shaped its design non-obviously (token caching per test file in `tests/helpers.js`, `getToken()` vs. raw `login()`). Discovered mid-build: running the suite twice within 15 minutes trips the rate limiter and fails — documented, not fixed, since fixing it properly needs a disposable per-run tenant (out of scope for this pass). Frontend still has zero test coverage.
 
 ---
 
@@ -120,14 +120,14 @@ Don't guess on this — it's a significant scope expansion, not a bug fix.
 
 ## 8. Recommended next-steps task list, in priority order
 
-Every numbered spec phase (1–9) is now implemented backend + frontend. What's left is hardening and a handful of scope decisions:
+Every numbered spec phase (1–9) is now implemented backend + frontend, with a backend integration test suite covering the highest-regression-risk paths. What's left is hardening and a handful of scope decisions:
 
-1. **Merge PR #9** (`feature/phase8-9-and-permission-ui`), or rebase new work on top of it.
-2. **Automated test suite** — now the single biggest gap (see §5b). No framework installed anywhere. At minimum, cover: tenant isolation (the pinned-`req.db`-per-request pattern in §4), cross-tenant JWT rejection, and the full permission matrix (admin/instructor/learner/guardian × every `.view`/`.manage`/`.mark`/`.grade`/`.issue`/`.log` permission) — that matrix is now large enough that manual curl verification (what's been done so far) won't reliably catch a regression.
-3. **Refresh tokens + CSRF** (remaining spec §11 items, see §5b).
+1. **Merge PR #10** (`feature/automated-test-suite`), or rebase new work on top of it.
+2. **Refresh tokens + CSRF** (remaining spec §11 items, see §5b) — the only security-baseline item left unaddressed.
+3. **Row-level permission scoping** (a `learner` seeing only their own attendance/scores/certificates, not the whole tenant's) — noted as a known limitation throughout §3 and §5, not yet designed. This is more important than it sounds: right now a `learner`-role account can see every other learner's attendance and certificates via `GET /api/v1/attendance` / `GET /api/v1/certificates`, just not the roster-management screens. Worth prioritizing before this app has real (non-test) student data in it.
 4. Live-verify `KindergartenActivityPage` in a browser against the actual kindergarten tenant — it was only checked via curl + static code review this session (see §3's Phase 8 row for why). Low risk (mirrors the verified Certificates page exactly) but not zero.
 5. **Get the open decision in §6 resolved** before touching the Purple-portal screens/modules.
-6. Row-level permission scoping (a `learner` seeing only their own attendance/scores/certificates, not the whole tenant's) — noted as a known limitation throughout §3 and §5, not yet designed. This is arguably more important than it sounds: right now a `learner`-role account can see every other learner's attendance and certificates via `GET /api/v1/attendance` / `GET /api/v1/certificates`, just not the roster-management screens. Worth prioritizing before this app has real (non-test) student data in it.
+6. Frontend test coverage — `server/tests/` only covers the backend. Nothing in `client/` has any automated coverage yet.
 7. Modules (subjects/courses) frontend — the one core entity (§3 Phase 3) still without a dedicated page.
 8. UI (and a backend endpoint) to link a guardian to a learner via `onec_learner_guardian_map` — currently has neither.
 9. PDF rendering for issued certificates (§3 Phase 6/9) — `onec_certificates.data` is captured but nothing turns it into a downloadable document.
