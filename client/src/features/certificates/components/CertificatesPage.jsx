@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { DataTable } from '../../../components/DataTable';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useCertificates, useIssueCertificate } from '../hooks/useCertificates';
+import { certificatesApi } from '../services/certificatesApi';
 import { CertificateFormModal } from './CertificateFormModal';
 
 export function CertificatesPage() {
@@ -12,14 +13,28 @@ export function CertificatesPage() {
   const { data: certificates, isLoading, error } = useCertificates();
   // Skip this entirely for a role without learners.view — it would just
   // 403. A `learner` viewing this list is always looking at their own
-  // (already row-scoped) certificates, so "You" is accurate; any other
-  // role without learners.view (e.g. guardian, currently unscoped — see
-  // HANDOFF.md) isn't necessarily looking at only their own records, so
-  // it falls back to the raw id instead of guessing.
+  // (already row-scoped) certificates, so "You" is accurate; a `guardian`
+  // is now also row-scoped (see lib/rowScope.js) but might be looking at
+  // more than one linked child, so it falls back to the raw id rather
+  // than guessing which child "You" would mean.
   const canSeeLearnerNames = can('learners.view');
   const { data: learners } = useLearners({ enabled: canSeeLearnerNames });
   const issueCertificate = useIssueCertificate();
   const [showForm, setShowForm] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  async function handleDownload(row) {
+    setDownloadError(null);
+    setDownloadingId(row.id);
+    try {
+      await certificatesApi.downloadPdf(row.id, row.certificate_no);
+    } catch (err) {
+      setDownloadError(err.message);
+    } finally {
+      setDownloadingId(null);
+    }
+  }
 
   const learnerName = (learnerId) => {
     if (!canSeeLearnerNames) return user?.role === 'learner' ? 'You' : `#${learnerId}`;
@@ -31,7 +46,20 @@ export function CertificatesPage() {
     { key: 'certificate_no', header: 'Certificate No.', render: (row) => <span className="font-mono font-semibold">{row.certificate_no}</span> },
     { key: 'learner', header: t('learner'), render: (row) => learnerName(row.learner_id) },
     { key: 'type', header: 'Type', render: (row) => row.type },
-    { key: 'issue_date', header: 'Issued', render: (row) => new Date(row.issue_date).toLocaleDateString() }
+    { key: 'issue_date', header: 'Issued', render: (row) => new Date(row.issue_date).toLocaleDateString() },
+    {
+      key: 'pdf',
+      header: '',
+      render: (row) => (
+        <button
+          onClick={() => handleDownload(row)}
+          disabled={downloadingId === row.id}
+          className="text-[11.5px] font-semibold text-accent disabled:opacity-60"
+        >
+          {downloadingId === row.id ? 'Downloading…' : 'Download PDF'}
+        </button>
+      )
+    }
   ];
 
   return (
@@ -52,6 +80,12 @@ export function CertificatesPage() {
           </button>
         )}
       </div>
+
+      {downloadError && (
+        <div className="mb-3 rounded border border-danger/30 bg-danger/10 px-4 py-2.5 text-[12.5px] font-semibold text-danger">
+          Couldn't download PDF: {downloadError}
+        </div>
+      )}
 
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}

@@ -117,3 +117,39 @@ export const apiClient = {
   put: (path, body) => request(path, { method: 'PUT', body }),
   delete: (path) => request(path, { method: 'DELETE' })
 };
+
+// Separate from request() because a binary (PDF) response can't go through
+// res.json() — mirrors request()'s auth header + one-shot 401-refresh-retry
+// logic, then triggers a browser download instead of returning parsed data.
+export async function downloadFile(path, filename, _retried = false) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    credentials: 'include',
+    headers: {
+      ...tenantHeaders(),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+    }
+  });
+
+  if (!res.ok) {
+    if (res.status === 401 && !_retried) {
+      try {
+        await refreshAccessToken();
+        return downloadFile(path, filename, true);
+      } catch {
+        // Refresh failed too — fall through to surface the original 401.
+      }
+    }
+    const payload = await res.json().catch(() => null);
+    throw new ApiError(payload?.error || res.statusText, res.status);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
