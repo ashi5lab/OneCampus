@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DataTable } from '../../../components/DataTable';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useEvaluations, useCreateEvaluation } from '../hooks/useEvaluations';
 import { EvaluationFormModal } from './EvaluationFormModal';
 
 export function EvaluationsPage() {
+  const { can } = useAuth();
   const { data: evaluations, isLoading, error } = useEvaluations();
   const createEvaluation = useCreateEvaluation();
   const [showForm, setShowForm] = useState(false);
@@ -32,12 +34,14 @@ export function EvaluationsPage() {
           </div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Exams</h1>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-        >
-          + Add Evaluation
-        </button>
+        {can('evaluations.manage') && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+          >
+            + Add Evaluation
+          </button>
+        )}
       </div>
 
       <div className="overflow-hidden rounded border border-border bg-surface">

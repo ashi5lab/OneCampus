@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useAttendanceForCohortDate, useMarkAttendance } from '../hooks/useAttendance';
@@ -20,6 +21,8 @@ function todayIso() {
 // per-learner, so "Save All" just fires one POST per row.
 export function AttendanceRoster() {
   const { t } = useConfig();
+  const { can } = useAuth();
+  const canMark = can('attendance.mark');
   const { data: cohorts } = useCohorts();
   const { data: allLearners } = useLearners();
   const markAttendance = useMarkAttendance();
@@ -94,13 +97,15 @@ export function AttendanceRoster() {
             onChange={(e) => setDate(e.target.value)}
           />
         </label>
-        <button
-          onClick={handleSaveAll}
-          disabled={!cohortId || roster.length === 0 || markAttendance.isPending}
-          className="rounded bg-accent px-4 py-2 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60"
-        >
-          {markAttendance.isPending ? 'Saving…' : 'Save All'}
-        </button>
+        {canMark && (
+          <button
+            onClick={handleSaveAll}
+            disabled={!cohortId || roster.length === 0 || markAttendance.isPending}
+            className="rounded bg-accent px-4 py-2 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60"
+          >
+            {markAttendance.isPending ? 'Saving…' : 'Save All'}
+          </button>
+        )}
         {savedAt && <span className="text-xs font-semibold text-success">Saved</span>}
         {saveError && <span className="text-xs font-semibold text-danger">{saveError}</span>}
       </div>
@@ -129,8 +134,9 @@ export function AttendanceRoster() {
                 </td>
                 <td className="border-b border-surface-muted px-5 py-2.5 text-right last:border-b-0">
                   <select
-                    className="input w-auto"
+                    className="input w-auto disabled:opacity-60"
                     value={statuses[learner.id] || 'present'}
+                    disabled={!canMark}
                     onChange={(e) =>
                       setStatuses((prev) => ({ ...prev, [learner.id]: e.target.value }))
                     }

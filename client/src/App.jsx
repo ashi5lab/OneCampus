@@ -10,6 +10,10 @@ import { AttendancePage } from './features/attendance/components/AttendancePage'
 import { EvaluationsPage } from './features/evaluations/components/EvaluationsPage';
 import { EvaluationDetailPage } from './features/evaluations/components/EvaluationDetailPage';
 import { ScoreEntryPage } from './features/evaluations/components/ScoreEntryPage';
+import { UnitsPage } from './features/units/components/UnitsPage';
+import { GuardiansPage } from './features/guardians/components/GuardiansPage';
+import { CertificatesPage } from './features/certificates/components/CertificatesPage';
+import { KindergartenActivityPage } from './features/kindergartenActivity/components/KindergartenActivityPage';
 
 export default function App() {
   return (
@@ -27,10 +31,14 @@ export default function App() {
         <Route path="learners" element={<LearnersPage />} />
         <Route path="instructors" element={<InstructorsPage />} />
         <Route path="cohorts" element={<CohortsPage />} />
+        <Route path="units" element={<UnitsPage />} />
+        <Route path="guardians" element={<GuardiansPage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="evaluations" element={<EvaluationsPage />} />
         <Route path="evaluations/:id" element={<EvaluationDetailPage />} />
         <Route path="evaluations/schedules/:scheduleId/scores" element={<ScoreEntryPage />} />
+        <Route path="certificates" element={<CertificatesPage />} />
+        <Route path="kindergarten-activity" element={<KindergartenActivityPage />} />
       </Route>
     </Routes>
   );

@@ -21,7 +21,19 @@ const navItemClass = ({ isActive }) =>
 
 export function Sidebar() {
   const { config, t, hasModule } = useConfig();
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
+
+  const managementLinks = [
+    can('learners.view') && { to: '/learners', label: t('learners') },
+    can('instructors.view') && { to: '/instructors', label: t('instructors') },
+    can('cohorts.view') && { to: '/cohorts', label: t('cohorts') },
+    can('units.view') && { to: '/units', label: 'Units' },
+    can('guardians.view') && { to: '/guardians', label: 'Guardians' },
+    hasModule('attendance') && can('attendance.view') && { to: '/attendance', label: 'Attendance' },
+    hasModule('exams') && can('evaluations.view') && { to: '/evaluations', label: 'Exams' },
+    hasModule('certificates') && can('certificates.view') && { to: '/certificates', label: 'Certificates' },
+    hasModule('kindergarten_activity') && can('kindergarten_activity.view') && { to: '/kindergarten-activity', label: 'Daily Activity' }
+  ].filter(Boolean);
 
   return (
     <div className="flex flex-col border-r border-sidebar-border bg-sidebar-bg px-4 py-6 text-sidebar-textStrong">
@@ -41,27 +53,17 @@ export function Sidebar() {
         Dashboard
       </NavLink>
 
-      <div className="px-3 pb-1.5 pt-4 text-[10.5px] font-bold uppercase tracking-wide text-sidebar-text">
-        Management
-      </div>
-      <NavLink to="/learners" className={navItemClass}>
-        {t('learners')}
-      </NavLink>
-      <NavLink to="/instructors" className={navItemClass}>
-        {t('instructors')}
-      </NavLink>
-      <NavLink to="/cohorts" className={navItemClass}>
-        {t('cohorts')}
-      </NavLink>
-      {hasModule('attendance') && (
-        <NavLink to="/attendance" className={navItemClass}>
-          Attendance
-        </NavLink>
-      )}
-      {hasModule('exams') && (
-        <NavLink to="/evaluations" className={navItemClass}>
-          Exams
-        </NavLink>
+      {managementLinks.length > 0 && (
+        <>
+          <div className="px-3 pb-1.5 pt-4 text-[10.5px] font-bold uppercase tracking-wide text-sidebar-text">
+            Management
+          </div>
+          {managementLinks.map((link) => (
+            <NavLink key={link.to} to={link.to} className={navItemClass}>
+              {link.label}
+            </NavLink>
+          ))}
+        </>
       )}
 
       <div className="mt-auto space-y-3 pt-3">

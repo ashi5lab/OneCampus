@@ -17,7 +17,9 @@ const ALL_PERMISSIONS = [
   'learners.view', 'learners.manage',
   'guardians.view', 'guardians.manage',
   'attendance.view', 'attendance.mark',
-  'evaluations.view', 'evaluations.manage', 'evaluations.grade'
+  'evaluations.view', 'evaluations.manage', 'evaluations.grade',
+  'certificates.view', 'certificates.issue',
+  'kindergarten_activity.view', 'kindergarten_activity.log'
 ];
 
 const DEFAULT_ROLE_PERMISSIONS = {
@@ -27,13 +29,15 @@ const DEFAULT_ROLE_PERMISSIONS = {
     'units.view', 'cohorts.view', 'modules.view', 'instructors.view',
     'learners.view', 'guardians.view',
     'attendance.view', 'attendance.mark',
-    'evaluations.view', 'evaluations.manage', 'evaluations.grade'
+    'evaluations.view', 'evaluations.manage', 'evaluations.grade',
+    'kindergarten_activity.view', 'kindergarten_activity.log'
   ],
   // Coarse-grained on purpose (see the row-level-scoping note above) — kept
-  // to just enough to view attendance/evaluation records, not the full
-  // roster/management surface.
-  learner: ['attendance.view', 'evaluations.view'],
-  guardian: ['attendance.view', 'evaluations.view']
+  // to just enough to view their own records, not the full roster/management
+  // surface. Certificate issuance and kindergarten activity logging are
+  // staff-side actions, not granted here.
+  learner: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view'],
+  guardian: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view']
 };
 
 async function seedDefaultPermissions(client) {
@@ -63,11 +67,24 @@ async function cannot(req, permission) {
   return !(await hasPermission(req, permission));
 }
 
+// Full permission list for the caller's role — used by GET /api/v1/auth/me
+// so the frontend can hide/disable what a role can't do, rather than
+// hardcoding a copy of DEFAULT_ROLE_PERMISSIONS that could drift from a
+// tenant's actual (possibly admin-customized) onec_role_permissions rows.
+async function getPermissionsForRole(req) {
+  const role = req.user?.role;
+  if (!role) return [];
+
+  const result = await req.db.query('SELECT permission FROM onec_role_permissions WHERE role = $1', [role]);
+  return result.rows.map((row) => row.permission);
+}
+
 module.exports = {
   ALL_PERMISSIONS,
   DEFAULT_ROLE_PERMISSIONS,
   seedDefaultPermissions,
   hasPermission,
   can: hasPermission,
-  cannot
+  cannot,
+  getPermissionsForRole
 };

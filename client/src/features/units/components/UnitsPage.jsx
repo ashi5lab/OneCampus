@@ -1,21 +1,19 @@
 import { useState } from 'react';
-import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
-import { useCohorts, useCreateCohort } from '../hooks/useCohorts';
-import { CohortFormModal } from './CohortFormModal';
+import { useUnits, useCreateUnit } from '../hooks/useUnits';
+import { UnitFormModal } from './UnitFormModal';
 
-export function CohortsPage() {
-  const { t } = useConfig();
+export function UnitsPage() {
   const { can } = useAuth();
-  const { data: cohorts, isLoading, error } = useCohorts();
-  const createCohort = useCreateCohort();
+  const { data: units, isLoading, error } = useUnits();
+  const createUnit = useCreateUnit();
   const [showForm, setShowForm] = useState(false);
 
   const columns = [
-    { key: 'name', header: t('cohort'), render: (row) => <span className="font-semibold">{row.name}</span> },
-    { key: 'time_block', header: t('term'), render: (row) => row.time_block }
+    { key: 'name', header: 'Name', render: (row) => <span className="font-semibold">{row.name}</span> },
+    { key: 'type', header: 'Type', render: (row) => row.type }
   ];
 
   return (
@@ -23,24 +21,22 @@ export function CohortsPage() {
       <div className="mb-6 flex items-start justify-between">
         <div>
           <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            Management / {t('cohorts')}
+            Management / Units
           </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-            {t('cohorts')}
-          </h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Units</h1>
         </div>
-        {can('cohorts.manage') && (
+        {can('units.manage') && (
           <button
             onClick={() => setShowForm(true)}
             className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
           >
-            + Add {t('cohort')}
+            + Add Unit
           </button>
         )}
       </div>
 
       <div className="mb-6 grid grid-cols-4 gap-3.5">
-        <StatCard label={`Total ${t('cohorts')}`} value={isLoading ? '—' : cohorts.length} />
+        <StatCard label="Total Units" value={isLoading ? '—' : units.length} />
       </div>
 
       <div className="overflow-hidden rounded border border-border bg-surface">
@@ -48,16 +44,16 @@ export function CohortsPage() {
         {error && (
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
-        {cohorts && <DataTable columns={columns} rows={cohorts} rowKey={(row) => row.id} />}
+        {units && <DataTable columns={columns} rows={units} rowKey={(row) => row.id} />}
       </div>
 
       {showForm && (
-        <CohortFormModal
+        <UnitFormModal
           onClose={() => setShowForm(false)}
-          submitting={createCohort.isPending}
-          submitError={createCohort.error?.message}
+          submitting={createUnit.isPending}
+          submitError={createUnit.error?.message}
           onSubmit={(values) =>
-            createCohort.mutate(values, { onSuccess: () => setShowForm(false) })
+            createUnit.mutate(values, { onSuccess: () => setShowForm(false) })
           }
         />
       )}
