@@ -1,6 +1,6 @@
 const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
-const { getOwnLearnerId } = require('../../lib/ownLearner');
+const { getScopedLearnerIds } = require('../../lib/rowScope');
 
 const evaluationSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -179,13 +179,14 @@ async function listScores(req, res) {
   try {
     const { scheduleId } = req.params;
 
-    // Row-level self-scoping for the learner role (see lib/ownLearner.js) —
-    // a learner sees only their own score for this schedule, not the roster.
-    const ownLearnerId = await getOwnLearnerId(req);
-    const query = ownLearnerId !== null
-      ? 'SELECT * FROM onec_learner_scores WHERE eval_schedule_id = $1 AND learner_id = $2 ORDER BY id ASC'
+    // Row-level self-scoping for learner/guardian roles (see lib/rowScope.js)
+    // — a learner/guardian sees only their own/linked children's score for
+    // this schedule, not the roster.
+    const scopedLearnerIds = await getScopedLearnerIds(req);
+    const query = scopedLearnerIds !== null
+      ? 'SELECT * FROM onec_learner_scores WHERE eval_schedule_id = $1 AND learner_id = ANY($2) ORDER BY id ASC'
       : 'SELECT * FROM onec_learner_scores WHERE eval_schedule_id = $1 ORDER BY id ASC';
-    const params = ownLearnerId !== null ? [scheduleId, ownLearnerId] : [scheduleId];
+    const params = scopedLearnerIds !== null ? [scheduleId, scopedLearnerIds] : [scheduleId];
 
     const result = await req.db.query(query, params);
     res.json({ data: result.rows });

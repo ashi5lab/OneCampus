@@ -1,6 +1,6 @@
 const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
-const { getOwnLearnerId } = require('../../lib/ownLearner');
+const { getScopedLearnerIds } = require('../../lib/rowScope');
 
 const issueSchema = z.object({
   learner_id: z.number().int(),
@@ -16,16 +16,18 @@ const issueSchema = z.object({
 
 async function getAll(req, res) {
   try {
-    // Row-level self-scoping for the learner role (see lib/ownLearner.js) —
-    // forces the filter regardless of the ?learner_id= query param, so a
-    // learner can't request someone else's certificates by id.
-    const ownLearnerId = await getOwnLearnerId(req);
-    const learnerId = ownLearnerId !== null ? ownLearnerId : req.query.learner_id;
+    // Row-level self-scoping for learner/guardian roles (see lib/rowScope.js)
+    // — forces the filter regardless of the ?learner_id= query param, so a
+    // learner or guardian can't request someone else's certificates by id.
+    const scopedLearnerIds = await getScopedLearnerIds(req);
 
     let query = 'SELECT * FROM onec_certificates';
     const params = [];
-    if (learnerId) {
-      params.push(learnerId);
+    if (scopedLearnerIds !== null) {
+      params.push(scopedLearnerIds);
+      query += ` WHERE learner_id = ANY($${params.length})`;
+    } else if (req.query.learner_id) {
+      params.push(req.query.learner_id);
       query += ` WHERE learner_id = $${params.length}`;
     }
     query += ' ORDER BY issue_date DESC, id DESC';
@@ -45,11 +47,11 @@ async function getById(req, res) {
 
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
 
-    // A learner fetching a certificate by id that isn't theirs gets the
-    // same 404 as a nonexistent one — a plain 403 would confirm the id
+    // A learner/guardian fetching a certificate by id that isn't theirs gets
+    // the same 404 as a nonexistent one — a plain 403 would confirm the id
     // belongs to *someone*, leaking more than necessary.
-    const ownLearnerId = await getOwnLearnerId(req);
-    if (ownLearnerId !== null && result.rows[0].learner_id !== ownLearnerId) {
+    const scopedLearnerIds = await getScopedLearnerIds(req);
+    if (scopedLearnerIds !== null && !scopedLearnerIds.includes(result.rows[0].learner_id)) {
       return res.status(404).json({ error: 'Not found' });
     }
 
