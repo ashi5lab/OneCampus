@@ -1,7 +1,8 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRecipients, useSendMessage } from '../hooks/useMessages';
+import { UserSearchSelect } from '../../../components/UserSearchSelect';
 
 const composeSchema = z.object({
   recipient_id: z.coerce.number({ invalid_type_error: 'Choose a recipient' }).int(),
@@ -14,6 +15,7 @@ export function ComposeMessageModal({ onClose }) {
   const sendMessage = useSendMessage();
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors }
   } = useForm({ resolver: zodResolver(composeSchema) });
@@ -31,16 +33,13 @@ export function ComposeMessageModal({ onClose }) {
         <div className="mb-4 text-base font-bold text-ink-900">New Message</div>
 
         <Field label="To" error={errors.recipient_id}>
-          <select className="input" defaultValue="" {...register('recipient_id')}>
-            <option value="" disabled>
-              Choose a recipient…
-            </option>
-            {(recipients || []).map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.username} ({r.role})
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="recipient_id"
+            control={control}
+            render={({ field }) => (
+              <UserSearchSelect users={recipients || []} value={field.value} onChange={field.onChange} placeholder="Search by name…" />
+            )}
+          />
         </Field>
         <Field label="Subject (optional)" error={errors.subject}>
           <input className="input" {...register('subject')} />

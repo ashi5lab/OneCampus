@@ -1,11 +1,12 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useBorrowers, useIssueLoan } from '../hooks/useLibrary';
+import { UserSearchSelect } from '../../../components/UserSearchSelect';
 
 const issueSchema = z.object({
   book_id: z.coerce.number().int(),
-  borrower_id: z.coerce.number().int(),
+  borrower_id: z.coerce.number({ invalid_type_error: 'Choose a borrower' }).int(),
   due_date: z.string().min(1, 'Due date is required')
 });
 
@@ -14,6 +15,7 @@ export function IssueLoanModal({ book, onClose }) {
   const issueLoan = useIssueLoan();
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors }
   } = useForm({ resolver: zodResolver(issueSchema), defaultValues: { book_id: book.id } });
@@ -32,16 +34,13 @@ export function IssueLoanModal({ book, onClose }) {
         <input type="hidden" {...register('book_id')} />
 
         <Field label="Borrower" error={errors.borrower_id}>
-          <select className="input" defaultValue="" {...register('borrower_id')}>
-            <option value="" disabled>
-              Choose a borrower…
-            </option>
-            {(borrowers || []).map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.username} ({b.role})
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="borrower_id"
+            control={control}
+            render={({ field }) => (
+              <UserSearchSelect users={borrowers || []} value={field.value} onChange={field.onChange} placeholder="Search by name…" />
+            )}
+          />
         </Field>
         <Field label="Due Date" error={errors.due_date}>
           <input type="date" className="input" {...register('due_date')} />
