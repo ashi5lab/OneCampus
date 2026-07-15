@@ -5,11 +5,9 @@
 // that a learner has .view access to, so their results narrow to "my own
 // records" instead of "every record in the tenant".
 //
-// Guardian scoping is deliberately NOT handled here — it depends on
-// onec_learner_guardian_map, which has no backend/frontend to populate it
-// yet (see HANDOFF.md). Scoping guardians to "nothing" wouldn't be
-// meaningfully better than today's unscoped access, and building the
-// linking feature is a separate, larger piece of work.
+// Guardian scoping is handled separately in lib/ownGuardianLearners.js —
+// controllers should use lib/rowScope.js's getScopedLearnerIds(req), which
+// combines both, rather than calling this directly.
 async function getOwnLearnerId(req) {
   if (req.user?.role !== 'learner') return null;
   const result = await req.db.query('SELECT id FROM onec_learners WHERE user_id = $1', [req.user.userId]);

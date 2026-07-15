@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { RequirePermission } from './components/RequirePermission';
 import { LoginPage } from './features/auth/components/LoginPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { LearnersPage } from './features/learners/components/LearnersPage';
@@ -28,11 +29,46 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
-        <Route path="learners" element={<LearnersPage />} />
-        <Route path="instructors" element={<InstructorsPage />} />
-        <Route path="cohorts" element={<CohortsPage />} />
-        <Route path="units" element={<UnitsPage />} />
-        <Route path="guardians" element={<GuardiansPage />} />
+        <Route
+          path="learners"
+          element={
+            <RequirePermission permission="learners.view">
+              <LearnersPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="instructors"
+          element={
+            <RequirePermission permission="instructors.view">
+              <InstructorsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="cohorts"
+          element={
+            <RequirePermission permission="cohorts.view">
+              <CohortsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="units"
+          element={
+            <RequirePermission permission="units.view">
+              <UnitsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="guardians"
+          element={
+            <RequirePermission permission="guardians.view">
+              <GuardiansPage />
+            </RequirePermission>
+          }
+        />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="evaluations" element={<EvaluationsPage />} />
         <Route path="evaluations/:id" element={<EvaluationDetailPage />} />

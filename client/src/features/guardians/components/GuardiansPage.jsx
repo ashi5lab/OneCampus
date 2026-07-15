@@ -4,7 +4,10 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { useGuardians, useCreateGuardian } from '../hooks/useGuardians';
+import { useGuardianLinks } from '../hooks/useGuardianLinks';
+import { useLearners } from '../../learners/hooks/useLearners';
 import { GuardianFormModal } from './GuardianFormModal';
+import { GuardianLinksModal } from './GuardianLinksModal';
 
 export function GuardiansPage() {
   const { t } = useConfig();
@@ -12,6 +15,11 @@ export function GuardiansPage() {
   const { data: guardians, isLoading, error } = useGuardians();
   const createGuardian = useCreateGuardian();
   const [showForm, setShowForm] = useState(false);
+  const [linksTarget, setLinksTarget] = useState(null);
+
+  const canManageLinks = can('guardian_links.manage');
+  const { data: links } = useGuardianLinks({ enabled: canManageLinks });
+  const { data: learners } = useLearners({ enabled: canManageLinks });
 
   const columns = [
     {
@@ -26,6 +34,34 @@ export function GuardiansPage() {
     },
     { key: 'address', header: 'Address', render: (row) => row.address }
   ];
+
+  if (canManageLinks) {
+    columns.push({
+      key: 'linkedLearners',
+      header: 'Linked Learners',
+      render: (row) => {
+        const linkedIds = (links || [])
+          .filter((link) => link.guardian_id === row.id)
+          .map((link) => link.learner_id);
+        const names = (learners || [])
+          .filter((learner) => linkedIds.includes(learner.id))
+          .map((learner) => `${learner.first_name} ${learner.last_name}`);
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-[12.5px] text-ink-500">
+              {names.length > 0 ? names.join(', ') : 'None'}
+            </span>
+            <button
+              onClick={() => setLinksTarget(row)}
+              className="whitespace-nowrap text-[11.5px] font-semibold text-accent"
+            >
+              Manage
+            </button>
+          </div>
+        );
+      }
+    });
+  }
 
   return (
     <div>
@@ -67,6 +103,10 @@ export function GuardiansPage() {
             createGuardian.mutate(values, { onSuccess: () => setShowForm(false) })
           }
         />
+      )}
+
+      {linksTarget && (
+        <GuardianLinksModal guardian={linksTarget} onClose={() => setLinksTarget(null)} />
       )}
     </div>
   );

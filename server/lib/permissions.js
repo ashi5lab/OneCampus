@@ -19,7 +19,8 @@ const ALL_PERMISSIONS = [
   'attendance.view', 'attendance.mark',
   'evaluations.view', 'evaluations.manage', 'evaluations.grade',
   'certificates.view', 'certificates.issue',
-  'kindergarten_activity.view', 'kindergarten_activity.log'
+  'kindergarten_activity.view', 'kindergarten_activity.log',
+  'guardian_links.view', 'guardian_links.manage'
 ];
 
 const DEFAULT_ROLE_PERMISSIONS = {
@@ -37,7 +38,13 @@ const DEFAULT_ROLE_PERMISSIONS = {
   // surface. Certificate issuance and kindergarten activity logging are
   // staff-side actions, not granted here.
   learner: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view'],
-  guardian: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view']
+  // guardian_links.view lets a guardian look up which learners they're
+  // linked to (lib/ownGuardianLearners.js needs this for row scoping) —
+  // not .manage, since linking/unlinking a child is a staff-side action.
+  guardian: [
+    'attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view',
+    'guardian_links.view'
+  ]
 };
 
 async function seedDefaultPermissions(client) {
