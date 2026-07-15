@@ -1,5 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
-const TENANT_DOMAIN = import.meta.env.VITE_TENANT_DOMAIN;
+const ENV_TENANT_DOMAIN = import.meta.env.VITE_TENANT_DOMAIN;
+const TENANT_DOMAIN_STORAGE_KEY = 'onecampus.tenantDomain';
 
 let authToken = null;
 let refreshPromise = null; // de-dupes concurrent refresh attempts (see refreshAccessToken)
@@ -11,6 +12,21 @@ export function setAuthToken(token) {
   authToken = token;
 }
 
+// A tenant typed into the login/register form at runtime — this app is one
+// build serving every tenant (unlike VITE_TENANT_DOMAIN, which is baked in
+// at build time for single-tenant local dev). Persisted so a page reload on
+// the tenant login/app routes still targets the right tenant. Real
+// production deployments that route tenants by Host header don't need this
+// at all; it's only consulted as a fallback.
+export function setTenantDomain(domain) {
+  if (domain) localStorage.setItem(TENANT_DOMAIN_STORAGE_KEY, domain);
+  else localStorage.removeItem(TENANT_DOMAIN_STORAGE_KEY);
+}
+
+export function getTenantDomain() {
+  return localStorage.getItem(TENANT_DOMAIN_STORAGE_KEY) || ENV_TENANT_DOMAIN || '';
+}
+
 class ApiError extends Error {
   constructor(message, status, details) {
     super(message);
@@ -20,7 +36,8 @@ class ApiError extends Error {
 }
 
 function tenantHeaders() {
-  return TENANT_DOMAIN ? { 'x-tenant-domain': TENANT_DOMAIN } : {};
+  const domain = getTenantDomain();
+  return domain ? { 'x-tenant-domain': domain } : {};
 }
 
 // The csrfToken cookie is deliberately not httpOnly (see server/lib/

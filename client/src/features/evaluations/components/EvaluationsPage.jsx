@@ -16,7 +16,7 @@ export function EvaluationsPage() {
       key: 'name',
       header: 'Name',
       render: (row) => (
-        <Link to={`/evaluations/${row.id}`} className="font-semibold text-accent-dark hover:underline">
+        <Link to={`/app/evaluations/${row.id}`} className="font-semibold text-accent-dark hover:underline">
           {row.name}
         </Link>
       )

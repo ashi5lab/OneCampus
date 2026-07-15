@@ -58,7 +58,7 @@ export function ScoreGradingRoster() {
       <div className="mb-6 flex items-start justify-between">
         <div>
           <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            <Link to="/evaluations" className="hover:underline">Exams</Link> / Scores
+            <Link to="/app/evaluations" className="hover:underline">Exams</Link> / Scores
           </div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Record Scores</h1>
         </div>

@@ -26,6 +26,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Platform routes (self-serve tenant registration + super admin management)
+// operate on the public schema directly and must work with no tenant
+// resolved yet — mounted before tenantResolver so it never runs for them.
+const platformRoutes = require('./modules/platform/routes');
+app.use('/api/v1/platform', platformRoutes);
+
 // Resolve the tenant, then pin a dedicated DB connection to that tenant's schema
 app.use(tenantResolver);
 app.use(tenantDb);

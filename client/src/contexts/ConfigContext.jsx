@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { apiClient } from '../lib/apiClient';
 import { resolveVocabulary } from '../lib/vocabulary';
 
@@ -20,13 +20,23 @@ export function ConfigProvider({ children }) {
     () => localStorage.getItem(THEME_STORAGE_KEY) || 'slate'
   );
 
-  useEffect(() => {
-    apiClient
+  // Exposed as reloadConfig so the tenant login page can re-fetch once the
+  // user's chosen tenant domain is actually known to be valid (right after
+  // a successful login) — the mount-time fetch below only knows whatever
+  // domain was resolved before the user typed/confirmed one (env default,
+  // or a domain persisted from a previous session).
+  const loadConfig = useCallback(() => {
+    setLoading(true);
+    return apiClient
       .get('/tenant/config')
       .then((res) => setConfig(res.data))
       .catch((err) => setError(err))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadConfig();
+  }, [loadConfig]);
 
   useEffect(() => {
     const className = THEME_CLASS_BY_KEY[themeKey] || THEME_CLASS_BY_KEY.slate;
@@ -43,6 +53,7 @@ export function ConfigProvider({ children }) {
     config,
     loading,
     error,
+    reloadConfig: loadConfig,
     vocabulary,
     t: (key) => vocabulary[key] || key,
     hasModule: (moduleName) => (config?.active_modules || []).includes(moduleName),

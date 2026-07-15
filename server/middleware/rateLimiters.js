@@ -15,4 +15,26 @@ const loginRateLimiter = rateLimit({
   message: { error: 'Too many login attempts. Try again later.' }
 });
 
-module.exports = { loginRateLimiter };
+// Super admin login isn't tenant-scoped (there's only one, global), so it's
+// keyed purely by IP.
+const superAdminLoginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
+  message: { error: 'Too many login attempts. Try again later.' }
+});
+
+// Loose limit on self-serve tenant registration — just enough to stop a
+// trivial spam script, not a real anti-abuse control.
+const tenantRegisterRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
+  message: { error: 'Too many registration attempts. Try again later.' }
+});
+
+module.exports = { loginRateLimiter, superAdminLoginRateLimiter, tenantRegisterRateLimiter };

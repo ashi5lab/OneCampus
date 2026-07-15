@@ -3,30 +3,32 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const db = require('../config/db');
 const { seedDefaultPermissions } = require('../lib/permissions');
+const { defaultConfigForOrgType, schemaNameForDomain } = require('../lib/moduleDefaults');
+
+// Creates the Postgres schema for a tenant and runs the DDL + default
+// permission seed inside it. Shared by the CLI flow below (which also
+// inserts the public.onec_tenants row itself) and
+// server/modules/platform/controller.js's tenant-approval flow (where the
+// onec_tenants row already exists, created 'pending' at registration time —
+// only the schema itself is created here, on approval).
+//
+// `client` must already be inside a transaction the caller controls.
+async function provisionSchema(client, schemaName) {
+  await client.query(`CREATE SCHEMA "${schemaName}"`);
+
+  const schemaSqlPath = path.join(__dirname, 'tenant_schema.sql');
+  const schemaSql = fs.readFileSync(schemaSqlPath, 'utf-8');
+
+  // Set search_path to only this schema to ensure tables are created there
+  await client.query(`SET search_path TO "${schemaName}"`);
+  await client.query(schemaSql);
+
+  await seedDefaultPermissions(client);
+}
 
 async function provisionTenant({ domain, name, type }) {
-  let activeModules = [];
-
-  if (type === 'kindergarten') {
-    activeModules = ['attendance', 'kindergarten_activity', 'messaging'];
-  } else if (type === 'school') {
-    activeModules = ['attendance', 'exams', 'marks', 'messaging', 'certificates'];
-  } else if (type === 'college') {
-    activeModules = ['attendance', 'exams', 'marks', 'course_credits', 'certificates'];
-  } else {
-    throw new Error('Invalid institution type. Must be kindergarten, school, or college.');
-  }
-
-  const config = {
-    active_modules: activeModules,
-    branding: { primaryColor: '#4f46e5', logoUrl: '/logo.png' },
-    vocabulary_override: {}
-  };
-
-  const schemaName = `tenant_${domain.replace(/[^a-zA-Z0-9]/g, '_')}`;
-  if (!/^[a-zA-Z0-9_]+$/.test(schemaName)) {
-    throw new Error('Generated schema name contains unsafe characters.');
-  }
+  const config = defaultConfigForOrgType(type);
+  const schemaName = schemaNameForDomain(domain);
 
   const client = await db.getPool().connect();
 
@@ -35,28 +37,15 @@ async function provisionTenant({ domain, name, type }) {
 
     // 1. Insert into public.onec_tenants
     const insertTenantText = `
-      INSERT INTO public.onec_tenants (domain, schema_name, org_name, org_type, config)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO public.onec_tenants (domain, schema_name, org_name, org_type, config, status, provisioned_at)
+      VALUES ($1, $2, $3, $4, $5, 'approved', CURRENT_TIMESTAMP)
       RETURNING id;
     `;
     const insertTenantValues = [domain, schemaName, name, type, config];
     await client.query(insertTenantText, insertTenantValues);
 
-    // 2. CREATE SCHEMA <schemaName>
-    await client.query(`CREATE SCHEMA "${schemaName}"`);
-
-    // 3. Run the schema DDL inside that schema
-    const schemaSqlPath = path.join(__dirname, 'tenant_schema.sql');
-    const schemaSql = fs.readFileSync(schemaSqlPath, 'utf-8');
-
-    // Set search_path to only this schema to ensure tables are created there
-    await client.query(`SET search_path TO "${schemaName}"`);
-    
-    // Execute DDL
-    await client.query(schemaSql);
-
-    // 4. Seed default role -> permission mapping (Phase 7)
-    await seedDefaultPermissions(client);
+    // 2-4. Create schema, run DDL, seed default permissions
+    await provisionSchema(client, schemaName);
 
     await client.query('COMMIT');
     console.log(`Successfully provisioned tenant: ${domain} (Schema: ${schemaName})`);
@@ -86,3 +75,4 @@ if (require.main === module) {
 }
 
 module.exports = provisionTenant;
+module.exports.provisionSchema = provisionSchema;
