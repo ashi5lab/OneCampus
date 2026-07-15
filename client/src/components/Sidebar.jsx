@@ -49,7 +49,8 @@ export function Sidebar({ isOpen, onClose }) {
     can('library.view') && { to: '/app/library', label: 'Library' },
     can('assignments.view') && { to: '/app/assignments', label: 'Assignments' },
     can('online_exams.view') && { to: '/app/online-exams', label: 'Online Exams' },
-    hasModule('messaging') && can('messages.view') && { to: '/app/messages', label: 'Messages', showUnreadBadge: true }
+    hasModule('messaging') && can('messages.view') && { to: '/app/messages', label: 'Messages', showUnreadBadge: true },
+    can('reports.view') && { to: '/app/reports', label: 'Reports' }
   ].filter(Boolean);
 
   const messagingEnabled = hasModule('messaging') && can('messages.view');

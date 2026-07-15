@@ -25,7 +25,8 @@ const ALL_PERMISSIONS = [
   'notices.view', 'notices.manage',
   'library.view', 'library.manage',
   'assignments.view', 'assignments.manage', 'assignments.grade', 'assignments.submit',
-  'online_exams.view', 'online_exams.manage', 'online_exams.grade', 'online_exams.take'
+  'online_exams.view', 'online_exams.manage', 'online_exams.grade', 'online_exams.take',
+  'reports.view'
 ];
 
 // messages.view/.send are granted to every role below — unlike the
