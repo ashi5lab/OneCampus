@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { getTenantDomain, setTenantDomain } from '../../../lib/apiClient';
+import { InstallAppPrompt } from '../../../components/InstallAppPrompt';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -14,29 +15,8 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   const redirectTo = location.state?.from?.pathname || '/app';
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  async function handleInstallClick() {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-    }
-  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -101,15 +81,7 @@ export function LoginPage() {
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
 
-        {deferredPrompt && (
-          <button
-            type="button"
-            onClick={handleInstallClick}
-            className="mt-3 w-full rounded bg-accent py-2.5 text-sm font-semibold text-accent-ink hover:opacity-90"
-          >
-            Install OneCampus App
-          </button>
-        )}
+        <InstallAppPrompt className="mt-3" />
 
         <div className="mt-5 flex justify-between text-xs">
           <Link to="/" className="font-semibold text-ink-500 hover:text-ink-900">
