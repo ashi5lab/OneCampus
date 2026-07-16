@@ -26,7 +26,8 @@ const ALL_PERMISSIONS = [
   'library.view', 'library.manage',
   'assignments.view', 'assignments.manage', 'assignments.grade', 'assignments.submit',
   'online_exams.view', 'online_exams.manage', 'online_exams.grade', 'online_exams.take',
-  'reports.view'
+  'reports.view',
+  'users.manage_passwords'
 ];
 
 // messages.view/.send are granted to every role below — unlike the
@@ -38,7 +39,10 @@ const ALL_PERMISSIONS = [
 // one permission pair with no row-scoping concern at all.
 const DEFAULT_ROLE_PERMISSIONS = {
   admin: ALL_PERMISSIONS,
-  staff: ALL_PERMISSIONS,
+  // Everything except resetting other users' passwords — that stays an
+  // admin-only power by default (a tenant can still grant it to staff by
+  // inserting the row into onec_role_permissions).
+  staff: ALL_PERMISSIONS.filter((p) => p !== 'users.manage_passwords'),
   instructor: [
     'units.view', 'cohorts.view', 'modules.view', 'instructors.view',
     'learners.view', 'guardians.view',

@@ -2,16 +2,9 @@ import { NavLink } from 'react-router-dom';
 import { useConfig } from '../contexts/ConfigContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUnreadCount } from '../features/messages/hooks/useMessages';
+import { useMyProfile } from '../features/profile/hooks/useProfile';
 import { ThemeSwitcher } from './ThemeSwitcher';
-
-function initials(name) {
-  return (name || '')
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
+import { Avatar } from './Avatar';
 
 const navItemClass = ({ isActive }) =>
   `mb-0.5 flex items-center gap-2.5 rounded px-3 py-2 text-[13.5px] font-medium ${
@@ -61,6 +54,9 @@ export function Sidebar({ isOpen, onClose }) {
 
   const messagingEnabled = hasModule('messaging') && can('messages.view');
   const { data: unreadCount } = useUnreadCount({ enabled: messagingEnabled });
+  // For the clickable account block at the bottom — brings in the profile
+  // picture, which auth/me's session payload doesn't carry.
+  const { data: myProfile } = useMyProfile();
 
   return (
     <>
@@ -128,13 +124,19 @@ export function Sidebar({ isOpen, onClose }) {
       <div className="mt-auto space-y-3 pt-3">
         <ThemeSwitcher />
         <div className="flex items-center gap-2.5 border-t border-sidebar-border px-1 pt-3">
-          <div className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-full bg-ink-700 text-xs font-semibold">
-            {initials(user?.username)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-xs font-semibold">{user?.username}</div>
-            <div className="text-[11px] capitalize text-sidebar-text">{user?.role}</div>
-          </div>
+          {/* Clicking the avatar/name opens the account screen (picture +
+              change password) — see features/profile/components/ProfilePage. */}
+          <NavLink
+            to="/app/profile"
+            onClick={onClose}
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded p-1 hover:bg-sidebar-hover"
+          >
+            <Avatar name={user?.username} src={myProfile?.profile_picture_url} size={30} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-semibold">{user?.username}</span>
+              <span className="block text-[11px] capitalize text-sidebar-text">{user?.role}</span>
+            </span>
+          </NavLink>
           <button
             onClick={logout}
             className="text-[11px] font-semibold text-sidebar-text hover:text-sidebar-textStrong"

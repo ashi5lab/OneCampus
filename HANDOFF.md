@@ -118,6 +118,16 @@ This closes out every item from the original "add few more" feature request (pro
 
 ---
 
+## 1i. This session: account/profile screen + password changes (self + admin reset)
+
+Extends `server/modules/profile` (previously just picture upload) into every user's account surface: `GET /profile/me` (own `onec_users` row — kept separate from `GET /auth/me` so the auth hot path stays lean), `PUT /profile/password` (own password change: bcrypt-verifies `current_password` first, min 8 chars, audit-logged), and the admin side — `GET /profile/users` + `PUT /profile/users/:userId/password` (no current-password check; audit-logged with the acting admin's id), gated by a new `users.manage_passwords` permission granted **only to `admin`** by default (`staff` is now `ALL_PERMISSIONS.filter(...)` instead of the full list — first permission ever excluded from staff; a tenant can re-grant via an `onec_role_permissions` insert). Migration `013` retrofits the admin row.
+
+Frontend: `client/src/features/profile/components/ProfilePage.jsx` at `/app/profile` (no route permission gate — everything visible touches only the caller's own row): `ProfilePictureUploader` (reused from the learner/instructor profile pages, Cloudinary-backed), account details, change-own-password card, plus an admin-only "Reset a User's Password" card (`UserSearchSelect` over all tenant users). Reached by clicking the avatar/name block at the bottom of the sidebar, which is now a `NavLink` and shows the actual profile picture (`useMyProfile` + `Avatar`) instead of bare initials. Learners/instructors get a "View my academic profile →" cross-link to their insights page.
+
+**Must run before the admin reset works**: apply `server/migrations/013_add_users_manage_passwords.sql` to each existing tenant schema (everything else on this screen — picture, own password change — needs no migration).
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):
