@@ -15,10 +15,13 @@ if (isConfigured) {
 // every caller must pass a `folder` starting with "onecampus/" (enforced by
 // callers, not here) so uploads from this app stay identifiable and never
 // collide with another project's assets in the same account.
-function uploadBuffer(buffer, { folder, publicId }) {
+// resourceType defaults to 'image' (profile pictures); audio uploads
+// (voicemail recordings) must pass 'video' — that's Cloudinary's resource
+// type for all audio/video media, there is no separate 'audio' type.
+function uploadBuffer(buffer, { folder, publicId, resourceType = 'image' }) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder, public_id: publicId, overwrite: true, resource_type: 'image' },
+      { folder, public_id: publicId, overwrite: true, resource_type: resourceType },
       (err, result) => (err ? reject(err) : resolve(result))
     );
     stream.end(buffer);

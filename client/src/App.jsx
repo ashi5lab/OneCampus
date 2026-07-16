@@ -32,6 +32,7 @@ import { OnlineExamDetailPage } from './features/onlineExams/components/OnlineEx
 import { ExamsPage } from './features/exams/components/ExamsPage';
 import { ReportsPage } from './features/reports/components/ReportsPage';
 import { ProfilePage } from './features/profile/components/ProfilePage';
+import { BroadcastPage } from './features/broadcast/components/BroadcastPage';
 
 export default function App() {
   return (
@@ -146,6 +147,14 @@ export default function App() {
           element={
             <RequirePermission permission="reports.view">
               <ReportsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="broadcast"
+          element={
+            <RequirePermission permission="broadcast.view">
+              <BroadcastPage />
             </RequirePermission>
           }
         />

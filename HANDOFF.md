@@ -128,6 +128,18 @@ Frontend: `client/src/features/profile/components/ProfilePage.jsx` at `/app/prof
 
 ---
 
+## 1j. This session: broadcast module (SMS + voicemail)
+
+`server/modules/broadcast`, `onec_broadcast_configs` + `onec_broadcasts` (migration `014`). **No SMS/voice provider is integrated yet — by design**: each channel's outbound HTTP call is fully described by a per-tenant config row (URL, `POST`-with-payload or `GET`-with-params, headers, and `{{variable}}` templates — static variables like `{{apikey}}` saved in the config, plus runtime `{{phone}}`/`{{message}}`/`{{voice_url}}` substituted per recipient at send time), so wiring the real provider later is purely a Configuration-panel change. Sends fail with a clear 400 until a channel is configured *and* activated.
+
+Voicemail flow: browser-side `MediaRecorder` (30s hard cap client-side; `duration_seconds ≤ 30` validated server-side, no audio decoding) → Cloudinary upload (`onecampus/<tenant_schema>/voicemails/`, `resource_type: 'video'` — `lib/cloudinary.js`'s `uploadBuffer` gained a `resourceType` option for this) → `pending_approval` → admin/staff approve/reject (optional reason) → approved recordings shareable to `all`/`cohort`/`users` audiences, re-shareable to different audiences. SMS has no approval step — composed and dispatched directly to the same audience shapes. Phone resolution per role: `instructors.phone` → `guardians.phone` → `learners.meta->>'phone'`; recipients with no phone are counted as `skipped_no_phone`, not errors. Dispatch is sequential with a 10s timeout per call — fine at school scale, would need a queue for very large tenants.
+
+Permissions: `broadcast.view`/`broadcast.manage` (admin/staff/instructor), `broadcast.approve` (admin/staff), `broadcast.configure` (**admin only** — the config holds provider credentials; staff's default set is now `ALL_PERMISSIONS` minus both this and `users.manage_passwords`). Learners/guardians get nothing — they're recipients. Frontend: `client/src/features/broadcast/` — `BroadcastPage` with SMS/Voicemail tabs + per-channel "Configure API" button (key-value editors for headers/payload/params/variables), `AudiencePicker` (all/cohort/specific-users with chips), `VoicemailRecorder`, approval actions inline in the voicemail table.
+
+**Must run before this works**: apply `server/migrations/014_add_broadcast.sql` to each existing tenant schema.
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):

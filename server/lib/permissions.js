@@ -27,7 +27,8 @@ const ALL_PERMISSIONS = [
   'assignments.view', 'assignments.manage', 'assignments.grade', 'assignments.submit',
   'online_exams.view', 'online_exams.manage', 'online_exams.grade', 'online_exams.take',
   'reports.view',
-  'users.manage_passwords'
+  'users.manage_passwords',
+  'broadcast.view', 'broadcast.manage', 'broadcast.approve', 'broadcast.configure'
 ];
 
 // messages.view/.send are granted to every role below — unlike the
@@ -39,10 +40,11 @@ const ALL_PERMISSIONS = [
 // one permission pair with no row-scoping concern at all.
 const DEFAULT_ROLE_PERMISSIONS = {
   admin: ALL_PERMISSIONS,
-  // Everything except resetting other users' passwords — that stays an
-  // admin-only power by default (a tenant can still grant it to staff by
-  // inserting the row into onec_role_permissions).
-  staff: ALL_PERMISSIONS.filter((p) => p !== 'users.manage_passwords'),
+  // Everything except resetting other users' passwords and editing the
+  // broadcast API config (which holds provider credentials) — both stay
+  // admin-only powers by default (a tenant can still grant either to staff
+  // by inserting the row into onec_role_permissions).
+  staff: ALL_PERMISSIONS.filter((p) => !['users.manage_passwords', 'broadcast.configure'].includes(p)),
   instructor: [
     'units.view', 'cohorts.view', 'modules.view', 'instructors.view',
     'learners.view', 'guardians.view',
@@ -52,7 +54,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
     'messages.view', 'messages.send',
     'notices.view', 'library.view',
     'assignments.view', 'assignments.manage', 'assignments.grade',
-    'online_exams.view', 'online_exams.manage', 'online_exams.grade'
+    'online_exams.view', 'online_exams.manage', 'online_exams.grade',
+    'broadcast.view', 'broadcast.manage'
   ],
   // Coarse-grained on purpose (see the row-level-scoping note above) — kept
   // to just enough to view their own records, not the full roster/management

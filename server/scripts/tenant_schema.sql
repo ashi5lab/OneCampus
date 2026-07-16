@@ -261,6 +261,45 @@ CREATE TABLE onec_exam_answers (
     UNIQUE(submission_id, question_id)
 );
 
+-- Broadcast (SMS + voicemail) — see server/modules/broadcast. The actual
+-- SMS/voice provider isn't integrated yet: each channel's outbound HTTP
+-- call is fully described by a per-tenant config row (URL, method,
+-- headers, payload/params templates with {{variable}} placeholders), so
+-- wiring a real provider later is a config change, not a code change.
+CREATE TABLE onec_broadcast_configs (
+    id SERIAL PRIMARY KEY,
+    channel VARCHAR(20) UNIQUE NOT NULL,               -- 'sms' | 'voicemail'
+    api_url VARCHAR(500),
+    http_method VARCHAR(10) NOT NULL DEFAULT 'POST',   -- 'POST' | 'GET'
+    headers JSONB NOT NULL DEFAULT '{}',
+    payload_template JSONB NOT NULL DEFAULT '{}',      -- POST body; values may contain {{variables}}
+    params_template JSONB NOT NULL DEFAULT '{}',       -- GET query params; values may contain {{variables}}
+    variables JSONB NOT NULL DEFAULT '{}',             -- static name -> value, substituted into the templates
+    is_active BOOLEAN NOT NULL DEFAULT false,
+    updated_by INT REFERENCES onec_users(id),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE onec_broadcasts (
+    id SERIAL PRIMARY KEY,
+    channel VARCHAR(20) NOT NULL,                      -- 'sms' | 'voicemail'
+    message TEXT,                                      -- SMS body
+    voice_url VARCHAR(500),                            -- voicemail audio (Cloudinary)
+    duration_seconds INT,
+    -- voicemail: pending_approval -> approved | rejected, then -> sent
+    -- sms: written as sent/failed directly (no approval step)
+    status VARCHAR(30) NOT NULL DEFAULT 'pending_approval',
+    audience_type VARCHAR(20),                         -- 'all' | 'cohort' | 'users'
+    audience_ids JSONB,                                -- cohort ids or user ids, per audience_type
+    send_result JSONB,                                 -- { sent, failed, skipped_no_phone, ... }
+    created_by INT REFERENCES onec_users(id),
+    approved_by INT REFERENCES onec_users(id),
+    approved_at TIMESTAMP,
+    rejection_reason TEXT,
+    sent_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Role -> permission mapping (Phase 7). Presence of a (role, permission) row
 -- means that role has that permission for this tenant. Absence means it
 -- doesn't — this is an allow-list, not a deny-list. Tenant-overridable: a
