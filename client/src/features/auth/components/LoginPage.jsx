@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
@@ -6,7 +6,7 @@ import { getTenantDomain, setTenantDomain } from '../../../lib/apiClient';
 import { InstallAppPrompt } from '../../../components/InstallAppPrompt';
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, initializing } = useAuth();
   const { config, reloadConfig } = useConfig();
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,6 +17,19 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const redirectTo = location.state?.from?.pathname || '/app';
+
+  // The installed PWA icon frequently reopens straight to /login (whatever
+  // page "Add to Home Screen" was tapped from — often this exact page,
+  // since the install button lives here), not the manifest's start_url.
+  // AuthContext already silently redeemed the httpOnly refresh-token
+  // cookie by the time `initializing` flips false; without this, a
+  // perfectly valid session would sit stuck on the login form forever,
+  // which reads as "the login doesn't persist" even though it does.
+  useEffect(() => {
+    if (!initializing && isAuthenticated) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [initializing, isAuthenticated, navigate, redirectTo]);
 
   async function handleSubmit(e) {
     e.preventDefault();
