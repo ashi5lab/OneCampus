@@ -4,6 +4,10 @@ const { logAudit } = require('../../lib/audit');
 const { parsePagination } = require('../../lib/pagination');
 const { hasPermission } = require('../../lib/permissions');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
+const { getCallerDesignation } = require('../../lib/designation');
+
+const classHeadSchema = z.object({ is_class_head: z.boolean() });
+const schoolHeadSchema = z.object({ is_school_head: z.boolean() });
 
 const learnerCreateSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -254,4 +258,71 @@ async function getProfile(req, res) {
   }
 }
 
-module.exports = { getAll, getById, create, update, remove, getProfile };
+// "Class head" — one of possibly several student representatives for their
+// own cohort (their cohort_id already determines which class this applies
+// to, so there's no separate join table — see server/migrations, this
+// deliberately needed none). Stored in meta rather than a new column, same
+// as gender/designation elsewhere in this app.
+async function setClassHead(req, res) {
+  try {
+    const { id } = req.params;
+    const parsed = classHeadSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+
+    const result = await req.db.query(
+      `UPDATE onec_learners SET meta = jsonb_set(meta, '{is_class_head}', to_jsonb($1::boolean)) WHERE id = $2 RETURNING *`,
+      [parsed.data.is_class_head, id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+
+    logAudit(req, 'learners.class_head_set', { learner_id: id, is_class_head: parsed.data.is_class_head });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// "School head" — unlike class head, singular tenant-wide (setting one
+// clears whoever held it before), and restricted to the principal
+// specifically per spec (not just anyone with learners.manage, which the
+// route itself requires as the coarser gate — admin bypasses this narrower
+// check since they can already do everything).
+async function setSchoolHead(req, res) {
+  try {
+    const { id } = req.params;
+    const parsed = schoolHeadSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+
+    if (req.user.role !== 'admin') {
+      const designation = await getCallerDesignation(req);
+      if (designation !== 'principal') return res.status(403).json({ error: 'Only the principal can assign the school head' });
+    }
+
+    await req.db.query('BEGIN');
+    try {
+      if (parsed.data.is_school_head) {
+        await req.db.query(`UPDATE onec_learners SET meta = meta - 'is_school_head' WHERE meta->>'is_school_head' = 'true'`);
+      }
+      const result = await req.db.query(
+        `UPDATE onec_learners SET meta = jsonb_set(meta, '{is_school_head}', to_jsonb($1::boolean)) WHERE id = $2 RETURNING *`,
+        [parsed.data.is_school_head, id]
+      );
+      if (result.rows.length === 0) {
+        await req.db.query('ROLLBACK');
+        return res.status(404).json({ error: 'Not found' });
+      }
+      await req.db.query('COMMIT');
+      logAudit(req, 'learners.school_head_set', { learner_id: id, is_school_head: parsed.data.is_school_head });
+      res.json({ data: result.rows[0] });
+    } catch (err) {
+      await req.db.query('ROLLBACK');
+      throw err;
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getAll, getById, create, update, remove, getProfile, setClassHead, setSchoolHead };

@@ -11,6 +11,10 @@ export function AuthProvider({ children }) {
   // caller's role, null otherwise. Lets the frontend link to "my profile"
   // (see LearnerProfilePage/InstructorProfilePage) without a separate call.
   const [profile, setProfile] = useState(null);
+  // 'principal' | 'vice_principal' | null — see server/lib/designation.js.
+  // Lets the frontend gate principal-only actions (e.g. naming the school
+  // head) without guessing from role/permissions alone.
+  const [designation, setDesignation] = useState(null);
   // True until the initial silent-session-restore attempt finishes — needed
   // so ProtectedRoute doesn't redirect to /login before we've even asked
   // the server whether the httpOnly refresh-token cookie is still valid.
@@ -28,6 +32,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     setPermissions([]);
     setProfile(null);
+    setDesignation(null);
   }, []);
 
   const refreshPermissions = useCallback(async () => {
@@ -35,9 +40,11 @@ export function AuthProvider({ children }) {
       const res = await apiClient.get('/auth/me');
       setPermissions(res.data.permissions || []);
       setProfile(res.data.profile || null);
+      setDesignation(res.data.designation || null);
     } catch {
       setPermissions([]);
       setProfile(null);
+      setDesignation(null);
     }
   }, []);
 
@@ -76,7 +83,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ token, user, isAuthenticated: !!token, initializing, login, logout, permissions, can, profile }}
+      value={{ token, user, isAuthenticated: !!token, initializing, login, logout, permissions, can, profile, designation }}
     >
       {children}
     </AuthContext.Provider>

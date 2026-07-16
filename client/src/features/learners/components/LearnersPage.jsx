@@ -7,7 +7,7 @@ import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { SearchSelect } from '../../../components/SearchSelect';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
-import { useLearners, useCreateLearner, useUpdateLearner, useDeleteLearner } from '../hooks/useLearners';
+import { useLearners, useCreateLearner, useUpdateLearner, useDeleteLearner, useSetClassHead, useSetSchoolHead } from '../hooks/useLearners';
 import { LearnerFormModal } from './LearnerFormModal';
 
 const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive' };
@@ -19,8 +19,12 @@ function initials(first, last) {
 
 export function LearnersPage() {
   const { t } = useConfig();
-  const { can } = useAuth();
+  const { can, user, designation } = useAuth();
   const { data: cohorts } = useCohorts();
+  const canManage = can('learners.manage');
+  const canAssignSchoolHead = canManage && (user?.role === 'admin' || designation === 'principal');
+  const setClassHead = useSetClassHead();
+  const setSchoolHead = useSetSchoolHead();
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -65,15 +69,44 @@ export function LearnersPage() {
     // Previously showed the raw cohort_id — getAll now joins onec_cohorts
     // and returns cohort_name for exactly this.
     { key: 'cohort', header: t('cohort'), render: (row) => row.cohort_name || '—' },
-    { key: 'gender', header: 'Gender', render: (row) => GENDER_LABEL[row.meta?.gender] || '—' }
+    { key: 'gender', header: 'Gender', render: (row) => GENDER_LABEL[row.meta?.gender] || '—' },
+    {
+      key: 'roles',
+      header: 'Roles',
+      render: (row) => (
+        <div className="flex flex-wrap gap-1">
+          {row.meta?.is_school_head && (
+            <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[10.5px] font-bold text-accent-dark">School Head</span>
+          )}
+          {row.meta?.is_class_head && (
+            <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[10.5px] font-bold text-ink-700">Class Head</span>
+          )}
+          {!row.meta?.is_school_head && !row.meta?.is_class_head && '—'}
+        </div>
+      )
+    }
   ];
 
-  if (can('learners.manage')) {
+  if (canManage) {
     columns.push({
       key: 'actions',
       header: '',
       render: (row) => (
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-wrap justify-end gap-3">
+          <button
+            onClick={() => setClassHead.mutate({ id: row.id, is_class_head: !row.meta?.is_class_head })}
+            className="text-xs font-semibold text-ink-500 hover:text-ink-900"
+          >
+            {row.meta?.is_class_head ? 'Unset Class Head' : 'Make Class Head'}
+          </button>
+          {canAssignSchoolHead && (
+            <button
+              onClick={() => setSchoolHead.mutate({ id: row.id, is_school_head: !row.meta?.is_school_head })}
+              className="text-xs font-semibold text-ink-500 hover:text-ink-900"
+            >
+              {row.meta?.is_school_head ? 'Unset School Head' : 'Make School Head'}
+            </button>
+          )}
           <button onClick={() => setEditingLearner(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
           <button
             onClick={() => {
