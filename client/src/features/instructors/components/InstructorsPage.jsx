@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -7,14 +7,27 @@ import { DataTable } from '../../../components/DataTable';
 import { useInstructors, useCreateInstructor, useUpdateInstructor, useDeleteInstructor } from '../hooks/useInstructors';
 import { InstructorFormModal } from './InstructorFormModal';
 
+const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
+
 export function InstructorsPage() {
   const { t } = useConfig();
   const { can } = useAuth();
-  const { data: instructors, isLoading, error } = useInstructors();
+
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [gender, setGender] = useState('');
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
+
+  const filters = { search: search || undefined, gender: gender || undefined };
+  const { data: instructors, isLoading, error } = useInstructors({ filters });
   const createInstructor = useCreateInstructor();
   const updateInstructor = useUpdateInstructor();
   const deleteInstructor = useDeleteInstructor();
-  
+
   const [showForm, setShowForm] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState(null);
 
@@ -29,7 +42,8 @@ export function InstructorsPage() {
         </Link>
       )
     },
-    { key: 'phone', header: 'Phone', render: (row) => row.phone || '—' }
+    { key: 'phone', header: 'Phone', render: (row) => row.phone || '—' },
+    { key: 'gender', header: 'Gender', render: (row) => GENDER_LABEL[row.meta?.gender] || '—' }
   ];
 
   if (can('instructors.manage')) {
@@ -39,12 +53,12 @@ export function InstructorsPage() {
       render: (row) => (
         <div className="flex justify-end gap-3">
           <button onClick={() => setEditingInstructor(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
-          <button 
+          <button
             onClick={() => {
               if (window.confirm(`Are you sure you want to delete ${row.first_name} ${row.last_name}?`)) {
                 deleteInstructor.mutate(row.id);
               }
-            }} 
+            }}
             className="text-xs font-semibold text-danger hover:opacity-80"
           >
             Delete
@@ -79,13 +93,46 @@ export function InstructorsPage() {
         <StatCard label={`Total ${t('instructors')}`} value={isLoading ? '—' : instructors.length} />
       </div>
 
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <label className="min-w-[200px] flex-1">
+          <div className="mb-1 text-xs font-semibold text-ink-700">Search</div>
+          <input
+            className="input"
+            placeholder="Search by name or staff ID…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </label>
+        <label className="w-[140px]">
+          <div className="mb-1 text-xs font-semibold text-ink-700">Gender</div>
+          <select className="input" value={gender} onChange={(e) => setGender(e.target.value)}>
+            <option value="">All</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        {(searchInput || gender) && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchInput('');
+              setGender('');
+            }}
+            className="rounded border border-border px-3 py-2 text-xs font-semibold text-ink-700 hover:bg-surface-muted"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && (
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
         {instructors && (
-          <DataTable columns={columns} rows={instructors} rowKey={(row) => row.id} />
+          <DataTable columns={columns} rows={instructors} rowKey={(row) => row.id} emptyMessage="No matching instructors." />
         )}
       </div>
 

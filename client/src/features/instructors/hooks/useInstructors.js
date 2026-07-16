@@ -2,9 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { instructorsApi } from '../services/instructorsApi';
 
 // `enabled: false` lets a caller without instructors.view skip the request
-// entirely (it would just 403) — see DashboardPage.
-export function useInstructors({ enabled = true } = {}) {
-  return useQuery({ queryKey: ['instructors'], queryFn: instructorsApi.list, enabled });
+// entirely (it would just 403) — see DashboardPage. `filters`
+// (search/gender) are forwarded to the query string.
+export function useInstructors({ enabled = true, filters = {} } = {}) {
+  return useQuery({ queryKey: ['instructors', filters], queryFn: () => instructorsApi.list(filters), enabled });
 }
 
 export function useCreateInstructor() {

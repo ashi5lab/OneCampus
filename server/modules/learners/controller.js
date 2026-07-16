@@ -27,20 +27,51 @@ const learnerUpdateSchema = z.object({
 });
 
 // ?page=&pageSize= are optional — omitting both returns every row exactly
-// as before pagination existed (see lib/pagination.js).
+// as before pagination existed (see lib/pagination.js). ?search/cohort_id/
+// gender/status are all optional and independently combinable filters.
+// Always joins onec_cohorts so the frontend gets cohort_name instead of a
+// bare cohort_id to display (previously the roster table showed the raw
+// id — see server/modules/learners/README.md).
 async function getAll(req, res) {
   try {
     const { pagination, error } = parsePagination(req.query);
     if (error) return res.status(400).json({ error: 'Invalid pagination parameters', details: error });
 
+    const { search, cohort_id, gender, status } = req.query;
+    const conditions = [];
+    const params = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(l.first_name ILIKE $${params.length} OR l.last_name ILIKE $${params.length} OR l.registry_no ILIKE $${params.length})`);
+    }
+    if (cohort_id) {
+      params.push(cohort_id);
+      conditions.push(`l.cohort_id = $${params.length}`);
+    }
+    if (gender) {
+      params.push(gender);
+      conditions.push(`l.meta->>'gender' = $${params.length}`);
+    }
+    if (status) {
+      params.push(status);
+      conditions.push(`l.status = $${params.length}`);
+    }
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const baseQuery = `FROM onec_learners l LEFT JOIN onec_cohorts c ON l.cohort_id = c.id ${whereClause}`;
+
     if (!pagination) {
-      const result = await req.db.query('SELECT * FROM onec_learners ORDER BY id DESC');
+      const result = await req.db.query(`SELECT l.*, c.name AS cohort_name ${baseQuery} ORDER BY l.id DESC`, params);
       return res.json({ data: result.rows });
     }
 
+    const pageParams = [...params, pagination.limit, pagination.offset];
     const [rows, count] = await Promise.all([
-      req.db.query('SELECT * FROM onec_learners ORDER BY id DESC LIMIT $1 OFFSET $2', [pagination.limit, pagination.offset]),
-      req.db.query('SELECT COUNT(*)::int AS total FROM onec_learners')
+      req.db.query(
+        `SELECT l.*, c.name AS cohort_name ${baseQuery} ORDER BY l.id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+        pageParams
+      ),
+      req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`, params)
     ]);
     return res.json({ data: rows.rows, meta: { total: count.rows[0].total, page: pagination.page, pageSize: pagination.pageSize } });
   } catch (err) {

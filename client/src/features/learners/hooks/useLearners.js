@@ -3,9 +3,11 @@ import { learnersApi } from '../services/learnersApi';
 
 // `enabled: false` lets a caller without learners.view skip the request
 // entirely (it would just 403) instead of firing it and discarding the
-// error — see CertificatesPage/KindergartenActivityPage.
-export function useLearners({ enabled = true } = {}) {
-  return useQuery({ queryKey: ['learners'], queryFn: learnersApi.list, enabled });
+// error — see CertificatesPage/KindergartenActivityPage. `filters`
+// (search/cohort_id/gender/status) are forwarded straight to the query
+// string; omitted/empty ones are dropped by learnersApi's withQuery.
+export function useLearners({ enabled = true, filters = {} } = {}) {
+  return useQuery({ queryKey: ['learners', filters], queryFn: () => learnersApi.list(filters), enabled });
 }
 
 export function useCreateLearner() {

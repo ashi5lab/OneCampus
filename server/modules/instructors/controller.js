@@ -23,20 +23,40 @@ const instructorUpdateSchema = z.object({
 });
 
 // ?page=&pageSize= are optional — omitting both returns every row exactly
-// as before pagination existed (see lib/pagination.js).
+// as before pagination existed (see lib/pagination.js). ?search/gender are
+// independently optional filters (no unit filter — onec_instructors has no
+// unit_id/department relationship in the current schema to filter by).
 async function getAll(req, res) {
   try {
     const { pagination, error } = parsePagination(req.query);
     if (error) return res.status(400).json({ error: 'Invalid pagination parameters', details: error });
 
+    const { search, gender } = req.query;
+    const conditions = [];
+    const params = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(first_name ILIKE $${params.length} OR last_name ILIKE $${params.length} OR staff_id ILIKE $${params.length})`);
+    }
+    if (gender) {
+      params.push(gender);
+      conditions.push(`meta->>'gender' = $${params.length}`);
+    }
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
     if (!pagination) {
-      const result = await req.db.query('SELECT * FROM onec_instructors ORDER BY id DESC');
+      const result = await req.db.query(`SELECT * FROM onec_instructors ${whereClause} ORDER BY id DESC`, params);
       return res.json({ data: result.rows });
     }
 
+    const pageParams = [...params, pagination.limit, pagination.offset];
     const [rows, count] = await Promise.all([
-      req.db.query('SELECT * FROM onec_instructors ORDER BY id DESC LIMIT $1 OFFSET $2', [pagination.limit, pagination.offset]),
-      req.db.query('SELECT COUNT(*)::int AS total FROM onec_instructors')
+      req.db.query(
+        `SELECT * FROM onec_instructors ${whereClause} ORDER BY id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+        pageParams
+      ),
+      req.db.query(`SELECT COUNT(*)::int AS total FROM onec_instructors ${whereClause}`, params)
     ]);
     res.json({ data: rows.rows, meta: { total: count.rows[0].total, page: pagination.page, pageSize: pagination.pageSize } });
   } catch (err) {

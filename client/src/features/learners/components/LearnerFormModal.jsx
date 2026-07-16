@@ -14,13 +14,17 @@ export function LearnerFormModal({ onClose, onSubmit, submitting, submitError, i
     formState: { errors }
   } = useForm({
     resolver: zodResolver(isEdit ? learnerUpdateSchema : learnerFormSchema),
-    defaultValues: initialData || { status: 'active' }
+    defaultValues: initialData ? { ...initialData, gender: initialData.meta?.gender || '' } : { status: 'active' }
   });
 
-  function handleFormSubmit(values) {
+  // `meta` is a JSONB grab-bag (allergies, majors, etc.) — merge the new
+  // gender into whatever was already there instead of overwriting it, so
+  // editing a learner doesn't silently wipe out unrelated meta fields.
+  function handleFormSubmit({ gender, ...values }) {
     onSubmit({
       ...values,
-      cohort_id: values.cohort_id ?? null
+      cohort_id: values.cohort_id ?? null,
+      meta: { ...(initialData?.meta || {}), gender: gender || undefined }
     });
   }
 
@@ -72,6 +76,14 @@ export function LearnerFormModal({ onClose, onSubmit, submitting, submitError, i
             <option value="active">Active</option>
             <option value="pending">Pending</option>
             <option value="inactive">Inactive</option>
+          </select>
+        </Field>
+        <Field label="Gender (optional)" error={errors.gender}>
+          <select className="input w-full" {...register('gender')}>
+            <option value="">Unspecified</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
           </select>
         </Field>
 
