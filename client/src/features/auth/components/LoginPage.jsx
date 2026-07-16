@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
@@ -14,18 +14,35 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   const redirectTo = location.state?.from?.pathname || '/app';
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  async function handleInstallClick() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      // Persist the domain before login so the request (and every request
-      // after it) carries the right x-tenant-domain header — this is what
-      // lets one frontend build serve every tenant in local/dev deploys
-      // that don't route tenants by real subdomains.
       setTenantDomain(domain.trim());
       await login(username, password);
       await reloadConfig();
@@ -83,6 +100,16 @@ export function LoginPage() {
         >
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
+
+        {deferredPrompt && (
+          <button
+            type="button"
+            onClick={handleInstallClick}
+            className="mt-3 w-full rounded bg-accent py-2.5 text-sm font-semibold text-accent-ink hover:opacity-90"
+          >
+            Install OneCampus App
+          </button>
+        )}
 
         <div className="mt-5 flex justify-between text-xs">
           <Link to="/" className="font-semibold text-ink-500 hover:text-ink-900">
