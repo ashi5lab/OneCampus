@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { InstallAppPrompt } from '../../../components/InstallAppPrompt';
 
 export function LandingPage() {
   return (
@@ -43,6 +44,8 @@ export function LandingPage() {
             <div className="mt-1 text-[13px] text-ink-500">Platform administrator access.</div>
           </Link>
         </div>
+
+        <InstallAppPrompt className="mt-3" />
       </div>
     </div>
   );

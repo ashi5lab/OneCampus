@@ -19,7 +19,12 @@ module.exports = {
   // Access-Control-Allow-Origin: * when a request includes credentials.
   CLIENT_ORIGIN: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   ACCESS_TOKEN_TTL: process.env.ACCESS_TOKEN_TTL || '15m',
-  REFRESH_TOKEN_TTL_DAYS: Number(process.env.REFRESH_TOKEN_TTL_DAYS) || 7,
+  // 30 days (was 7) — an installed PWA is used more like a native app than
+  // a browser tab, so forcing a full re-login every week reads as "my
+  // session doesn't persist" even though the refresh-token flow itself is
+  // working correctly. Still fully revocable via logout (see lib/
+  // refreshTokens.js's rotation-on-use).
+  REFRESH_TOKEN_TTL_DAYS: Number(process.env.REFRESH_TOKEN_TTL_DAYS) || 30,
   // Self-registered tenants pick a short slug (e.g. "greenwood") and get
   // `${slug}.${TENANT_BASE_DOMAIN}` as their domain — mirrors the existing
   // dev tenant naming convention (dev.onecampus.local, dev2.onecampus.local).

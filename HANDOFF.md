@@ -150,6 +150,18 @@ Permissions: `broadcast.view`/`broadcast.manage` (admin/staff/instructor), `broa
 
 ---
 
+## 1l. This session: PWA fixes — broken asset references, iOS meta tags, install UX, session-length
+
+The user had already added `vite-plugin-pwa` in a prior commit (`4219732 PWA setup`, not from this AI session) — this entry covers the fixes/additions made on top of that.
+
+**Real bug fixed**: `vite.config.js`'s `includeAssets` listed `favicon.ico`, `apple-touch-icon.png`, `masked-icon.svg` — none of which existed in `client/public/`. `vite-plugin-pwa` silently drops missing entries rather than failing the build, so this shipped with zero effect and, critically, **no `apple-touch-icon`**, which iOS Safari requires (it ignores the web app manifest for "Add to Home Screen" entirely — icon, standalone display mode, and status bar come from `<link rel="apple-touch-icon">` + `apple-mobile-web-app-*` meta tags in `index.html`, none of which existed either). Generated real `apple-touch-icon.png` (180×180, square — iOS applies its own corner mask, so a pre-rounded icon looks doubly-inset) and `favicon.png` from the existing brand SVG via a one-off `sharp` script (not a project dependency, used and discarded), and added the missing `index.html` tags. Also set `start_url: '/app'` on the manifest so an installed icon opens straight into the tenant app shell instead of the public landing page, and added a `purpose: 'maskable'` icon variant for Android's adaptive-icon masking.
+
+**"Session doesn't persist after installing"**: investigated thoroughly; there is no code bug in the refresh-token plumbing itself (cookie is `httpOnly`+`secure`+`sameSite=lax`, scoped to the same origin the client is served from since `server.js` serves the built client and API from one Railway service; `credentials: 'include'` is set on every fetch in `apiClient.js`; the tenant-domain header is read fresh per request, no staleness). What's actually happening is a **platform limitation, not a bug**: iOS's "Add to Home Screen" standalone mode runs in its own storage container, separate from Safari's regular browsing storage — cookies/localStorage set while browsing in Safari do **not** carry over to the installed icon. The fix on the user's end is to log in **from within the already-installed icon**, once; after that, the session persists within that container across relaunches the same as any other site (subject to iOS's own inactivity-based storage eviction, which Apple has relaxed somewhat for home-screen web apps in recent iOS versions but doesn't fully eliminate). The one concrete improvement made: `REFRESH_TOKEN_TTL_DAYS` default bumped **7 → 30** (`server/config/env.js`), since a school app opened like a native app shouldn't force weekly re-logins.
+
+**Install UX**: new `client/src/hooks/usePwaInstall.js` (centralizes the `beforeinstallprompt`/`appinstalled` listener so multiple screens can share one) + `client/src/lib/pwa.js` (`isIos()`/`isStandalone()` detection) + `client/src/components/InstallAppPrompt.jsx` (renders a real "Install" button on Android/Chrome/desktop, or a "How to install — Help" button on iOS that opens `IosInstallModal`: numbered steps, an illustrative inline-SVG mockup of Safari's share sheet — not a real screenshot, avoids depending on a capture that goes stale the moment Apple redesigns the UI — and an explicit "open this in Safari, not Chrome" callout, since iOS only exposes Add to Home Screen there). Mounted on both `LandingPage` (per explicit request) and `LoginPage` (already had an inline, Android-only version; refactored to use the shared component, gaining the iOS path for free).
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):
