@@ -50,7 +50,8 @@ export function Sidebar({ isOpen, onClose }) {
     can('assignments.view') && { to: '/app/assignments', label: 'Assignments' },
     hasModule('messaging') && can('messages.view') && { to: '/app/messages', label: 'Messages', showUnreadBadge: true },
     can('broadcast.view') && { to: '/app/broadcast', label: 'Broadcast' },
-    can('reports.view') && { to: '/app/reports', label: 'Reports' }
+    can('reports.view') && { to: '/app/reports', label: 'Reports' },
+    can('access_control.manage') && { to: '/app/access-control', label: 'Access Control' }
   ].filter(Boolean);
 
   const messagingEnabled = hasModule('messaging') && can('messages.view');

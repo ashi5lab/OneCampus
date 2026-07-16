@@ -62,6 +62,8 @@ const assignmentsRoutes = require('./modules/assignments/routes');
 const onlineExamsRoutes = require('./modules/onlineExams/routes');
 const reportsRoutes = require('./modules/reports/routes');
 const broadcastRoutes = require('./modules/broadcast/routes');
+const staffRoutes = require('./modules/staff/routes');
+const accessControlRoutes = require('./modules/accessControl/routes');
 
 app.use('/api/v1/tenant', tenantRoutes);
 app.use('/api/v1/auth', authRoutes);
@@ -84,6 +86,8 @@ app.use('/api/v1/assignments', assignmentsRoutes);
 app.use('/api/v1/online-exams', onlineExamsRoutes);
 app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/broadcast', broadcastRoutes);
+app.use('/api/v1/staff', staffRoutes);
+app.use('/api/v1/access-control', accessControlRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
