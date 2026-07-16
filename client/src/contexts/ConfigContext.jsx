@@ -8,7 +8,8 @@ const THEME_CLASS_BY_KEY = {
   slate: 'theme-slate',
   chalkboard: 'theme-chalkboard',
   blueprint: 'theme-blueprint',
-  purple: 'theme-purple'
+  purple: 'theme-purple',
+  mono: 'theme-mono'
 };
 const THEME_STORAGE_KEY = 'onecampus.theme';
 
