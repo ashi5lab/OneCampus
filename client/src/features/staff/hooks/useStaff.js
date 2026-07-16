@@ -28,3 +28,11 @@ export function useDeleteStaff() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff'] })
   });
 }
+
+export function useSetStaffDesignation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, designation }) => staffApi.setDesignation(id, designation),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff'] })
+  });
+}

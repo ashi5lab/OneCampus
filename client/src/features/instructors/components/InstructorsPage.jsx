@@ -4,9 +4,10 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
-import { useInstructors, useCreateInstructor, useUpdateInstructor, useDeleteInstructor } from '../hooks/useInstructors';
+import { useInstructors, useCreateInstructor, useUpdateInstructor, useDeleteInstructor, useSetInstructorDesignation } from '../hooks/useInstructors';
 import { InstructorFormModal } from './InstructorFormModal';
 import { StaffPage } from '../../staff/components/StaffPage';
+import { DesignationPicker } from '../../../components/DesignationPicker';
 
 const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
 
@@ -64,6 +65,7 @@ function TeachersTab() {
   const createInstructor = useCreateInstructor();
   const updateInstructor = useUpdateInstructor();
   const deleteInstructor = useDeleteInstructor();
+  const setDesignation = useSetInstructorDesignation();
 
   const [showForm, setShowForm] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState(null);
@@ -82,6 +84,20 @@ function TeachersTab() {
     { key: 'phone', header: 'Phone', render: (row) => row.phone || '—' },
     { key: 'gender', header: 'Gender', render: (row) => GENDER_LABEL[row.meta?.gender] || '—' }
   ];
+
+  if (can('instructors.manage')) {
+    columns.push({
+      key: 'designation',
+      header: 'Designation',
+      render: (row) => (
+        <DesignationPicker
+          value={row.meta?.designation}
+          disabled={setDesignation.isPending}
+          onChange={(designation) => setDesignation.mutate({ id: row.id, designation })}
+        />
+      )
+    });
+  }
 
   if (can('instructors.manage')) {
     columns.push({

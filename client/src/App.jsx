@@ -34,6 +34,7 @@ import { ReportsPage } from './features/reports/components/ReportsPage';
 import { ProfilePage } from './features/profile/components/ProfilePage';
 import { BroadcastPage } from './features/broadcast/components/BroadcastPage';
 import { AccessControlPage } from './features/accessControl/components/AccessControlPage';
+import { LeavePage } from './features/leave/components/LeavePage';
 
 export default function App() {
   return (
@@ -164,6 +165,14 @@ export default function App() {
           element={
             <RequirePermission permission="access_control.manage">
               <AccessControlPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="leave"
+          element={
+            <RequirePermission permission="leave.apply">
+              <LeavePage />
             </RequirePermission>
           }
         />

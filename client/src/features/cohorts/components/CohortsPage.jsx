@@ -27,7 +27,12 @@ export function CohortsPage() {
   const columns = [
     { key: 'name', header: t('cohort'), render: (row) => <span className="font-semibold">{row.name}</span> },
     { key: 'unit', header: 'Unit', render: (row) => unitName(row.unit_id) },
-    { key: 'time_block', header: t('term'), render: (row) => row.time_block }
+    { key: 'time_block', header: t('term'), render: (row) => row.time_block },
+    {
+      key: 'advisor',
+      header: 'Class Teacher',
+      render: (row) => (row.advisor_first_name ? `${row.advisor_first_name} ${row.advisor_last_name}` : '—')
+    }
   ];
 
   if (can('cohorts.manage')) {

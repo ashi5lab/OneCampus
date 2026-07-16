@@ -351,6 +351,31 @@ CREATE TABLE onec_staff (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Leave applications (see server/modules/leave). applicant_role records
+-- which of onec_instructors/onec_staff/onec_learners the applicant (user_id)
+-- resolves to, rather than three nullable FK columns. Approval routing has
+-- no stored approver column at all — it's resolved at read time from
+-- onec_cohorts.advisor_id (the "class teacher") for learner applicants, and
+-- from meta->>'designation' = 'principal'/'vice_principal' on onec_
+-- instructors/onec_staff for tenant-wide approvers.
+CREATE TABLE onec_leave_requests (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES onec_users(id) ON DELETE CASCADE,
+    applicant_role VARCHAR(20) NOT NULL,           -- 'instructor' | 'staff' | 'learner'
+    leave_type VARCHAR(20) NOT NULL,               -- 'personal' | 'sick'
+    reason TEXT,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    is_half_day BOOLEAN NOT NULL DEFAULT false,
+    half_day_period VARCHAR(10),                   -- 'first_half' | 'second_half', set only when is_half_day
+    num_days DECIMAL(4,1) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- 'pending' | 'approved' | 'rejected' | 'cancelled'
+    reviewed_by INT REFERENCES onec_users(id),
+    reviewed_at TIMESTAMP,
+    review_note TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Audit trail for sensitive actions (spec Part 11): grading, deletions, and
 -- permission denials. user_id has no FK/ON DELETE CASCADE on purpose — a
 -- log entry must survive the user who caused it being deleted.

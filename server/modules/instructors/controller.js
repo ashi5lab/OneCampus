@@ -2,6 +2,9 @@ const { z } = require('zod');
 const bcrypt = require('bcrypt');
 const { logAudit } = require('../../lib/audit');
 const { parsePagination } = require('../../lib/pagination');
+const { assignDesignation } = require('../../lib/designation');
+
+const designationSchema = z.object({ designation: z.enum(['principal', 'vice_principal']).nullable() });
 
 const instructorCreateSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -201,4 +204,25 @@ async function getProfile(req, res) {
   }
 }
 
-module.exports = { getAll, getById, create, update, remove, getProfile };
+// 'principal'/'vice_principal' — a single tenant-wide holder each, across
+// both instructors and staff (see lib/designation.js). A separate endpoint
+// from update() so setting it can atomically clear it from whoever holds it
+// now, without the frontend having to fetch-then-merge the rest of `meta`.
+async function setDesignation(req, res) {
+  try {
+    const { id } = req.params;
+    const parsed = designationSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+
+    const updated = await assignDesignation(req, 'onec_instructors', id, parsed.data.designation);
+    if (!updated) return res.status(404).json({ error: 'Not found' });
+
+    logAudit(req, 'instructors.designation_set', { instructor_id: id, designation: parsed.data.designation });
+    res.json({ data: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getAll, getById, create, update, remove, getProfile, setDesignation };

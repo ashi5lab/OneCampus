@@ -12,5 +12,6 @@ router.get('/:id', requirePermission('instructors.view'), controller.getById);
 router.put('/:id', requirePermission('instructors.manage'), controller.update);
 router.delete('/:id', requirePermission('instructors.manage'), controller.remove);
 router.get('/:id/profile', requirePermission('instructors.view'), controller.getProfile);
+router.patch('/:id/designation', requirePermission('instructors.manage'), controller.setDesignation);
 
 module.exports = router;

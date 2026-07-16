@@ -15,13 +15,25 @@ async function getAll(req, res) {
     const { pagination, error } = parsePagination(req.query);
     if (error) return res.status(400).json({ error: 'Invalid pagination parameters', details: error });
 
+    // advisor_id references onec_users generically, but in practice is
+    // always set from the instructor roster (see CohortFormModal's "Class
+    // Teacher" picker) — LEFT JOIN onec_instructors by user_id to surface a
+    // display name instead of a bare id.
+    const advisorJoin = `LEFT JOIN onec_instructors adv ON adv.user_id = c.advisor_id`;
+    const advisorSelect = `adv.first_name AS advisor_first_name, adv.last_name AS advisor_last_name`;
+
     if (!pagination) {
-      const result = await req.db.query('SELECT * FROM onec_cohorts ORDER BY id DESC');
+      const result = await req.db.query(
+        `SELECT c.*, ${advisorSelect} FROM onec_cohorts c ${advisorJoin} ORDER BY c.id DESC`
+      );
       return res.json({ data: result.rows });
     }
 
     const [rows, count] = await Promise.all([
-      req.db.query('SELECT * FROM onec_cohorts ORDER BY id DESC LIMIT $1 OFFSET $2', [pagination.limit, pagination.offset]),
+      req.db.query(
+        `SELECT c.*, ${advisorSelect} FROM onec_cohorts c ${advisorJoin} ORDER BY c.id DESC LIMIT $1 OFFSET $2`,
+        [pagination.limit, pagination.offset]
+      ),
       req.db.query('SELECT COUNT(*)::int AS total FROM onec_cohorts')
     ]);
     res.json({ data: rows.rows, meta: { total: count.rows[0].total, page: pagination.page, pageSize: pagination.pageSize } });
@@ -34,7 +46,13 @@ async function getAll(req, res) {
 async function getById(req, res) {
   try {
     const { id } = req.params;
-    const result = await req.db.query('SELECT * FROM onec_cohorts WHERE id = $1', [id]);
+    const result = await req.db.query(
+      `SELECT c.*, adv.first_name AS advisor_first_name, adv.last_name AS advisor_last_name
+       FROM onec_cohorts c
+       LEFT JOIN onec_instructors adv ON adv.user_id = c.advisor_id
+       WHERE c.id = $1`,
+      [id]
+    );
 
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
