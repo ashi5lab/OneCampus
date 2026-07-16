@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
-import { useStaff, useCreateStaff, useUpdateStaff, useDeleteStaff } from '../hooks/useStaff';
+import { useStaff, useCreateStaff, useUpdateStaff, useDeleteStaff, useSetStaffDesignation } from '../hooks/useStaff';
 import { StaffFormModal } from './StaffFormModal';
+import { DesignationPicker } from '../../../components/DesignationPicker';
 
 const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
 
@@ -27,6 +28,7 @@ export function StaffPage() {
   const createStaff = useCreateStaff();
   const updateStaff = useUpdateStaff();
   const deleteStaff = useDeleteStaff();
+  const setDesignation = useSetStaffDesignation();
 
   const [showForm, setShowForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
@@ -45,6 +47,20 @@ export function StaffPage() {
     { key: 'phone', header: 'Phone', render: (row) => row.phone || '—' },
     { key: 'gender', header: 'Gender', render: (row) => GENDER_LABEL[row.meta?.gender] || '—' }
   ];
+
+  if (can('staff.manage')) {
+    columns.push({
+      key: 'designation',
+      header: 'Designation',
+      render: (row) => (
+        <DesignationPicker
+          value={row.meta?.designation}
+          disabled={setDesignation.isPending}
+          onChange={(designation) => setDesignation.mutate({ id: row.id, designation })}
+        />
+      )
+    });
+  }
 
   if (can('staff.manage')) {
     columns.push({

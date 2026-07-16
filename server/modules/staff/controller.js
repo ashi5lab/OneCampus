@@ -2,6 +2,9 @@ const { z } = require('zod');
 const bcrypt = require('bcrypt');
 const { logAudit } = require('../../lib/audit');
 const { parsePagination } = require('../../lib/pagination');
+const { assignDesignation } = require('../../lib/designation');
+
+const designationSchema = z.object({ designation: z.enum(['principal', 'vice_principal']).nullable() });
 
 const staffCreateSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -134,4 +137,23 @@ async function remove(req, res) {
   }
 }
 
-module.exports = { getAll, create, update, remove };
+// See server/modules/instructors/controller.js's setDesignation — same
+// single-holder-across-both-tables behavior via lib/designation.js.
+async function setDesignation(req, res) {
+  try {
+    const { id } = req.params;
+    const parsed = designationSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+
+    const updated = await assignDesignation(req, 'onec_staff', id, parsed.data.designation);
+    if (!updated) return res.status(404).json({ error: 'Not found' });
+
+    logAudit(req, 'staff.designation_set', { staff_id: id, designation: parsed.data.designation });
+    res.json({ data: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getAll, create, update, remove, setDesignation };

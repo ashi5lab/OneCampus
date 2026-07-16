@@ -9,5 +9,6 @@ export const staffApi = {
   list: (filters) => apiClient.get(withQuery('/staff', filters)).then((res) => res.data),
   create: (payload) => apiClient.post('/staff', payload).then((res) => res.data),
   update: (id, payload) => apiClient.put(`/staff/${id}`, payload).then((res) => res.data),
-  remove: (id) => apiClient.delete(`/staff/${id}`).then((res) => res.data)
+  remove: (id) => apiClient.delete(`/staff/${id}`).then((res) => res.data),
+  setDesignation: (id, designation) => apiClient.patch(`/staff/${id}/designation`, { designation }).then((res) => res.data)
 };

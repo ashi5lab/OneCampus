@@ -32,6 +32,14 @@ export function useDeleteInstructor() {
   });
 }
 
+export function useSetInstructorDesignation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, designation }) => instructorsApi.setDesignation(id, designation),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['instructors'] })
+  });
+}
+
 export function useInstructorProfile(id) {
   return useQuery({
     queryKey: ['instructors', id, 'profile'],
