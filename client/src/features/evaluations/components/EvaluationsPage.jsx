@@ -27,22 +27,16 @@ export function EvaluationsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            Management / Exams
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Exams</h1>
-        </div>
-        {can('evaluations.manage') && (
+      {can('evaluations.manage') && (
+        <div className="mb-4 flex justify-end">
           <button
             onClick={() => setShowForm(true)}
             className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
           >
             + Add Evaluation
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}

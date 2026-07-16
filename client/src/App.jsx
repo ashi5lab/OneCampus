@@ -16,7 +16,6 @@ import { InstructorsPage } from './features/instructors/components/InstructorsPa
 import { InstructorProfilePage } from './features/instructors/components/InstructorProfilePage';
 import { CohortsPage } from './features/cohorts/components/CohortsPage';
 import { AttendancePage } from './features/attendance/components/AttendancePage';
-import { EvaluationsPage } from './features/evaluations/components/EvaluationsPage';
 import { EvaluationDetailPage } from './features/evaluations/components/EvaluationDetailPage';
 import { ScoreEntryPage } from './features/evaluations/components/ScoreEntryPage';
 import { UnitsPage } from './features/units/components/UnitsPage';
@@ -29,8 +28,8 @@ import { NoticesPage } from './features/notices/components/NoticesPage';
 import { LibraryPage } from './features/library/components/LibraryPage';
 import { AssignmentsPage } from './features/assignments/components/AssignmentsPage';
 import { AssignmentDetailPage } from './features/assignments/components/AssignmentDetailPage';
-import { OnlineExamsPage } from './features/onlineExams/components/OnlineExamsPage';
 import { OnlineExamDetailPage } from './features/onlineExams/components/OnlineExamDetailPage';
+import { ExamsPage } from './features/exams/components/ExamsPage';
 import { ReportsPage } from './features/reports/components/ReportsPage';
 
 export default function App() {
@@ -126,7 +125,7 @@ export default function App() {
           }
         />
         <Route path="attendance" element={<AttendancePage />} />
-        <Route path="evaluations" element={<EvaluationsPage />} />
+        <Route path="exams" element={<ExamsPage />} />
         <Route path="evaluations/:id" element={<EvaluationDetailPage />} />
         <Route path="evaluations/schedules/:scheduleId/scores" element={<ScoreEntryPage />} />
         <Route path="certificates" element={<CertificatesPage />} />
@@ -136,7 +135,6 @@ export default function App() {
         <Route path="library" element={<LibraryPage />} />
         <Route path="assignments" element={<AssignmentsPage />} />
         <Route path="assignments/:id" element={<AssignmentDetailPage />} />
-        <Route path="online-exams" element={<OnlineExamsPage />} />
         <Route path="online-exams/:id" element={<OnlineExamDetailPage />} />
         <Route
           path="reports"

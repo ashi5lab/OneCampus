@@ -73,20 +73,16 @@ export function OnlineExamsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Online Exams</div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Online Exams</h1>
-        </div>
-        {isManager && (
+      {isManager && (
+        <div className="mb-4 flex justify-end">
           <button
             onClick={() => setShowForm(true)}
             className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
           >
             + Create Exam
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total Exams" value={isLoading ? '—' : exams.length} />

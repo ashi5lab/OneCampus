@@ -14,7 +14,7 @@ export function MyScoreView() {
     <div>
       <div className="mb-6">
         <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-          <Link to="/app/evaluations" className="hover:underline">Exams</Link> / Score
+          <Link to="/app/exams" className="hover:underline">Exams</Link> / Score
         </div>
         <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Your Score</h1>
       </div>
