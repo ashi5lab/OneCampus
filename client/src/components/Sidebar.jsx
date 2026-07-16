@@ -49,6 +49,7 @@ export function Sidebar({ isOpen, onClose }) {
     can('library.view') && { to: '/app/library', label: 'Library' },
     can('assignments.view') && { to: '/app/assignments', label: 'Assignments' },
     hasModule('messaging') && can('messages.view') && { to: '/app/messages', label: 'Messages', showUnreadBadge: true },
+    can('broadcast.view') && { to: '/app/broadcast', label: 'Broadcast' },
     can('reports.view') && { to: '/app/reports', label: 'Reports' }
   ].filter(Boolean);
 
