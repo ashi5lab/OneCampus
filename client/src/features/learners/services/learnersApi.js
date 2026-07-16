@@ -10,5 +10,7 @@ export const learnersApi = {
   create: (payload) => apiClient.post('/learners', payload).then((res) => res.data),
   update: (id, payload) => apiClient.put(`/learners/${id}`, payload).then((res) => res.data),
   remove: (id) => apiClient.delete(`/learners/${id}`).then((res) => res.data),
-  getProfile: (id) => apiClient.get(`/learners/${id}/profile`).then((res) => res.data)
+  getProfile: (id) => apiClient.get(`/learners/${id}/profile`).then((res) => res.data),
+  setClassHead: (id, is_class_head) => apiClient.patch(`/learners/${id}/class-head`, { is_class_head }).then((res) => res.data),
+  setSchoolHead: (id, is_school_head) => apiClient.patch(`/learners/${id}/school-head`, { is_school_head }).then((res) => res.data)
 };

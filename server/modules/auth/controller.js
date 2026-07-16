@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { JWT_SECRET, ACCESS_TOKEN_TTL } = require('../../config/env');
 const { getPermissionsForRole } = require('../../lib/permissions');
+const { getCallerDesignation } = require('../../lib/designation');
 const { issueRefreshToken, rotateRefreshToken, revokeRefreshToken } = require('../../lib/refreshTokens');
 const { setAuthCookies, clearAuthCookies, REFRESH_COOKIE_NAME } = require('../../lib/authCookies');
 
@@ -140,8 +141,12 @@ async function logout(req, res) {
 // any tenant-specific customization to a role's access.
 async function me(req, res) {
   try {
-    const [permissions, profile] = await Promise.all([getPermissionsForRole(req), getOwnProfileIds(req)]);
-    res.json({ data: { userId: req.user.userId, role: req.user.role, permissions, profile } });
+    const [permissions, profile, designation] = await Promise.all([
+      getPermissionsForRole(req),
+      getOwnProfileIds(req),
+      getCallerDesignation(req)
+    ]);
+    res.json({ data: { userId: req.user.userId, role: req.user.role, permissions, profile, designation } });
   } catch (err) {
     console.error('Failed to load current user permissions:', err);
     res.status(500).json({ error: 'Internal server error' });

@@ -34,6 +34,22 @@ export function useDeleteLearner() {
   });
 }
 
+export function useSetClassHead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, is_class_head }) => learnersApi.setClassHead(id, is_class_head),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['learners'] })
+  });
+}
+
+export function useSetSchoolHead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, is_school_head }) => learnersApi.setSchoolHead(id, is_school_head),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['learners'] })
+  });
+}
+
 export function useLearnerProfile(id) {
   return useQuery({
     queryKey: ['learners', id, 'profile'],
