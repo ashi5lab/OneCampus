@@ -20,13 +20,6 @@ const navItemClass = ({ isActive }) =>
       : 'text-sidebar-text hover:bg-sidebar-hover'
   }`;
 
-const subNavItemClass = ({ isActive }) =>
-  `mb-0.5 flex items-center gap-2.5 rounded py-2 pl-6 pr-3 text-[13px] font-medium ${
-    isActive
-      ? 'bg-sidebar-activeBg font-semibold text-sidebar-activeText'
-      : 'text-sidebar-text hover:bg-sidebar-hover'
-  }`;
-
 export function Sidebar({ isOpen, onClose }) {
   const { config, t, hasModule } = useConfig();
   const { user, logout, can, profile } = useAuth();
@@ -43,13 +36,10 @@ export function Sidebar({ isOpen, onClose }) {
 
   // Evaluations (offline/paper exam score entry) and Online Exams are two
   // distinct modules under the hood (see server/modules/evaluations vs.
-  // server/modules/onlineExams), but from a nav perspective they're both
-  // "Exams" — grouped under one header instead of two separate top-level
-  // links, rather than merging their actual page/routing logic.
-  const examLinks = [
-    hasModule('exams') && can('evaluations.view') && { to: '/app/evaluations', label: 'Evaluations' },
-    can('online_exams.view') && { to: '/app/online-exams', label: 'Online Exams' }
-  ].filter(Boolean);
+  // server/modules/onlineExams), but they share one "Exams" nav entry and
+  // one page (client/src/features/exams/components/ExamsPage.jsx, tabs
+  // between the two) rather than being separate top-level links.
+  const showExamsLink = (hasModule('exams') && can('evaluations.view')) || can('online_exams.view');
 
   const managementLinks = [
     can('learners.view') && { to: '/app/learners', label: t('learners') },
@@ -59,7 +49,7 @@ export function Sidebar({ isOpen, onClose }) {
     can('modules.view') && { to: '/app/modules', label: t('topics') },
     can('guardians.view') && { to: '/app/guardians', label: 'Guardians' },
     hasModule('attendance') && can('attendance.view') && { to: '/app/attendance', label: 'Attendance' },
-    examLinks.length > 0 && { label: 'Exams', group: examLinks },
+    showExamsLink && { to: '/app/exams', label: 'Exams' },
     hasModule('certificates') && can('certificates.view') && { to: '/app/certificates', label: 'Certificates' },
     hasModule('kindergarten_activity') && can('kindergarten_activity.view') && { to: '/app/kindergarten-activity', label: 'Daily Activity' },
     can('notices.view') && { to: '/app/notices', label: 'Notices' },
@@ -120,29 +110,18 @@ export function Sidebar({ isOpen, onClose }) {
           <div className="px-3 pb-1.5 pt-4 text-[10.5px] font-bold uppercase tracking-wide text-sidebar-text">
             Management
           </div>
-          {managementLinks.map((link) =>
-            link.group ? (
-              <div key={link.label} className="mb-0.5">
-                <div className="px-3 pb-0.5 pt-1.5 text-[11.5px] font-semibold text-sidebar-text">{link.label}</div>
-                {link.group.map((sub) => (
-                  <NavLink key={sub.to} to={sub.to} className={subNavItemClass} onClick={onClose}>
-                    {sub.label}
-                  </NavLink>
-                ))}
-              </div>
-            ) : (
-              <NavLink key={link.to} to={link.to} className={navItemClass} onClick={onClose}>
-                <span className="flex flex-1 items-center justify-between">
-                  {link.label}
-                  {link.showUnreadBadge && unreadCount > 0 && (
-                    <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-ink">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                </span>
-              </NavLink>
-            )
-          )}
+          {managementLinks.map((link) => (
+            <NavLink key={link.to} to={link.to} className={navItemClass} onClick={onClose}>
+              <span className="flex flex-1 items-center justify-between">
+                {link.label}
+                {link.showUnreadBadge && unreadCount > 0 && (
+                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-ink">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </span>
+            </NavLink>
+          ))}
         </>
       )}
 

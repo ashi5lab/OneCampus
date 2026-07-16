@@ -25,8 +25,8 @@ export function OnlineExamDetailPage() {
     <div>
       <div className="mb-6">
         <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-          <Link to="/app/online-exams" className="hover:underline">
-            Online Exams
+          <Link to="/app/exams" className="hover:underline">
+            Exams
           </Link>{' '}
           / {exam.title}
         </div>
