@@ -1,7 +1,11 @@
 // All read-only aggregation queries — no writes, no zod body schemas.
-// Every endpoint is gated by reports.view (admin/staff only, see
-// server/lib/permissions.js), since this is a cross-cohort/school-wide
-// operational view, not something to row-scope per learner/instructor.
+// Every endpoint except dashboard() is gated by reports.view (admin/staff
+// only, see server/lib/permissions.js), since those are cross-cohort/
+// school-wide operational views, not something to row-scope per learner/
+// instructor. dashboard() is the one exception — see routes.js.
+
+const { hasPermission } = require('../../lib/permissions');
+const { getScopedLearnerIds } = require('../../lib/rowScope');
 
 async function overview(req, res) {
   try {
@@ -245,8 +249,182 @@ async function certificatesReport(req, res) {
   }
 }
 
+// The Dashboard page's default view. Admin/anyone with reports.view gets a
+// tenant-wide "what's happening" slice (teacher/student/staff activity in
+// the last 7 days, today's attendance breakdown); everyone else gets a
+// smaller "my activity" slice scoped to their own role, instead of a 403 —
+// see routes.js for why this isn't behind requirePermission.
+async function dashboard(req, res) {
+  try {
+    if (await hasPermission(req, 'reports.view')) return dashboardAll(req, res);
+    return dashboardMine(req, res);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function dashboardAll(req, res) {
+  const [teacherActivity, studentActivity, staffActivity, attendanceToday] = await Promise.all([
+    req.db.query(`
+      SELECT
+        (SELECT COUNT(*) FROM onec_attendance WHERE date >= CURRENT_DATE - INTERVAL '7 days') AS attendance_marked,
+        (SELECT COUNT(*) FROM onec_learner_scores s JOIN onec_evaluation_schedules es ON s.eval_schedule_id = es.id
+           WHERE es.eval_date >= CURRENT_DATE - INTERVAL '7 days') AS scores_graded,
+        (SELECT COUNT(*) FROM onec_assignment_submissions WHERE graded_at >= CURRENT_DATE - INTERVAL '7 days') AS assignments_graded
+    `),
+    req.db.query(`
+      SELECT
+        (SELECT COUNT(*) FROM onec_assignment_submissions WHERE submitted_at >= CURRENT_DATE - INTERVAL '7 days') AS assignments_submitted,
+        (SELECT COUNT(*) FROM onec_exam_submissions WHERE submitted_at >= CURRENT_DATE - INTERVAL '7 days') AS exams_taken
+    `),
+    req.db.query(`
+      SELECT
+        (SELECT COUNT(*) FROM onec_notices WHERE created_at >= CURRENT_DATE - INTERVAL '7 days') AS notices_posted,
+        (SELECT COUNT(*) FROM onec_broadcasts WHERE created_at >= CURRENT_DATE - INTERVAL '7 days') AS broadcasts_sent
+    `),
+    req.db.query(`SELECT status, COUNT(*)::int AS count FROM onec_attendance WHERE date = CURRENT_DATE GROUP BY status`)
+  ]);
+
+  res.json({
+    data: {
+      scope: 'all',
+      teacherActivity: teacherActivity.rows[0],
+      studentActivity: studentActivity.rows[0],
+      staffActivity: staffActivity.rows[0],
+      attendanceToday: attendanceToday.rows
+    }
+  });
+}
+
+async function dashboardMine(req, res) {
+  const role = req.user.role;
+
+  if (role === 'instructor') {
+    const [stats, myClasses] = await Promise.all([
+      req.db.query(
+        `SELECT
+           (SELECT COUNT(*) FROM onec_attendance WHERE marked_by = $1 AND date >= CURRENT_DATE - INTERVAL '7 days') AS attendance_marked,
+           (SELECT COUNT(*) FROM onec_learner_scores WHERE graded_by = $1) AS scores_graded`,
+        [req.user.userId]
+      ),
+      req.db.query(`SELECT id, name FROM onec_cohorts WHERE advisor_id = $1`, [req.user.userId])
+    ]);
+    return res.json({ data: { scope: 'instructor', stats: stats.rows[0], myClasses: myClasses.rows } });
+  }
+
+  if (role === 'learner') {
+    const learnerResult = await req.db.query('SELECT id, cohort_id FROM onec_learners WHERE user_id = $1', [req.user.userId]);
+    const learner = learnerResult.rows[0];
+    if (!learner) return res.json({ data: { scope: 'learner', stats: null } });
+
+    const stats = await req.db.query(
+      `SELECT
+         (SELECT COUNT(*) FILTER (WHERE status = 'present') FROM onec_attendance WHERE learner_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days') AS present_30d,
+         (SELECT COUNT(*) FROM onec_attendance WHERE learner_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days') AS marked_30d,
+         (SELECT COUNT(*) FROM onec_assignments a WHERE a.cohort_id = $2 AND a.due_date >= CURRENT_DATE) AS assignments_open,
+         (SELECT COUNT(*) FROM onec_online_exams e WHERE e.cohort_id = $2 AND e.published = true) AS exams_published`,
+      [learner.id, learner.cohort_id]
+    );
+    const row = stats.rows[0];
+    return res.json({
+      data: {
+        scope: 'learner',
+        stats: { ...row, attendanceRate30d: row.marked_30d > 0 ? Math.round((row.present_30d / row.marked_30d) * 1000) / 10 : null }
+      }
+    });
+  }
+
+  if (role === 'guardian') {
+    const learnerIds = await getScopedLearnerIds(req);
+    if (!learnerIds || learnerIds.length === 0) return res.json({ data: { scope: 'guardian', children: [] } });
+
+    const result = await req.db.query(
+      `SELECT l.id, l.first_name, l.last_name,
+              COUNT(a.*) FILTER (WHERE a.status = 'present' AND a.date >= CURRENT_DATE - INTERVAL '30 days') AS present_30d,
+              COUNT(a.*) FILTER (WHERE a.date >= CURRENT_DATE - INTERVAL '30 days') AS marked_30d
+       FROM onec_learners l
+       LEFT JOIN onec_attendance a ON a.learner_id = l.id
+       WHERE l.id = ANY($1::int[])
+       GROUP BY l.id, l.first_name, l.last_name`,
+      [learnerIds]
+    );
+    const children = result.rows.map((row) => ({
+      ...row,
+      attendanceRate30d: row.marked_30d > 0 ? Math.round((row.present_30d / row.marked_30d) * 1000) / 10 : null
+    }));
+    return res.json({ data: { scope: 'guardian', children } });
+  }
+
+  if (role === 'staff') {
+    const stats = await req.db.query(
+      `SELECT
+         (SELECT COUNT(*) FROM onec_notices WHERE posted_by = $1 AND created_at >= CURRENT_DATE - INTERVAL '7 days') AS notices_posted,
+         (SELECT COUNT(*) FROM onec_messages WHERE sender_id = $1 AND created_at >= CURRENT_DATE - INTERVAL '7 days') AS messages_sent`,
+      [req.user.userId]
+    );
+    return res.json({ data: { scope: 'staff', stats: stats.rows[0] } });
+  }
+
+  res.json({ data: { scope: role || 'unknown', stats: null } });
+}
+
+// Backs the Reports page's Analytics tab — chart-ready aggregates, all
+// derived from the same tables the other report endpoints already query.
+async function analytics(req, res) {
+  try {
+    const [attendanceTrend, attendanceToday, performanceByCohort, examPassRates] = await Promise.all([
+      req.db.query(`
+        SELECT date, COUNT(*) FILTER (WHERE status = 'present') AS present, COUNT(*) AS total
+        FROM onec_attendance
+        WHERE date >= CURRENT_DATE - INTERVAL '13 days'
+        GROUP BY date ORDER BY date
+      `),
+      req.db.query(`SELECT status, COUNT(*)::int AS count FROM onec_attendance WHERE date = CURRENT_DATE GROUP BY status`),
+      req.db.query(`
+        SELECT c.name AS cohort_name, ROUND(AVG(s.score_obtained / NULLIF(es.max_score, 0) * 100)::numeric, 1) AS avg_percentage
+        FROM onec_learner_scores s
+        JOIN onec_evaluation_schedules es ON s.eval_schedule_id = es.id
+        JOIN onec_learners l ON s.learner_id = l.id
+        JOIN onec_cohorts c ON l.cohort_id = c.id
+        GROUP BY c.name ORDER BY avg_percentage DESC NULLS LAST LIMIT 10
+      `),
+      req.db.query(`
+        SELECT e.title,
+               ROUND((COUNT(s.*) FILTER (WHERE s.status = 'graded' AND s.total_score >= e.max_score * 0.4)::numeric
+                      / NULLIF(COUNT(s.*) FILTER (WHERE s.status = 'graded'), 0) * 100), 1) AS pass_rate
+        FROM onec_online_exams e
+        LEFT JOIN onec_exam_submissions s ON s.exam_id = e.id
+        WHERE e.published = true
+        GROUP BY e.id, e.title
+        HAVING COUNT(s.*) FILTER (WHERE s.status = 'graded') > 0
+        ORDER BY e.id DESC LIMIT 10
+      `)
+    ]);
+
+    const attendanceTrendData = attendanceTrend.rows.map((row) => ({
+      date: row.date,
+      rate: row.total > 0 ? Math.round((row.present / row.total) * 1000) / 10 : null
+    }));
+
+    res.json({
+      data: {
+        attendanceTrend: attendanceTrendData,
+        attendanceToday: attendanceToday.rows,
+        performanceByCohort: performanceByCohort.rows,
+        examPassRates: examPassRates.rows
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   overview,
+  analytics,
+  dashboard,
   attendance,
   academicPerformance,
   assignmentsReport,

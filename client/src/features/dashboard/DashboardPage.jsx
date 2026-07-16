@@ -1,56 +1,214 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useConfig } from '../../contexts/ConfigContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavLinks } from '../../hooks/useNavLinks';
 import { StatCard } from '../../components/StatCard';
-import { useLearners } from '../learners/hooks/useLearners';
-import { useInstructors } from '../instructors/hooks/useInstructors';
-import { useCohorts } from '../cohorts/hooks/useCohorts';
+import { HorizontalBarChart } from '../../components/charts/HorizontalBarChart';
+import { useDashboardReport } from '../reports/hooks/useReports';
+
+const DASHBOARD_VIEW_KEY = 'onecampus.dashboardView';
+const STATUS_LABEL = { present: 'Present', absent: 'Absent', late: 'Late', excused: 'Excused' };
+const STATUS_COLOR = { present: 'var(--success)', absent: 'var(--danger)', late: 'var(--accent)', excused: 'var(--ink-500)' };
 
 export function DashboardPage() {
-  const { config, t } = useConfig();
-  const { can } = useAuth();
+  const { config } = useConfig();
+  const [view, setView] = useState(() => localStorage.getItem(DASHBOARD_VIEW_KEY) || 'reports');
 
-  const canSeeLearners = can('learners.view');
-  const canSeeInstructors = can('instructors.view');
-  const canSeeCohorts = can('cohorts.view');
-
-  // Every authenticated user lands here regardless of role — a role
-  // without learners.view/etc. must not even fire those requests (they'd
-  // just 403 and leave the stat card stuck at "—" forever).
-  const { data: learners } = useLearners({ enabled: canSeeLearners });
-  const { data: instructors } = useInstructors({ enabled: canSeeInstructors });
-  const { data: cohorts } = useCohorts({ enabled: canSeeCohorts });
-
-  const stats = [
-    canSeeLearners && { label: `Total ${t('learners')}`, value: learners?.length ?? '—' },
-    canSeeInstructors && { label: `Total ${t('instructors')}`, value: instructors?.length ?? '—' },
-    canSeeCohorts && { label: `Total ${t('cohorts')}`, value: cohorts?.length ?? '—' }
-  ].filter(Boolean);
+  function toggleView() {
+    const next = view === 'reports' ? 'cards' : 'reports';
+    setView(next);
+    localStorage.setItem(DASHBOARD_VIEW_KEY, next);
+  }
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-          Overview
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Overview</div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
+            {config?.org_name || 'Dashboard'}
+          </h1>
+          <div className="mt-1 text-[13.5px] text-ink-500">
+            {config?.org_type ? `${config.org_type[0].toUpperCase()}${config.org_type.slice(1)}` : ''}
+          </div>
         </div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-          {config?.org_name || 'Dashboard'}
-        </h1>
-        <div className="mt-1 text-[13.5px] text-ink-500">
-          {config?.org_type ? `${config.org_type[0].toUpperCase()}${config.org_type.slice(1)}` : ''}
+
+        {/* "V2" toggle — default is the reports view; switching shows a
+            shortcut card per accessible nav item instead. Persisted per
+            device, same pattern as the theme picker. */}
+        <label className="flex items-center gap-2 text-xs font-semibold text-ink-700">
+          Card View
+          <button
+            type="button"
+            role="switch"
+            aria-checked={view === 'cards'}
+            onClick={toggleView}
+            className={`relative h-5 w-9 rounded-full transition-colors ${view === 'cards' ? 'bg-accent' : 'bg-surface-muted'}`}
+          >
+            <span
+              className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${
+                view === 'cards' ? 'translate-x-[18px]' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </label>
+      </div>
+
+      {view === 'cards' ? <FeatureCardsView /> : <ReportsView />}
+    </div>
+  );
+}
+
+function FeatureCardsView() {
+  const links = useNavLinks();
+
+  if (links.length === 0) {
+    return (
+      <div className="rounded border border-border bg-surface p-8 text-center text-sm text-ink-500">
+        Nothing to show yet — your role doesn't have access to any modules.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      {links.map((link) => (
+        <Link
+          key={link.to}
+          to={link.to}
+          className="block rounded-xl border border-border bg-surface p-5 transition hover:border-accent active:scale-[0.99]"
+        >
+          <div className="text-[15px] font-semibold text-ink-900">{link.label}</div>
+          <div className="mt-1 text-[13px] text-ink-500">Open {link.label}</div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function ReportsView() {
+  const { data, isLoading, error } = useDashboardReport();
+
+  if (isLoading) return <div className="rounded border border-border bg-surface p-8 text-center text-sm text-ink-500">Loading…</div>;
+  if (error) return <div className="rounded border border-border bg-surface p-8 text-center text-sm font-semibold text-danger">{error.message}</div>;
+
+  if (data.scope === 'all') return <AdminReportsView data={data} />;
+  if (data.scope === 'instructor') return <InstructorReportsView data={data} />;
+  if (data.scope === 'learner') return <LearnerReportsView data={data} />;
+  if (data.scope === 'guardian') return <GuardianReportsView data={data} />;
+  if (data.scope === 'staff') return <StaffReportsView data={data} />;
+
+  return (
+    <div className="rounded border border-border bg-surface p-8 text-center text-sm text-ink-500">
+      Use the sidebar to get started.
+    </div>
+  );
+}
+
+function AdminReportsView({ data }) {
+  const { teacherActivity, studentActivity, staffActivity, attendanceToday } = data;
+  const attendanceBars = ['present', 'absent', 'late', 'excused'].map((status) => ({
+    label: STATUS_LABEL[status],
+    value: attendanceToday.find((r) => r.status === status)?.count ?? 0,
+    color: STATUS_COLOR[status]
+  }));
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <div className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-500">Teacher Activity (7 days)</div>
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+          <StatCard label="Attendance Marked" value={teacherActivity.attendance_marked} />
+          <StatCard label="Scores Graded" value={teacherActivity.scores_graded} />
+          <StatCard label="Assignments Graded" value={teacherActivity.assignments_graded} />
         </div>
       </div>
 
-      {stats.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {stats.map((stat) => (
-            <StatCard key={stat.label} label={stat.label} value={stat.value} />
-          ))}
+      <div>
+        <div className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-500">Student Activity (7 days)</div>
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <StatCard label="Assignments Submitted" value={studentActivity.assignments_submitted} />
+          <StatCard label="Online Exams Taken" value={studentActivity.exams_taken} />
         </div>
-      ) : (
-        <div className="rounded border border-border bg-surface p-8 text-center text-sm text-ink-500">
-          Use the sidebar to get started.
+      </div>
+
+      <div>
+        <div className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-500">Staff Activity (7 days)</div>
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <StatCard label="Notices Posted" value={staffActivity.notices_posted} />
+          <StatCard label="Broadcasts Sent" value={staffActivity.broadcasts_sent} />
         </div>
-      )}
+      </div>
+
+      <div className="rounded border border-border bg-surface p-4">
+        <div className="mb-3 text-[13.5px] font-bold text-ink-900">Today's Attendance</div>
+        <HorizontalBarChart data={attendanceBars} valueSuffix="" emptyMessage="No attendance marked today." />
+      </div>
+
+      <Link to="/app/reports" className="inline-block text-xs font-semibold text-accent-dark hover:underline">
+        View full reports & analytics &rarr;
+      </Link>
+    </div>
+  );
+}
+
+function InstructorReportsView({ data }) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+        <StatCard label="Attendance Marked (7d)" value={data.stats.attendance_marked} />
+        <StatCard label="Scores Graded" value={data.stats.scores_graded} />
+      </div>
+      <div className="rounded border border-border bg-surface p-4">
+        <div className="mb-2 text-[13.5px] font-bold text-ink-900">My Classes (Class Teacher)</div>
+        {data.myClasses.length === 0 ? (
+          <div className="text-sm text-ink-500">You're not assigned as a class teacher for any class.</div>
+        ) : (
+          <ul className="space-y-1 text-sm text-ink-700">
+            {data.myClasses.map((c) => (
+              <li key={c.id}>{c.name}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LearnerReportsView({ data }) {
+  if (!data.stats) return <div className="rounded border border-border bg-surface p-8 text-center text-sm text-ink-500">No data yet.</div>;
+  return (
+    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      <StatCard label="Attendance Rate (30d)" value={data.stats.attendanceRate30d != null ? `${data.stats.attendanceRate30d}%` : '—'} />
+      <StatCard label="Open Assignments" value={data.stats.assignments_open} />
+      <StatCard label="Published Exams" value={data.stats.exams_published} />
+    </div>
+  );
+}
+
+function GuardianReportsView({ data }) {
+  if (data.children.length === 0) {
+    return <div className="rounded border border-border bg-surface p-8 text-center text-sm text-ink-500">No linked children yet.</div>;
+  }
+  return (
+    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      {data.children.map((child) => (
+        <StatCard
+          key={child.id}
+          label={`${child.first_name} ${child.last_name} — Attendance (30d)`}
+          value={child.attendanceRate30d != null ? `${child.attendanceRate30d}%` : '—'}
+        />
+      ))}
+    </div>
+  );
+}
+
+function StaffReportsView({ data }) {
+  return (
+    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+      <StatCard label="Notices Posted (7d)" value={data.stats.notices_posted} />
+      <StatCard label="Messages Sent (7d)" value={data.stats.messages_sent} />
     </div>
   );
 }

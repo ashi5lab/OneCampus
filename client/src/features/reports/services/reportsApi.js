@@ -6,6 +6,8 @@ function withQuery(path, params = {}) {
 }
 
 export const reportsApi = {
+  dashboard: () => apiClient.get('/reports/dashboard').then((res) => res.data),
+  analytics: () => apiClient.get('/reports/analytics').then((res) => res.data),
   overview: () => apiClient.get('/reports/overview').then((res) => res.data),
   attendance: (params) => apiClient.get(withQuery('/reports/attendance', params)),
   academicPerformance: (params) => apiClient.get(withQuery('/reports/academic-performance', params)).then((res) => res.data),

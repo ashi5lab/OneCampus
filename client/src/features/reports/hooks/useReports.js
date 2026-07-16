@@ -1,6 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '../services/reportsApi';
 
+export function useDashboardReport() {
+  return useQuery({ queryKey: ['reports', 'dashboard'], queryFn: reportsApi.dashboard });
+}
+
+export function useAnalyticsReport() {
+  return useQuery({ queryKey: ['reports', 'analytics'], queryFn: reportsApi.analytics });
+}
+
 export function useOverviewReport() {
   return useQuery({ queryKey: ['reports', 'overview'], queryFn: reportsApi.overview });
 }
