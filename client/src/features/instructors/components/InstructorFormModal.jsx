@@ -12,13 +12,20 @@ export function InstructorFormModal({ onClose, onSubmit, submitting, submitError
     formState: { errors }
   } = useForm({
     resolver: zodResolver(isEdit ? instructorUpdateSchema : instructorFormSchema),
-    defaultValues: initialData || {}
+    defaultValues: initialData ? { ...initialData, gender: initialData.meta?.gender || '' } : {}
   });
+
+  // `meta` is a JSONB grab-bag — merge the new gender into whatever was
+  // already there instead of overwriting it (previously this form never
+  // sent `meta` at all, so every edit silently reset it to {}).
+  function handleFormSubmit({ gender, ...values }) {
+    onSubmit({ ...values, meta: { ...(initialData?.meta || {}), gender: gender || undefined } });
+  }
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(handleFormSubmit)}
         className="w-full max-w-[420px] rounded border border-border bg-surface p-6 my-auto"
       >
         <div className="mb-4 text-base font-bold text-ink-900">
@@ -49,6 +56,14 @@ export function InstructorFormModal({ onClose, onSubmit, submitting, submitError
         </Field>
         <Field label="Phone (optional)" error={errors.phone}>
           <input className="input w-full" {...register('phone')} />
+        </Field>
+        <Field label="Gender (optional)" error={errors.gender}>
+          <select className="input w-full" {...register('gender')}>
+            <option value="">Unspecified</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
         </Field>
 
         {submitError && (

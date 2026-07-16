@@ -140,6 +140,16 @@ Permissions: `broadcast.view`/`broadcast.manage` (admin/staff/instructor), `broa
 
 ---
 
+## 1k. This session: Students/Teachers search + filters, class-name display bug
+
+`GET /api/v1/learners` and `GET /api/v1/instructors` both gained optional query filters — `search` (ILIKE across name + registry_no/staff_id), plus `cohort_id`/`gender`/`status` for learners and `gender` for instructors (no unit filter for instructors — `onec_instructors` has no unit/department relationship in the schema to filter by). `gender` isn't a real column on either table; it's read/written via `meta->>'gender'` (both tables already had an untyped `meta` JSONB for exactly this kind of extension).
+
+**Bug fix**: the Students page table was showing the raw `cohort_id` instead of the class name — `learners.getAll` never joined `onec_cohorts`. Now always does (`LEFT JOIN`, `cohort_name` in the response) regardless of filters.
+
+**Bug fix, while touching these forms anyway**: `LearnerFormModal`/`InstructorFormModal` never sent `meta` back on update, so editing a learner or instructor silently reset their `meta` JSONB to `{}` on every save (wiping any previously-set gender/allergies/etc.). Both forms now merge `{ ...initialData.meta, gender }` instead of overwriting.
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):

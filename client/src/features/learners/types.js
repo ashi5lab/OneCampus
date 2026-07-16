@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
 // Mirrors server/modules/learners/controller.js's learnerCreateSchema — keep
-// the two in sync if the API contract changes.
+// the two in sync if the API contract changes. `gender` isn't a real
+// top-level column (it lives in the DB's `meta` JSONB) — it's here purely
+// so the form has something to register/validate; LearnerFormModal folds it
+// into `meta` before submitting.
 export const learnerFormSchema = z.object({
   username: z.string().min(1, 'Username is required'),
   email: z.string().email('A valid email is required'),
@@ -13,7 +16,8 @@ export const learnerFormSchema = z.object({
     (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
     z.number().int().optional()
   ),
-  status: z.string().default('active')
+  status: z.string().default('active'),
+  gender: z.enum(['male', 'female', 'other', '']).optional()
 });
 
 export const learnerUpdateSchema = z.object({
@@ -24,5 +28,6 @@ export const learnerUpdateSchema = z.object({
     (val) => (val === '' || val === undefined || val === null ? undefined : Number(val)),
     z.number().int().optional()
   ),
-  status: z.string().default('active')
+  status: z.string().default('active'),
+  gender: z.enum(['male', 'female', 'other', '']).optional()
 });

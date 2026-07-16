@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
+import { SearchSelect } from '../../../components/SearchSelect';
+import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners, useCreateLearner, useUpdateLearner, useDeleteLearner } from '../hooks/useLearners';
 import { LearnerFormModal } from './LearnerFormModal';
 
 const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive' };
+const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
 
 function initials(first, last) {
   return `${first?.[0] || ''}${last?.[0] || ''}`.toUpperCase();
@@ -17,11 +20,26 @@ function initials(first, last) {
 export function LearnersPage() {
   const { t } = useConfig();
   const { can } = useAuth();
-  const { data: learners, isLoading, error } = useLearners();
+  const { data: cohorts } = useCohorts();
+
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [cohortId, setCohortId] = useState('');
+  const [gender, setGender] = useState('');
+  const [status, setStatus] = useState('');
+
+  // Debounce the search box so every keystroke doesn't fire a request.
+  useEffect(() => {
+    const timeout = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
+
+  const filters = { search: search || undefined, cohort_id: cohortId || undefined, gender: gender || undefined, status: status || undefined };
+  const { data: learners, isLoading, error } = useLearners({ filters });
   const createLearner = useCreateLearner();
   const updateLearner = useUpdateLearner();
   const deleteLearner = useDeleteLearner();
-  
+
   const [showForm, setShowForm] = useState(false);
   const [editingLearner, setEditingLearner] = useState(null);
 
@@ -44,7 +62,10 @@ export function LearnersPage() {
     { key: 'status', header: 'Status', render: (row) => (
       <Badge variant={STATUS_VARIANT[row.status] || 'active'}>{row.status}</Badge>
     ) },
-    { key: 'cohort_id', header: t('cohort'), render: (row) => row.cohort_id ?? '—' }
+    // Previously showed the raw cohort_id — getAll now joins onec_cohorts
+    // and returns cohort_name for exactly this.
+    { key: 'cohort', header: t('cohort'), render: (row) => row.cohort_name || '—' },
+    { key: 'gender', header: 'Gender', render: (row) => GENDER_LABEL[row.meta?.gender] || '—' }
   ];
 
   if (can('learners.manage')) {
@@ -54,12 +75,12 @@ export function LearnersPage() {
       render: (row) => (
         <div className="flex justify-end gap-3">
           <button onClick={() => setEditingLearner(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
-          <button 
+          <button
             onClick={() => {
               if (window.confirm(`Are you sure you want to delete ${row.first_name} ${row.last_name}?`)) {
                 deleteLearner.mutate(row.id);
               }
-            }} 
+            }}
             className="text-xs font-semibold text-danger hover:opacity-80"
           >
             Delete
@@ -94,6 +115,59 @@ export function LearnersPage() {
         <StatCard label={`Total ${t('learners')}`} value={isLoading ? '—' : learners.length} />
       </div>
 
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <label className="min-w-[200px] flex-1">
+          <div className="mb-1 text-xs font-semibold text-ink-700">Search</div>
+          <input
+            className="input"
+            placeholder={`Search by name or registry no…`}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </label>
+        <label className="w-[200px]">
+          <div className="mb-1 text-xs font-semibold text-ink-700">{t('cohort')}</div>
+          <SearchSelect
+            options={(cohorts || []).map((c) => ({ value: c.id, label: c.name }))}
+            value={cohortId}
+            onChange={setCohortId}
+            placeholder="All"
+          />
+        </label>
+        <label className="w-[140px]">
+          <div className="mb-1 text-xs font-semibold text-ink-700">Gender</div>
+          <select className="input" value={gender} onChange={(e) => setGender(e.target.value)}>
+            <option value="">All</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label className="w-[140px]">
+          <div className="mb-1 text-xs font-semibold text-ink-700">Status</div>
+          <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="">All</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </label>
+        {(searchInput || cohortId || gender || status) && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchInput('');
+              setCohortId('');
+              setGender('');
+              setStatus('');
+            }}
+            className="rounded border border-border px-3 py-2 text-xs font-semibold text-ink-700 hover:bg-surface-muted"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && (
@@ -102,7 +176,7 @@ export function LearnersPage() {
           </div>
         )}
         {learners && (
-          <DataTable columns={columns} rows={learners} rowKey={(row) => row.id} />
+          <DataTable columns={columns} rows={learners} rowKey={(row) => row.id} emptyMessage="No matching learners." />
         )}
       </div>
 
