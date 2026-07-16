@@ -31,6 +31,7 @@ import { AssignmentDetailPage } from './features/assignments/components/Assignme
 import { OnlineExamDetailPage } from './features/onlineExams/components/OnlineExamDetailPage';
 import { ExamsPage } from './features/exams/components/ExamsPage';
 import { ReportsPage } from './features/reports/components/ReportsPage';
+import { ProfilePage } from './features/profile/components/ProfilePage';
 
 export default function App() {
   return (
@@ -63,6 +64,10 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
+        {/* Every authenticated user's own account screen — no permission
+            gate, all routes inside touch only the caller's own row (the
+            admin reset section hides itself without users.manage_passwords). */}
+        <Route path="profile" element={<ProfilePage />} />
         <Route
           path="learners"
           element={
