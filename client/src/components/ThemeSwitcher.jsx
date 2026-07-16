@@ -4,7 +4,8 @@ const THEMES = [
   { key: 'slate', label: 'Slate & Amber' },
   { key: 'chalkboard', label: 'Chalkboard Fresh' },
   { key: 'blueprint', label: 'Blueprint Precision' },
-  { key: 'purple', label: 'Purple' }
+  { key: 'purple', label: 'Purple' },
+  { key: 'mono', label: 'Monochrome (Geist Mono)' }
 ];
 
 // Internal/admin-only theme toggle — proves the token system is decoupled
