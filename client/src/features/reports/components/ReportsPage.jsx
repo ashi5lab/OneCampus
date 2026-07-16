@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { OverviewTab } from './OverviewTab';
+import { AnalyticsTab } from './AnalyticsTab';
 import { AttendanceTab } from './AttendanceTab';
 import { AcademicPerformanceTab } from './AcademicPerformanceTab';
 import { AssignmentsTab } from './AssignmentsTab';
@@ -9,6 +10,7 @@ import { CertificatesTab } from './CertificatesTab';
 
 const TABS = [
   { value: 'overview', label: 'Overview', Component: OverviewTab },
+  { value: 'analytics', label: 'Analytics', Component: AnalyticsTab },
   { value: 'attendance', label: 'Attendance', Component: AttendanceTab },
   { value: 'academic', label: 'Academic Performance', Component: AcademicPerformanceTab },
   { value: 'assignments', label: 'Assignments', Component: AssignmentsTab },
