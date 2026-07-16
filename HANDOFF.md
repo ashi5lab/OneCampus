@@ -150,8 +150,6 @@ Permissions: `broadcast.view`/`broadcast.manage` (admin/staff/instructor), `broa
 
 ---
 
----
-
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):
