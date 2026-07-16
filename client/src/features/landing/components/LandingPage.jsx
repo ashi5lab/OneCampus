@@ -1,7 +1,22 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 import { InstallAppPrompt } from '../../../components/InstallAppPrompt';
 
 export function LandingPage() {
+  const { isAuthenticated, initializing } = useAuth();
+  const navigate = useNavigate();
+
+  // Same reasoning as LoginPage: the installed PWA icon can reopen to
+  // whichever route "Add to Home Screen" was tapped from, including this
+  // one — don't leave an already-logged-in user stranded on the marketing
+  // page when their session silently restored in the background.
+  useEffect(() => {
+    if (!initializing && isAuthenticated) {
+      navigate('/app', { replace: true });
+    }
+  }, [initializing, isAuthenticated, navigate]);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4 py-10 font-body">
       <div className="w-full max-w-[420px]">
