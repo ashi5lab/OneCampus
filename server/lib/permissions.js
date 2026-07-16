@@ -28,7 +28,9 @@ const ALL_PERMISSIONS = [
   'online_exams.view', 'online_exams.manage', 'online_exams.grade', 'online_exams.take',
   'reports.view',
   'users.manage_passwords',
-  'broadcast.view', 'broadcast.manage', 'broadcast.approve', 'broadcast.configure'
+  'broadcast.view', 'broadcast.manage', 'broadcast.approve', 'broadcast.configure',
+  'staff.view', 'staff.manage',
+  'access_control.manage'
 ];
 
 // messages.view/.send are granted to every role below — unlike the
@@ -40,11 +42,15 @@ const ALL_PERMISSIONS = [
 // one permission pair with no row-scoping concern at all.
 const DEFAULT_ROLE_PERMISSIONS = {
   admin: ALL_PERMISSIONS,
-  // Everything except resetting other users' passwords and editing the
-  // broadcast API config (which holds provider credentials) — both stay
-  // admin-only powers by default (a tenant can still grant either to staff
-  // by inserting the row into onec_role_permissions).
-  staff: ALL_PERMISSIONS.filter((p) => !['users.manage_passwords', 'broadcast.configure'].includes(p)),
+  // Deliberately narrow — messages + notices only. Previously this role
+  // defaulted to "everything except a couple of admin-only powers" (a
+  // co-admin in practice), but there was no roster/creation UI for it at
+  // all, so no tenant could actually have staff-role users yet — safe to
+  // redefine. Any broader per-tenant access (e.g. library management,
+  // grading) is meant to come from the new Access Control module
+  // (server/modules/accessControl) layering an access group onto the role
+  // or onto specific staff users, not from a hardcoded default here.
+  staff: ['messages.view', 'messages.send', 'notices.view', 'notices.manage'],
   instructor: [
     'units.view', 'cohorts.view', 'modules.view', 'instructors.view',
     'learners.view', 'guardians.view',
@@ -86,16 +92,51 @@ async function seedDefaultPermissions(client) {
   }
 }
 
+// A caller's effective permissions are their role's onec_role_permissions
+// rows UNION every Access Control group that applies to them (see
+// server/modules/accessControl) — either a group targeting their whole role,
+// or one targeting them individually/as part of an explicit set of users.
+// This query references onec_access_groups/onec_access_group_members,
+// which won't exist on a tenant that hasn't yet run migration 015 — rather
+// than 500ing on every single permission check tenant-wide the moment this
+// code deploys ahead of that migration, PG error 42P01 (undefined_table)
+// falls back to the plain role-only query, so the rest of the app keeps
+// working and only the not-yet-migrated Access Control feature is absent.
+const EFFECTIVE_PERMISSIONS_QUERY = `
+  SELECT permission FROM onec_role_permissions WHERE role = $1
+  UNION
+  SELECT jsonb_array_elements_text(g.permissions) AS permission
+  FROM onec_access_groups g
+  WHERE (g.target_type = 'role' AND g.target_role = $1)
+     OR (g.target_type = 'users' AND g.id IN (
+           SELECT group_id FROM onec_access_group_members WHERE user_id = $2
+         ))
+`;
+
+function isUndefinedTableError(err) {
+  return err.code === '42P01';
+}
+
 // req.db is already pinned to the tenant's schema (see middleware/tenantDb.js).
 async function hasPermission(req, permission) {
   const role = req.user?.role;
   if (!role) return false;
 
-  const result = await req.db.query(
-    'SELECT 1 FROM onec_role_permissions WHERE role = $1 AND permission = $2 LIMIT 1',
-    [role, permission]
-  );
-  return result.rows.length > 0;
+  try {
+    const result = await req.db.query(`SELECT 1 FROM (${EFFECTIVE_PERMISSIONS_QUERY}) p WHERE permission = $3 LIMIT 1`, [
+      role,
+      req.user.userId,
+      permission
+    ]);
+    return result.rows.length > 0;
+  } catch (err) {
+    if (!isUndefinedTableError(err)) throw err;
+    const fallback = await req.db.query('SELECT 1 FROM onec_role_permissions WHERE role = $1 AND permission = $2 LIMIT 1', [
+      role,
+      permission
+    ]);
+    return fallback.rows.length > 0;
+  }
 }
 
 async function cannot(req, permission) {
@@ -110,8 +151,14 @@ async function getPermissionsForRole(req) {
   const role = req.user?.role;
   if (!role) return [];
 
-  const result = await req.db.query('SELECT permission FROM onec_role_permissions WHERE role = $1', [role]);
-  return result.rows.map((row) => row.permission);
+  try {
+    const result = await req.db.query(EFFECTIVE_PERMISSIONS_QUERY, [role, req.user.userId]);
+    return result.rows.map((row) => row.permission);
+  } catch (err) {
+    if (!isUndefinedTableError(err)) throw err;
+    const fallback = await req.db.query('SELECT permission FROM onec_role_permissions WHERE role = $1', [role]);
+    return fallback.rows.map((row) => row.permission);
+  }
 }
 
 module.exports = {

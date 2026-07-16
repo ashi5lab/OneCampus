@@ -162,6 +162,22 @@ The user had already added `vite-plugin-pwa` in a prior commit (`4219732 PWA set
 
 ---
 
+## 1m. This session: Access Control module (access groups) + Staff role/roster
+
+**Access Control** (`server/modules/accessControl`, `onec_access_groups` + `onec_access_group_members`, migration `015`) — admin-defined named groups of permissions, layered **additively** on top of `onec_role_permissions` (never removes access, only adds). A group's `target_type` is `'role'` (every user currently holding that role) or `'users'` (an explicit set of individual users, membership fully replaced on every edit rather than diffed). Enforced centrally: `lib/permissions.js`'s `hasPermission()`/`getPermissionsForRole()` — used by every `requirePermission()` check and `GET /auth/me` — now run a `UNION` of the role table with every applicable access group, so **every existing permission check across the whole app picks this up with no other code changes**.
+
+**Deploy-order safety, read this before touching `lib/permissions.js` again**: that `UNION` query references two tables that don't exist until migration `015` runs, and `hasPermission` gates nearly every request in the app — letting it throw on a missing table would 500 the *entire app* for any tenant that hasn't migrated yet the moment this code deploys. Both functions catch Postgres `42P01` (undefined_table) and fall back to the plain role-only query in that case, so an unmigrated tenant just doesn't have Access Control yet rather than losing everything. Keep this fallback if you extend these functions further.
+
+Admin-only (`access_control.manage`) — this module controls the permission system itself. Frontend: `client/src/features/accessControl/` — `AccessControlPage` (group list) + `AccessGroupFormModal` (name/description, permissions grouped into a checkbox grid by module prefix, target role-or-users picker reusing `UserSearchSelect`).
+
+**Staff role/roster**: the `staff` role has existed in `lib/permissions.js` since early in the project but had **no roster/creation UI at all** — closed via `server/modules/staff` (`onec_staff` table, mirrors `onec_instructors`'s shape) and a "Staff" tab inside the existing Teachers page (`InstructorsPage.jsx` — same `/app/instructors` URL as before, tab only shown to callers with `staff.view`, so most roles see exactly what they saw before this). Since there was no creation path yet, it was safe to also **redefine `staff`'s default permission set** from "everything except a couple of admin-only powers" down to just `messages.view/.send` + `notices.view/.manage` — broader per-tenant access for staff is meant to come from an Access Control group now, not a hardcoded role default. `staff.view`/`staff.manage` are admin-only, same reasoning as `users.manage_passwords`.
+
+**Known gap** (documented in `server/modules/accessControl/README.md`): a handful of controllers (library/notices/assignments/onlineExams) have `isManager = role === 'admin' || role === 'staff'`-style row-scoping shortcuts checked against the literal role string rather than through `hasPermission()`. A staff user granted a narrower permission via an access group (e.g. just `library.view`) still trips those shortcuts and gets manager-level scoping in list results. Not a privilege-escalation issue (the outer `requirePermission()` gate still blocks anyone without the real permission) — just over-broad *scoping* for staff given access-group-granted permissions in a few list endpoints. Reworking those checks to go through `hasPermission()` would close this properly; out of scope for this pass.
+
+**Must run before either of these work**: apply `server/migrations/015_add_access_control_and_staff.sql` to each existing tenant schema. Note its comment: it adds the new narrow `staff` permission rows without removing any broader ones a tenant's existing `staff` role might already have — actually narrowing an existing tenant down to the new default is a separate, explicit choice, not automated by this migration.
+
+---
+
 ## 2. Environment setup
 
 Two `.env` files exist locally (both gitignored, **not** in the repo):

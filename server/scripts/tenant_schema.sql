@@ -312,6 +312,45 @@ CREATE TABLE onec_role_permissions (
     UNIQUE(role, permission)
 );
 
+-- Access Control (see server/modules/accessControl) — admin-defined named
+-- groups of permissions, layered additively on top of onec_role_permissions
+-- rather than replacing them. A group targets either every user of one role
+-- (target_type='role') or an explicit set of individual users
+-- (target_type='users', via onec_access_group_members). A user's effective
+-- permission set is their role's onec_role_permissions rows UNION every
+-- group that applies to them — see lib/permissions.js's hasPermission().
+CREATE TABLE onec_access_groups (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    permissions JSONB NOT NULL DEFAULT '[]',
+    target_type VARCHAR(20) NOT NULL,   -- 'role' | 'users'
+    target_role VARCHAR(50),            -- set when target_type = 'role'
+    created_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE onec_access_group_members (
+    group_id INT REFERENCES onec_access_groups(id) ON DELETE CASCADE,
+    user_id INT REFERENCES onec_users(id) ON DELETE CASCADE,
+    PRIMARY KEY (group_id, user_id)
+);
+
+-- Staff — a lighter-weight roster than instructors, for front-office/admin
+-- support accounts (role='staff'). Deliberately its own table rather than
+-- reusing onec_instructors, since a staff member isn't a teacher and
+-- shouldn't show up anywhere instructors do (grading, allocations, ...).
+CREATE TABLE onec_staff (
+    id SERIAL PRIMARY KEY,
+    user_id INT UNIQUE REFERENCES onec_users(id) ON DELETE CASCADE,
+    staff_id VARCHAR(50) UNIQUE NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    meta JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Audit trail for sensitive actions (spec Part 11): grading, deletions, and
 -- permission denials. user_id has no FK/ON DELETE CASCADE on purpose — a
 -- log entry must survive the user who caused it being deleted.
