@@ -55,6 +55,12 @@ CREATE TABLE onec_guardians (
     last_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20) NOT NULL,
     address TEXT NOT NULL,
+    -- WhatsApp is opt-in, not opt-out, per Meta's business-messaging policy
+    -- (see server/lib/whatsappNotify.js) — defaults false, a staff member
+    -- or the guardian themself must explicitly turn it on before any
+    -- automatic WhatsApp notification (e.g. an absentee alert) is sent to
+    -- this phone number.
+    whatsapp_opt_in BOOLEAN NOT NULL DEFAULT false,
     meta JSONB DEFAULT '{}'
 );
 

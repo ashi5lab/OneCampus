@@ -11,6 +11,7 @@ const guardianCreateSchema = z.object({
   last_name: z.string().min(1, "Last name is required"),
   phone: z.string().min(1, "Phone is required"),
   address: z.string().min(1, "Address is required"),
+  whatsapp_opt_in: z.boolean().optional().default(false),
   meta: z.record(z.any()).optional().default({})
 });
 
@@ -19,6 +20,7 @@ const guardianUpdateSchema = z.object({
   last_name: z.string().min(1, "Last name is required"),
   phone: z.string().min(1, "Phone is required"),
   address: z.string().min(1, "Address is required"),
+  whatsapp_opt_in: z.boolean().optional().default(false),
   meta: z.record(z.any()).optional().default({})
 });
 
@@ -65,7 +67,7 @@ async function create(req, res) {
     const parsed = guardianCreateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { username, email, password, first_name, last_name, phone, address, meta } = parsed.data;
+    const { username, email, password, first_name, last_name, phone, address, whatsapp_opt_in, meta } = parsed.data;
     const password_hash = await bcrypt.hash(password, 10);
 
     await req.db.query('BEGIN');
@@ -77,9 +79,9 @@ async function create(req, res) {
       const user_id = userResult.rows[0].id;
 
       const guardianResult = await req.db.query(
-        `INSERT INTO onec_guardians (user_id, first_name, last_name, phone, address, meta)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [user_id, first_name, last_name, phone, address, meta]
+        `INSERT INTO onec_guardians (user_id, first_name, last_name, phone, address, whatsapp_opt_in, meta)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [user_id, first_name, last_name, phone, address, whatsapp_opt_in, meta]
       );
 
       await req.db.query('COMMIT');
@@ -101,11 +103,11 @@ async function update(req, res) {
     const parsed = guardianUpdateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { first_name, last_name, phone, address, meta } = parsed.data;
+    const { first_name, last_name, phone, address, whatsapp_opt_in, meta } = parsed.data;
 
     const result = await req.db.query(
-      'UPDATE onec_guardians SET first_name = $1, last_name = $2, phone = $3, address = $4, meta = $5 WHERE id = $6 RETURNING *',
-      [first_name, last_name, phone, address, meta, id]
+      'UPDATE onec_guardians SET first_name = $1, last_name = $2, phone = $3, address = $4, whatsapp_opt_in = $5, meta = $6 WHERE id = $7 RETURNING *',
+      [first_name, last_name, phone, address, whatsapp_opt_in, meta, id]
     );
 
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });

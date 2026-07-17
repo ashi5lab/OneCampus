@@ -8,12 +8,14 @@ export const guardianFormSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   phone: z.string().min(1, 'Phone is required'),
-  address: z.string().min(1, 'Address is required')
+  address: z.string().min(1, 'Address is required'),
+  whatsapp_opt_in: z.boolean().optional().default(false)
 });
 
 export const guardianUpdateSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   phone: z.string().min(1, 'Phone is required'),
-  address: z.string().min(1, 'Address is required')
+  address: z.string().min(1, 'Address is required'),
+  whatsapp_opt_in: z.boolean().optional().default(false)
 });

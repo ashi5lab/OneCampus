@@ -3,6 +3,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
+import { Badge } from '../../../components/Badge';
 import { useGuardians, useCreateGuardian, useUpdateGuardian, useDeleteGuardian } from '../hooks/useGuardians';
 import { useGuardianLinks } from '../hooks/useGuardianLinks';
 import { useLearners } from '../../learners/hooks/useLearners';
@@ -36,7 +37,12 @@ export function GuardiansPage() {
         </div>
       )
     },
-    { key: 'address', header: 'Address', render: (row) => row.address }
+    { key: 'address', header: 'Address', render: (row) => row.address },
+    {
+      key: 'whatsapp',
+      header: 'WhatsApp',
+      render: (row) => <Badge variant={row.whatsapp_opt_in ? 'active' : 'inactive'}>{row.whatsapp_opt_in ? 'Opted in' : 'Not opted in'}</Badge>
+    }
   ];
 
   if (canManageLinks) {

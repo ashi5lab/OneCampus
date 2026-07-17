@@ -41,7 +41,12 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
     );
   }
 
-  const runtimeVars = channel === 'sms' ? '{{phone}}, {{message}}' : '{{phone}}, {{voice_url}}';
+  const RUNTIME_VARS_BY_CHANNEL = {
+    sms: '{{phone}}, {{message}}',
+    voicemail: '{{phone}}, {{voice_url}}',
+    whatsapp_absentee: '{{phone}}, {{learner_name}}, {{cohort_name}}, {{date}}'
+  };
+  const runtimeVars = RUNTIME_VARS_BY_CHANNEL[channel] || '{{phone}}';
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
