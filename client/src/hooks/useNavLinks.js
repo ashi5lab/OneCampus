@@ -34,6 +34,7 @@ export function useNavLinks() {
     hasModule('messaging') && can('messages.view') && { to: '/app/messages', label: 'Messages' },
     can('broadcast.view') && { to: '/app/broadcast', label: 'Broadcast' },
     can('leave.apply') && { to: '/app/leave', label: 'Leave' },
+    can('calendar.view') && { to: '/app/calendar', label: 'Calendar' },
     can('reports.view') && { to: '/app/reports', label: 'Reports' },
     can('access_control.manage') && { to: '/app/access-control', label: 'Access Control' }
   ].filter(Boolean);

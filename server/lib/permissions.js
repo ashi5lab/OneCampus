@@ -31,7 +31,9 @@ const ALL_PERMISSIONS = [
   'broadcast.view', 'broadcast.manage', 'broadcast.approve', 'broadcast.configure',
   'staff.view', 'staff.manage',
   'access_control.manage',
-  'leave.apply', 'leave.view_own', 'leave.approve'
+  'leave.apply', 'leave.view_own', 'leave.approve',
+  'calendar.view', 'calendar.manage',
+  'timetable.view', 'timetable.manage'
 ];
 
 // messages.view/.send are granted to every role below — unlike the
@@ -51,7 +53,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
   // grading) is meant to come from the new Access Control module
   // (server/modules/accessControl) layering an access group onto the role
   // or onto specific staff users, not from a hardcoded default here.
-  staff: ['messages.view', 'messages.send', 'notices.view', 'notices.manage', 'leave.apply', 'leave.view_own', 'leave.approve'],
+  staff: ['messages.view', 'messages.send', 'notices.view', 'notices.manage', 'leave.apply', 'leave.view_own', 'leave.approve', 'calendar.view', 'timetable.view'],
   instructor: [
     'units.view', 'cohorts.view', 'modules.view', 'instructors.view',
     'learners.view', 'guardians.view',
@@ -63,7 +65,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
     'assignments.view', 'assignments.manage', 'assignments.grade',
     'online_exams.view', 'online_exams.manage', 'online_exams.grade',
     'broadcast.view', 'broadcast.manage',
-    'leave.apply', 'leave.view_own', 'leave.approve'
+    'leave.apply', 'leave.view_own', 'leave.approve',
+    'calendar.view', 'timetable.view'
   ],
   // Coarse-grained on purpose (see the row-level-scoping note above) — kept
   // to just enough to view their own records, not the full roster/management
@@ -73,13 +76,14 @@ const DEFAULT_ROLE_PERMISSIONS = {
   // admin/staff-only too, same reasoning. assignments.submit (not
   // .manage/.grade) is the learner-side counterpart of a teacher posting
   // and grading homework.
-  learner: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view', 'messages.view', 'messages.send', 'notices.view', 'library.view', 'assignments.view', 'assignments.submit', 'online_exams.view', 'online_exams.take', 'leave.apply', 'leave.view_own'],
+  learner: ['attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view', 'messages.view', 'messages.send', 'notices.view', 'library.view', 'assignments.view', 'assignments.submit', 'online_exams.view', 'online_exams.take', 'leave.apply', 'leave.view_own', 'calendar.view', 'timetable.view'],
   // guardian_links.view lets a guardian look up which learners they're
   // linked to (lib/ownGuardianLearners.js needs this for row scoping) —
   // not .manage, since linking/unlinking a child is a staff-side action.
   guardian: [
     'attendance.view', 'evaluations.view', 'certificates.view', 'kindergarten_activity.view',
-    'guardian_links.view', 'messages.view', 'messages.send', 'notices.view', 'library.view', 'assignments.view', 'online_exams.view'
+    'guardian_links.view', 'messages.view', 'messages.send', 'notices.view', 'library.view', 'assignments.view', 'online_exams.view',
+    'calendar.view', 'timetable.view'
   ]
 };
 
