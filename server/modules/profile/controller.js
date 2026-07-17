@@ -4,6 +4,8 @@ const { z } = require('zod');
 const { isConfigured, uploadBuffer } = require('../../lib/cloudinary');
 const { logAudit } = require('../../lib/audit');
 const { listUsersWithNames } = require('../../lib/userDirectory');
+const { revokeAllUserTokens } = require('../../lib/refreshTokens');
+const { clearAuthCookies } = require('../../lib/authCookies');
 
 // heic/heif: iPhones save camera photos in this format by default. Some
 // browser/OS combinations report it as "image/heic", others as
@@ -121,6 +123,15 @@ async function changeOwnPassword(req, res) {
     const newHash = await bcrypt.hash(new_password, 10);
     await req.db.query('UPDATE onec_users SET password_hash = $1 WHERE id = $2', [newHash, req.user.userId]);
 
+    // Sessions live until the password changes or someone force-logs-out
+    // the account — this is that boundary firing. Revokes every device's
+    // refresh token (including this one) and clears this response's own
+    // cookies so the current tab doesn't keep working off its still-valid
+    // 15-minute access token until it naturally expires; the frontend
+    // treats the resulting 401 on next refresh as "logged out" already.
+    await revokeAllUserTokens(req.db, req.user.userId);
+    clearAuthCookies(res);
+
     logAudit(req, 'user.password_changed', { user_id: req.user.userId, by: 'self' });
     res.json({ data: { changed: true } });
   } catch (err) {
@@ -163,6 +174,11 @@ async function adminChangePassword(req, res) {
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
+    // Same as self-service password change — every device the target user
+    // was logged in on stops working (not the acting admin's own session,
+    // just the target's).
+    await revokeAllUserTokens(req.db, result.rows[0].id);
+
     logAudit(req, 'user.password_changed', {
       user_id: result.rows[0].id,
       username: result.rows[0].username,
@@ -176,6 +192,32 @@ async function adminChangePassword(req, res) {
   }
 }
 
+// The other end of "sessions live indefinitely until password change or an
+// explicit logout" — this is the explicit-logout path for someone who
+// still knows their own password but should stop being logged in anyway
+// (lost device, offboarding, suspicious activity). Doesn't touch the
+// password at all, just every refresh token — same permission as password
+// reset, since it's the same "administer another user's auth" surface.
+async function forceLogoutUser(req, res) {
+  try {
+    const { userId } = req.params;
+    const result = await req.db.query('SELECT id, username FROM onec_users WHERE id = $1', [userId]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    await revokeAllUserTokens(req.db, result.rows[0].id);
+
+    logAudit(req, 'user.force_logout', {
+      user_id: result.rows[0].id,
+      username: result.rows[0].username,
+      admin_user_id: req.user.userId
+    });
+    res.json({ data: { loggedOut: true, username: result.rows[0].username } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   upload,
   uploadProfilePicture,
@@ -183,5 +225,6 @@ module.exports = {
   getMe,
   changeOwnPassword,
   listUsers,
-  adminChangePassword
+  adminChangePassword,
+  forceLogoutUser
 };

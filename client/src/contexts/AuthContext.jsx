@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient, setAuthToken, refreshAccessToken, logoutRequest } from '../lib/apiClient';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const queryClient = useQueryClient();
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState([]);
@@ -33,7 +35,13 @@ export function AuthProvider({ children }) {
     setPermissions([]);
     setProfile(null);
     setDesignation(null);
-  }, []);
+    // Wipes every cached API response (roster lists, messages, grades, ...)
+    // — without this, a shared/kiosk device could flash the previous
+    // user's data for an instant before the next login's queries refetch,
+    // and a "logged out" device would still be sitting on stale personal
+    // data in memory.
+    queryClient.clear();
+  }, [queryClient]);
 
   const refreshPermissions = useCallback(async () => {
     try {

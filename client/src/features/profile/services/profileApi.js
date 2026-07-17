@@ -11,5 +11,6 @@ export const profileApi = {
   changePassword: (payload) => apiClient.put('/profile/password', payload).then((res) => res.data),
   listUsers: () => apiClient.get('/profile/users').then((res) => res.data),
   adminChangePassword: (userId, payload) =>
-    apiClient.put(`/profile/users/${userId}/password`, payload).then((res) => res.data)
+    apiClient.put(`/profile/users/${userId}/password`, payload).then((res) => res.data),
+  forceLogoutUser: (userId) => apiClient.post(`/profile/users/${userId}/force-logout`).then((res) => res.data)
 };

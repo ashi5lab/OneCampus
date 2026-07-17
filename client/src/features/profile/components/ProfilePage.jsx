@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 import { ProfilePictureUploader } from './ProfilePictureUploader';
-import { useMyProfile, useChangePassword, useAllUsers, useAdminChangePassword, MY_PROFILE_KEY } from '../hooks/useProfile';
+import { useMyProfile, useChangePassword, useAllUsers, useAdminChangePassword, useForceLogoutUser, MY_PROFILE_KEY } from '../hooks/useProfile';
 
 // Every authenticated user's own account screen (reached by clicking the
 // avatar/name in the sidebar): profile picture + change-own-password. An
@@ -59,6 +59,7 @@ export function ProfilePage() {
       <ChangePasswordCard />
 
       {canManagePasswords && <AdminPasswordResetCard />}
+      {canManagePasswords && <ForceLogoutCard />}
     </div>
   );
 }
@@ -181,6 +182,58 @@ function AdminPasswordResetCard() {
         {adminChangePassword.isPending ? 'Saving…' : 'Reset Password'}
       </button>
     </form>
+  );
+}
+
+// A logged-in session now lasts effectively indefinitely (see server/
+// config/env.js's REFRESH_TOKEN_TTL_DAYS) — it only ends when the
+// password changes or someone force-logs-out the account here. This is
+// the "someone force-logs-out the account" half: doesn't touch the
+// password, just ends every device that user is currently logged in on
+// (lost/stolen device, suspicious activity, offboarding).
+function ForceLogoutCard() {
+  const { data: users } = useAllUsers({ enabled: true });
+  const forceLogout = useForceLogoutUser();
+  const [userId, setUserId] = useState(null);
+  const [doneFor, setDoneFor] = useState(null);
+
+  function handleClick() {
+    if (!userId) return;
+    const target = (users || []).find((u) => u.id === userId);
+    if (!window.confirm(`Log out ${target?.username || 'this user'} everywhere? They'll need to sign in again on every device.`)) return;
+
+    setDoneFor(null);
+    forceLogout.mutate(userId, {
+      onSuccess: (data) => {
+        setDoneFor(data.username);
+        setUserId(null);
+      }
+    });
+  }
+
+  return (
+    <div className="mb-5 rounded border border-border bg-surface p-5">
+      <div className="mb-1 text-[15px] font-bold text-ink-900">Force Logout</div>
+      <div className="mb-3 text-[12px] text-ink-500">
+        Admin only — ends a user's session on every device immediately, without changing their password.
+      </div>
+
+      <Field label="User">
+        <UserSearchSelect users={users || []} value={userId} onChange={setUserId} placeholder="Search users…" />
+      </Field>
+
+      {forceLogout.error && <div className="mb-3 text-xs font-semibold text-danger">{forceLogout.error.message}</div>}
+      {doneFor && <div className="mb-3 text-xs font-semibold text-success">{doneFor} has been logged out everywhere.</div>}
+
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={forceLogout.isPending || !userId}
+        className="rounded border border-danger px-4 py-2 text-xs font-semibold text-danger disabled:opacity-60"
+      >
+        {forceLogout.isPending ? 'Logging out…' : 'Force Logout'}
+      </button>
+    </div>
   );
 }
 
