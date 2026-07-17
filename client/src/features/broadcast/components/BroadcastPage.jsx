@@ -4,11 +4,13 @@ import { Badge } from '../../../components/Badge';
 import { useBroadcastConfigs } from '../hooks/useBroadcast';
 import { SmsTab } from './SmsTab';
 import { VoicemailTab } from './VoicemailTab';
+import { WhatsappAbsenteeTab } from './WhatsappAbsenteeTab';
 import { ChannelConfigModal } from './ChannelConfigModal';
 
 const TABS = [
   { value: 'sms', label: 'SMS' },
-  { value: 'voicemail', label: 'Voicemail' }
+  { value: 'voicemail', label: 'Voicemail' },
+  { value: 'whatsapp_absentee', label: 'WhatsApp (Absentee Alerts)' }
 ];
 
 export function BroadcastPage() {
@@ -38,7 +40,7 @@ export function BroadcastPage() {
               onClick={() => setConfiguring(true)}
               className="rounded border border-border px-4 py-2 text-[13px] font-semibold text-ink-700 hover:bg-surface-muted"
             >
-              Configure {tab === 'sms' ? 'SMS' : 'Voicemail'} API
+              Configure {TABS.find((t) => t.value === tab)?.label} API
             </button>
           </div>
         )}
@@ -58,7 +60,9 @@ export function BroadcastPage() {
         ))}
       </div>
 
-      {tab === 'sms' ? <SmsTab /> : <VoicemailTab />}
+      {tab === 'sms' && <SmsTab />}
+      {tab === 'voicemail' && <VoicemailTab />}
+      {tab === 'whatsapp_absentee' && <WhatsappAbsenteeTab />}
 
       {configuring && (
         <ChannelConfigModal channel={tab} existing={activeConfig} onClose={() => setConfiguring(false)} />

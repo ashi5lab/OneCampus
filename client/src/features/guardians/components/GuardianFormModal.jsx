@@ -49,6 +49,13 @@ export function GuardianFormModal({ onClose, onSubmit, submitting, submitError, 
           <input className="input w-full" {...register('address')} />
         </Field>
 
+        <label className="mb-3 flex items-start gap-2 text-[13px] text-ink-700">
+          <input type="checkbox" className="mt-0.5" {...register('whatsapp_opt_in')} />
+          <span>
+            This guardian has agreed to receive WhatsApp notifications (attendance alerts, etc.) at the phone number above.
+          </span>
+        </label>
+
         {submitError && (
           <div className="mb-3 text-xs font-semibold text-danger">{submitError}</div>
         )}

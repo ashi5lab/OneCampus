@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
+const { notifyAbsentee } = require('../../lib/whatsappNotify');
 
 const attendanceSchema = z.object({
   learner_id: z.number().int(),
@@ -65,12 +66,13 @@ async function mark(req, res) {
     // If allocation_id is null, our schema has a UNIQUE(learner_id, date, allocation_id) constraint.
     // We will do a manual check if UPSERT syntax becomes complex with NULL constraints.
     const checkQuery = `
-      SELECT id FROM onec_attendance
+      SELECT id, status FROM onec_attendance
       WHERE learner_id = $1 AND date = $2
       ${allocation_id ? 'AND allocation_id = $3' : 'AND allocation_id IS NULL'}
     `;
     const checkParams = allocation_id ? [learner_id, date, allocation_id] : [learner_id, date];
     const existing = await req.db.query(checkQuery, checkParams);
+    const previousStatus = existing.rows[0]?.status ?? null;
 
     let result;
     if (existing.rows.length > 0) {
@@ -90,6 +92,16 @@ async function mark(req, res) {
     }
 
     res.status(200).json({ data: result.rows[0] });
+
+    // Fired after the response is sent — a slow/unreachable WhatsApp
+    // provider must never delay the attendance-marking response itself.
+    // Only a genuine present/late/excused -> absent transition notifies,
+    // not every edit of an already-absent record (re-saving remarks, a
+    // status correction between two non-absent values, etc.).
+    if (status === 'absent' && previousStatus !== 'absent') {
+      notifyAbsentee(req, { learnerId: learner_id, date });
+    }
+    return;
   } catch (err) {
     console.error(err);
     if (err.code === '23503') return res.status(400).json({ error: 'Learner, cohort, or allocation does not exist' });
