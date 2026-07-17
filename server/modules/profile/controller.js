@@ -5,7 +5,17 @@ const { isConfigured, uploadBuffer } = require('../../lib/cloudinary');
 const { logAudit } = require('../../lib/audit');
 const { listUsersWithNames } = require('../../lib/userDirectory');
 
-const ALLOWED_MIME_TYPES = /^image\/(jpeg|png|webp|gif)$/;
+// heic/heif: iPhones save camera photos in this format by default. Some
+// browser/OS combinations report it as "image/heic", others as
+// "application/octet-stream" with a .heic/.heif filename (Safari is
+// inconsistent about this depending on iOS version) — the extension check
+// below is the fallback for that second case. Cloudinary decodes HEIC/HEIF
+// natively and, combined with PROFILE_PICTURE_TRANSFORMATION's
+// fetch_format: 'auto' below, always stores a normal browser-compatible
+// format (JPEG/PNG/WebP) regardless of what came in — nothing HEIC ever
+// gets served back out.
+const ALLOWED_MIME_TYPES = /^image\/(jpeg|png|webp|gif|heic|heif)$/;
+const ALLOWED_HEIC_EXTENSION = /\.(heic|heif)$/i;
 
 // The largest this ever renders at in the UI is 72px (see Avatar usages in
 // ProfilePictureUploader/LearnerProfilePage/InstructorProfilePage) — 256px
@@ -24,8 +34,9 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
-    if (!ALLOWED_MIME_TYPES.test(file.mimetype)) {
-      return cb(new Error('Only JPEG, PNG, WEBP, or GIF images are allowed'));
+    const allowed = ALLOWED_MIME_TYPES.test(file.mimetype) || ALLOWED_HEIC_EXTENSION.test(file.originalname || '');
+    if (!allowed) {
+      return cb(new Error('Only JPEG, PNG, WEBP, GIF, or HEIC/HEIF images are allowed'));
     }
     cb(null, true);
   }

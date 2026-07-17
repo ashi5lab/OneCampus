@@ -2,7 +2,11 @@ import { useRef, useState } from 'react';
 import { Avatar } from '../../../components/Avatar';
 import { useUploadProfilePicture, useRemoveProfilePicture } from '../hooks/useProfilePicture';
 
-const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp,image/gif';
+// heic/heif included so iOS actually offers/sends the original photo
+// instead of transcoding or blocking it at the picker — the backend
+// decodes HEIC/HEIF via Cloudinary and always stores a browser-compatible
+// format regardless (see server/modules/profile/controller.js).
+const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif';
 
 // Only rendered on a profile page when the viewer IS that profile (see
 // LearnerProfilePage/InstructorProfilePage) — there's no "set someone
