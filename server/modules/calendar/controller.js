@@ -45,7 +45,14 @@ async function listRaw(req, res) {
   try {
     const { clause, params } = audienceWhereClause(req, 1);
     const result = await req.db.query(
-      `SELECT ce.*, u.username AS created_by_username
+      // Date columns are cast to text — pg parses `date` columns into JS
+      // Date objects by default, but the frontend (and expandOccurrences
+      // below) expect plain 'YYYY-MM-DD' strings throughout.
+      `SELECT ce.id, ce.title, ce.description, ce.event_type,
+              ce.start_date::text AS start_date, ce.end_date::text AS end_date,
+              ce.is_recurring, ce.recurrence_type, ce.recurrence_days,
+              ce.recurrence_end_date::text AS recurrence_end_date,
+              ce.audience, ce.created_by, ce.created_at, u.username AS created_by_username
        FROM onec_calendar_events ce
        LEFT JOIN onec_users u ON ce.created_by = u.id
        WHERE true${clause}
@@ -214,7 +221,15 @@ async function getAgenda(req, res) {
 
     const [calendarRows, noticeRows, examRows, assignmentRows] = await Promise.all([
       req.db.query(
-        `SELECT * FROM onec_calendar_events
+        // Date columns cast to text — see the comment on listRaw's query;
+        // expandOccurrences below assumes start_date/end_date/
+        // recurrence_end_date are strings, not pg's parsed Date objects.
+        `SELECT id, title, description, event_type,
+                start_date::text AS start_date, end_date::text AS end_date,
+                is_recurring, recurrence_type, recurrence_days,
+                recurrence_end_date::text AS recurrence_end_date,
+                audience, created_by, created_at
+         FROM onec_calendar_events
          WHERE (
            (is_recurring = false AND start_date <= $2 AND COALESCE(end_date, start_date) >= $1)
            OR (is_recurring = true AND start_date <= $2 AND (recurrence_end_date IS NULL OR recurrence_end_date >= $1))
@@ -222,12 +237,12 @@ async function getAgenda(req, res) {
         [from, to, ...audienceFilter.params]
       ),
       req.db.query(
-        `SELECT id, title, created_at::date AS date FROM onec_notices
+        `SELECT id, title, created_at::date::text AS date FROM onec_notices
          WHERE created_at::date BETWEEN $1 AND $2${audienceFilter.clause}`,
         [from, to, ...audienceFilter.params]
       ),
       req.db.query(
-        `SELECT es.id, es.eval_date AS date, ev.name AS evaluation_name, ev.type AS evaluation_type, m.name AS module_name
+        `SELECT es.id, es.eval_date::text AS date, ev.name AS evaluation_name, ev.type AS evaluation_type, m.name AS module_name
          FROM onec_evaluation_schedules es
          JOIN onec_evaluations ev ON es.evaluation_id = ev.id
          JOIN onec_modules m ON es.module_id = m.id
@@ -235,7 +250,7 @@ async function getAgenda(req, res) {
         [from, to]
       ),
       req.db.query(
-        `SELECT a.id, a.title, a.due_date AS date, m.name AS module_name, c.name AS cohort_name
+        `SELECT a.id, a.title, a.due_date::text AS date, m.name AS module_name, c.name AS cohort_name
          FROM onec_assignments a
          JOIN onec_modules m ON a.module_id = m.id
          JOIN onec_cohorts c ON a.cohort_id = c.id

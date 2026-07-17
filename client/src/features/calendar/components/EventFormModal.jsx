@@ -70,6 +70,10 @@ export function EventFormModal({ onClose, onSubmit, submitting, submitError, ini
       payload.recurrence_type = null;
       payload.recurrence_days = [];
       delete payload.recurrence_end_date;
+      // An untouched "End Date (optional)" field submits '' (react-hook-form
+      // never leaves it undefined) — the backend's zod schema only treats
+      // end_date as optional when the key is absent/undefined, not ''.
+      if (!payload.end_date) delete payload.end_date;
     } else {
       delete payload.end_date;
       if (payload.recurrence_type === 'yearly') payload.recurrence_days = [];
