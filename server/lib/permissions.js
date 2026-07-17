@@ -53,7 +53,10 @@ const DEFAULT_ROLE_PERMISSIONS = {
   // grading) is meant to come from the new Access Control module
   // (server/modules/accessControl) layering an access group onto the role
   // or onto specific staff users, not from a hardcoded default here.
-  staff: ['messages.view', 'messages.send', 'notices.view', 'notices.manage', 'leave.apply', 'leave.view_own', 'leave.approve', 'calendar.view', 'timetable.view'],
+  // cohorts.view was added so staff can pick a class in the Timetable
+  // module's "By Class" view (server/modules/timetable) — read-only, no
+  // roster-management access comes with it (cohorts.manage stays admin-only).
+  staff: ['messages.view', 'messages.send', 'notices.view', 'notices.manage', 'leave.apply', 'leave.view_own', 'leave.approve', 'calendar.view', 'timetable.view', 'cohorts.view'],
   instructor: [
     'units.view', 'cohorts.view', 'modules.view', 'instructors.view',
     'learners.view', 'guardians.view',

@@ -66,6 +66,7 @@ const staffRoutes = require('./modules/staff/routes');
 const accessControlRoutes = require('./modules/accessControl/routes');
 const leaveRoutes = require('./modules/leave/routes');
 const calendarRoutes = require('./modules/calendar/routes');
+const timetableRoutes = require('./modules/timetable/routes');
 
 app.use('/api/v1/tenant', tenantRoutes);
 app.use('/api/v1/auth', authRoutes);
@@ -92,6 +93,7 @@ app.use('/api/v1/staff', staffRoutes);
 app.use('/api/v1/access-control', accessControlRoutes);
 app.use('/api/v1/leave', leaveRoutes);
 app.use('/api/v1/calendar', calendarRoutes);
+app.use('/api/v1/timetable', timetableRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
