@@ -2,7 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- maximum-scale=1/user-scalable=no locks pinch/double-tap zoom — the
+         layout is fixed-scale by design (see index.css's 16px .input rule,
+         which fixes the actual cause of iOS auto-zooming into focused form
+         fields; this is the backstop for zoom generally). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#F5F6F8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <!-- iOS ignores the web app manifest for "Add to Home Screen" — these
