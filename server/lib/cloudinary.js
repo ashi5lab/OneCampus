@@ -18,10 +18,23 @@ if (isConfigured) {
 // resourceType defaults to 'image' (profile pictures); audio uploads
 // (voicemail recordings) must pass 'video' — that's Cloudinary's resource
 // type for all audio/video media, there is no separate 'audio' type.
-function uploadBuffer(buffer, { folder, publicId, resourceType = 'image' }) {
+//
+// `transformation`, if given, is applied as an *incoming* transformation —
+// Cloudinary transforms the upload before storing it, so the resized/
+// compressed version becomes the actual stored asset (unlike `eager`, which
+// keeps the original full-size and stores an extra derived copy alongside
+// it). Callers pass this for anything where the original resolution is
+// never needed (e.g. a small avatar), to keep storage/bandwidth minimal.
+function uploadBuffer(buffer, { folder, publicId, resourceType = 'image', transformation }) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder, public_id: publicId, overwrite: true, resource_type: resourceType },
+      {
+        folder,
+        public_id: publicId,
+        overwrite: true,
+        resource_type: resourceType,
+        ...(transformation ? { transformation } : {})
+      },
       (err, result) => (err ? reject(err) : resolve(result))
     );
     stream.end(buffer);
