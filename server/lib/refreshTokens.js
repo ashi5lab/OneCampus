@@ -57,4 +57,15 @@ async function revokeRefreshToken(db, rawToken) {
   );
 }
 
-module.exports = { issueRefreshToken, rotateRefreshToken, revokeRefreshToken };
+// Ends every session a user has, everywhere — not just the one device
+// calling logout (revokeRefreshToken, by raw token, only ever touches the
+// caller's own current token). Used when a password changes (self-service
+// or admin reset) and by the admin "force logout" action, per the
+// long-lived-session policy: a session lives until the user's password
+// changes or someone with users.manage_passwords explicitly ends it, not
+// on a timer alone.
+async function revokeAllUserTokens(db, userId) {
+  await db.query('UPDATE onec_refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL', [userId]);
+}
+
+module.exports = { issueRefreshToken, rotateRefreshToken, revokeRefreshToken, revokeAllUserTokens };

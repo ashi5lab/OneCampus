@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './AuthContext';
 
 vi.mock('../lib/apiClient', () => ({
@@ -15,6 +16,14 @@ function Probe() {
   const { initializing, isAuthenticated, user } = useAuth();
   if (initializing) return <div>initializing</div>;
   return <div>{isAuthenticated ? `logged in as ${user.username}` : 'logged out'}</div>;
+}
+
+// AuthProvider now calls useQueryClient() (to wipe cached data on
+// clearSession — see AuthContext.jsx) so it needs a real QueryClientProvider
+// ancestor, same as in the real app's main.jsx.
+function renderWithProviders(ui) {
+  const queryClient = new QueryClient();
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
 // Regression test for a real bug: the mount-time silent session restore
@@ -43,7 +52,7 @@ describe('AuthContext session restore', () => {
         user: { id: 1, username: 'jane', role: 'instructor' }
       });
 
-      render(
+      renderWithProviders(
         <AuthProvider>
           <Probe />
         </AuthProvider>
@@ -61,7 +70,7 @@ describe('AuthContext session restore', () => {
     const authError = Object.assign(new Error('Session expired'), { status: 401 });
     refreshAccessToken.mockRejectedValue(authError);
 
-    render(
+    renderWithProviders(
       <AuthProvider>
         <Probe />
       </AuthProvider>

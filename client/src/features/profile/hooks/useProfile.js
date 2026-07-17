@@ -22,3 +22,7 @@ export function useAdminChangePassword() {
     mutationFn: ({ userId, payload }) => profileApi.adminChangePassword(userId, payload)
   });
 }
+
+export function useForceLogoutUser() {
+  return useMutation({ mutationFn: (userId) => profileApi.forceLogoutUser(userId) });
+}

@@ -13,6 +13,7 @@ router.put('/password', controller.changeOwnPassword);
 // other than the caller, hence the only permission-gated ones here.
 router.get('/users', requirePermission('users.manage_passwords'), controller.listUsers);
 router.put('/users/:userId/password', requirePermission('users.manage_passwords'), controller.adminChangePassword);
+router.post('/users/:userId/force-logout', requirePermission('users.manage_passwords'), controller.forceLogoutUser);
 
 // multer's .single() is called manually (not just handed to the router)
 // so a rejected upload (wrong mimetype, over the 5MB cap) resolves to a

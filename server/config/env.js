@@ -19,12 +19,19 @@ module.exports = {
   // Access-Control-Allow-Origin: * when a request includes credentials.
   CLIENT_ORIGIN: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   ACCESS_TOKEN_TTL: process.env.ACCESS_TOKEN_TTL || '15m',
-  // 30 days (was 7) — an installed PWA is used more like a native app than
-  // a browser tab, so forcing a full re-login every week reads as "my
-  // session doesn't persist" even though the refresh-token flow itself is
-  // working correctly. Still fully revocable via logout (see lib/
-  // refreshTokens.js's rotation-on-use).
-  REFRESH_TOKEN_TTL_DAYS: Number(process.env.REFRESH_TOKEN_TTL_DAYS) || 30,
+  // 400 days — Chrome's own hard cap on any cookie's Max-Age (RFC 6265bis);
+  // asking for longer just gets silently clamped to this by the browser, so
+  // this is as close to "session never expires" as a cookie can actually
+  // get. Combined with rotation-on-use (lib/refreshTokens.js — every
+  // refresh issues a fresh 400-day token), an actively-used session's
+  // expiry keeps sliding forward and never actually arrives; only real
+  // inactivity beyond 400 days, a password change, or an explicit
+  // logout/admin-forced-logout (both call lib/refreshTokens.js's
+  // revokeAllUserTokens) ever end it. Was 30 days; bumped after repeated
+  // "why do I have to log in again" reports — a school-management app used
+  // like a native mobile app has no natural "session", unlike a banking
+  // site where short expiry is the point.
+  REFRESH_TOKEN_TTL_DAYS: Number(process.env.REFRESH_TOKEN_TTL_DAYS) || 400,
   // Self-registered tenants pick a short slug (e.g. "greenwood") and get
   // `${slug}.${TENANT_BASE_DOMAIN}` as their domain — mirrors the existing
   // dev tenant naming convention (dev.onecampus.local, dev2.onecampus.local).
