@@ -37,11 +37,24 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       setTenantDomain(domain.trim());
-      await login(username, password);
+      try {
+        await login(username, password);
+      } catch (err) {
+        // A raw network failure (no `.status` — the request never got a
+        // response at all, vs. a real 401/400 which does) is often
+        // transient on mobile — one retry before surfacing an error avoids
+        // bouncing a login attempt that would have worked a second later.
+        if (typeof err?.status !== 'number') {
+          await login(username, password);
+        } else {
+          throw err;
+        }
+      }
       await reloadConfig();
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(err.message || 'Login failed');
+      const message = typeof err?.status === 'number' ? err.message : 'Could not reach the server. Check your connection and try again.';
+      setError(message || 'Login failed');
     } finally {
       setSubmitting(false);
     }

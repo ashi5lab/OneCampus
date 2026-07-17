@@ -54,11 +54,50 @@ export function AuthProvider({ children }) {
   // no valid cookie (never logged in, or it expired/was revoked), this just
   // fails and the user sees the login page, exactly as if they'd never had
   // a session.
+  //
+  // A raw network failure (fetch never got a response at all — no `.status`
+  // on the error, vs. a real 401 which does) is NOT the same thing as "no
+  // valid session" and must not be treated as one: a mobile PWA relaunched
+  // right after a hard-close often races the OS still reconnecting Wi-Fi/
+  // cellular, so the very first request can transiently fail even though
+  // the refresh-token cookie is perfectly valid. Treating that as a logout
+  // was bouncing users who force-quit the app back to the login screen.
+  // Retry a couple of times before giving up; a genuine 401 still fails
+  // immediately with no retries.
   useEffect(() => {
-    refreshAccessToken()
-      .then((sessionData) => applySession(sessionData))
-      .catch(() => clearSession())
-      .finally(() => setInitializing(false));
+    let cancelled = false;
+
+    // Resolves with session data, or throws the final error once retries
+    // (network failures only) are exhausted — callers decide what "done"
+    // means, so setInitializing(false) fires exactly once, after every
+    // retry attempt, not after each intermediate one.
+    async function restoreSession(retriesLeft = 2) {
+      try {
+        return await refreshAccessToken();
+      } catch (err) {
+        const isNetworkError = typeof err?.status !== 'number';
+        if (isNetworkError && retriesLeft > 0 && !cancelled) {
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+          return restoreSession(retriesLeft - 1);
+        }
+        throw err;
+      }
+    }
+
+    restoreSession()
+      .then((sessionData) => {
+        if (!cancelled) applySession(sessionData);
+      })
+      .catch(() => {
+        if (!cancelled) clearSession();
+      })
+      .finally(() => {
+        if (!cancelled) setInitializing(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [applySession, clearSession]);
 
   useEffect(() => {
