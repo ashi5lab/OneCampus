@@ -14,8 +14,26 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* A rogue fixed-width element on any one page (a wide table not wrapped
+     in its own overflow-x-auto container, a long unbreakable string, ...)
+     shouldn't be able to force the *whole* page to scroll sideways on a
+     narrow screen — this is the backstop regardless of whether every
+     individual component gets that right. */
+  html, body {
+    overflow-x: hidden;
+  }
+}
+
 @layer components {
+  /* text-base (16px), not text-sm (14px) — iOS Safari auto-zooms the whole
+     page in when a focused input's font-size is under 16px (its own
+     accessibility heuristic, not a bug), which is what was actually
+     breaking the layout on iPhone: every tap into a form field forced a
+     zoom that didn't reliably reset when the field lost focus. Below
+     16px was the root cause; the locked viewport (index.html) is the
+     backstop for pinch-zoom generally. */
   .input {
-    @apply w-full rounded border border-border px-3 py-2 text-sm text-ink-900;
+    @apply w-full rounded border border-border px-3 py-2 text-base text-ink-900;
   }
 }
