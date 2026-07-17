@@ -35,6 +35,8 @@ import { ProfilePage } from './features/profile/components/ProfilePage';
 import { BroadcastPage } from './features/broadcast/components/BroadcastPage';
 import { AccessControlPage } from './features/accessControl/components/AccessControlPage';
 import { LeavePage } from './features/leave/components/LeavePage';
+import { CalendarPage } from './features/calendar/components/CalendarPage';
+import { TimetablePage } from './features/timetable/components/TimetablePage';
 
 export default function App() {
   return (
@@ -173,6 +175,22 @@ export default function App() {
           element={
             <RequirePermission permission="leave.apply">
               <LeavePage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="calendar"
+          element={
+            <RequirePermission permission="calendar.view">
+              <CalendarPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="timetable"
+          element={
+            <RequirePermission permission="timetable.view">
+              <TimetablePage />
             </RequirePermission>
           }
         />

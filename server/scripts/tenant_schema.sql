@@ -75,13 +75,20 @@ CREATE TABLE onec_learner_guardian_map (
     PRIMARY KEY (learner_id, guardian_id)
 );
 
+-- The Timetable module (see server/modules/timetable). start_date/end_date
+-- are optional: null on both (the common case) means the weekly pattern
+-- in schedule_data applies for the whole time_block; setting them scopes
+-- it to a sub-range within the term (a temporary substitute schedule, an
+-- exam-week-only variation) without a separate table.
 CREATE TABLE onec_allocations (
     id SERIAL PRIMARY KEY,
     cohort_id INT REFERENCES onec_cohorts(id) ON DELETE CASCADE,
     module_id INT REFERENCES onec_modules(id) ON DELETE CASCADE,
     instructor_id INT REFERENCES onec_instructors(id) ON DELETE CASCADE,
     schedule_data JSONB NOT NULL,   -- { days: ["Monday"], hour: "09:00-10:00" }
-    time_block VARCHAR(20) NOT NULL
+    time_block VARCHAR(20) NOT NULL,
+    start_date DATE,
+    end_date DATE
 );
 
 CREATE TABLE onec_attendance (
@@ -192,6 +199,27 @@ CREATE TABLE onec_notices (
     body TEXT NOT NULL,
     audience VARCHAR(20) NOT NULL DEFAULT 'all',  -- 'all', 'instructors', 'learners', 'guardians'
     posted_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Org Calendar (events + holidays; see server/modules/calendar). Recurrence
+-- is stored as a rule, not materialized rows — the controller expands a
+-- rule into concrete occurrences on read for whatever date range is being
+-- viewed, so editing "every Sunday" once updates every future Sunday
+-- instead of needing to touch N rows.
+CREATE TABLE onec_calendar_events (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    event_type VARCHAR(20) NOT NULL DEFAULT 'event',    -- 'event' | 'holiday'
+    start_date DATE NOT NULL,
+    end_date DATE,                                      -- multi-day *non-recurring* events only; null = single day
+    is_recurring BOOLEAN NOT NULL DEFAULT false,
+    recurrence_type VARCHAR(20),                        -- 'weekly' | 'monthly' | 'yearly', null when not recurring
+    recurrence_days JSONB,                               -- weekly: [0-6] weekday ints (0=Sunday); monthly: [1-31] day-of-month ints; yearly: unused (repeats on start_date's month/day)
+    recurrence_end_date DATE,                            -- null = no defined end (expansion caps at a lookahead window)
+    audience VARCHAR(20) NOT NULL DEFAULT 'all',         -- 'all' | 'instructors' | 'learners' | 'guardians'
+    created_by INT REFERENCES onec_users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
