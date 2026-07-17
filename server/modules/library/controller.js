@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
+const { listActiveUsers } = require('../../lib/userDirectory');
 
 const bookSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -98,10 +99,8 @@ async function deleteBook(req, res) {
 // manager issues loans.
 async function listBorrowers(req, res) {
   try {
-    const result = await req.db.query(
-      'SELECT id, username, role FROM onec_users WHERE is_active = true ORDER BY role, username'
-    );
-    res.json({ data: result.rows });
+    const users = await listActiveUsers(req);
+    res.json({ data: users });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });

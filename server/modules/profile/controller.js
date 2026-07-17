@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const { z } = require('zod');
 const { isConfigured, uploadBuffer } = require('../../lib/cloudinary');
 const { logAudit } = require('../../lib/audit');
+const { listUsersWithNames } = require('../../lib/userDirectory');
 
 const ALLOWED_MIME_TYPES = /^image\/(jpeg|png|webp|gif)$/;
 
@@ -107,8 +108,8 @@ async function changeOwnPassword(req, res) {
 // credentials before re-enabling it.
 async function listUsers(req, res) {
   try {
-    const result = await req.db.query('SELECT id, username, email, role, is_active FROM onec_users ORDER BY role, username');
-    res.json({ data: result.rows });
+    const users = await listUsersWithNames(req, { includeInactive: true });
+    res.json({ data: users });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });

@@ -2,6 +2,7 @@ const multer = require('multer');
 const { z } = require('zod');
 const { isConfigured, uploadBuffer } = require('../../lib/cloudinary');
 const { logAudit } = require('../../lib/audit');
+const { listActiveUsers } = require('../../lib/userDirectory');
 
 const CHANNELS = ['sms', 'voicemail'];
 
@@ -208,8 +209,8 @@ async function listBroadcasts(req, res) {
 // but gated by broadcast.manage since only senders need it).
 async function listUsers(req, res) {
   try {
-    const result = await req.db.query('SELECT id, username, role FROM onec_users WHERE is_active = true ORDER BY role, username');
-    res.json({ data: result.rows });
+    const users = await listActiveUsers(req);
+    res.json({ data: users });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });

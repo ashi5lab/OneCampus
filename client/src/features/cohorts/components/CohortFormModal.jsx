@@ -25,9 +25,15 @@ export function CohortFormModal({ onClose, onSubmit, submitting, submitError, in
 
   // advisor_id references onec_users, but the picker searches instructors —
   // map each instructor row to its user_id so the selected value lines up
-  // with what the backend (and UserSearchSelect's {id, username, role}
-  // shape) expects.
-  const advisorOptions = (instructors || []).map((i) => ({ id: i.user_id, username: `${i.first_name} ${i.last_name}`, role: 'instructor' }));
+  // with what the backend expects. `name` comes from the instructor row
+  // directly; `username` is joined in by GET /instructors specifically for
+  // pickers like this one (see server/modules/instructors/controller.js).
+  const advisorOptions = (instructors || []).map((i) => ({
+    id: i.user_id,
+    username: i.username,
+    name: `${i.first_name} ${i.last_name}`,
+    role: 'instructor'
+  }));
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">

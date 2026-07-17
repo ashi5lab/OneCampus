@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { listActiveUsers } = require('../../lib/userDirectory');
 
 const sendSchema = z.object({
   recipient_id: z.number().int(),
@@ -59,11 +60,8 @@ async function getUnreadCount(req, res) {
 // message-whom is a reasonable follow-up if this turns out to be too open.
 async function listRecipients(req, res) {
   try {
-    const result = await req.db.query(
-      'SELECT id, username, role FROM onec_users WHERE is_active = true AND id != $1 ORDER BY role, username',
-      [req.user.userId]
-    );
-    res.json({ data: result.rows });
+    const users = await listActiveUsers(req, { excludeUserId: req.user.userId });
+    res.json({ data: users });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
