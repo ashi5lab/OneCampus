@@ -51,8 +51,15 @@ function dateRangesOverlap(aStart, aEnd, bStart, bEnd) {
 // time_block (a Fall-2026 period and a 2027-2028 period can never collide).
 async function findConflict(req, candidate, excludeId = null) {
   const params = [candidate.time_block, candidate.cohort_id, candidate.instructor_id];
+  // Date columns cast to text — pg parses `date` columns into JS Date
+  // objects by default, but dateRangesOverlap compares them against the
+  // candidate's plain 'YYYY-MM-DD' strings; a string-vs-Date comparison
+  // silently evaluates to NaN-based `false` and would make this never
+  // detect a real conflict.
   let query = `
-    SELECT a.*, m.name AS module_name, c.name AS cohort_name, i.first_name AS instructor_first_name, i.last_name AS instructor_last_name
+    SELECT a.id, a.cohort_id, a.module_id, a.instructor_id, a.schedule_data, a.time_block,
+           a.start_date::text AS start_date, a.end_date::text AS end_date,
+           m.name AS module_name, c.name AS cohort_name, i.first_name AS instructor_first_name, i.last_name AS instructor_last_name
     FROM onec_allocations a
     JOIN onec_modules m ON a.module_id = m.id
     JOIN onec_cohorts c ON a.cohort_id = c.id
@@ -101,7 +108,12 @@ async function getAll(req, res) {
     }
 
     const result = await req.db.query(
-      `SELECT a.*, m.name AS module_name, m.code AS module_code, i.first_name AS instructor_first_name, i.last_name AS instructor_last_name
+      // start_date/end_date cast to text — see the comment on findConflict's
+      // query; PeriodFormModal's toFormDefaults calls .slice() on these
+      // assuming plain strings, which a raw Date object doesn't support.
+      `SELECT a.id, a.cohort_id, a.module_id, a.instructor_id, a.schedule_data, a.time_block,
+              a.start_date::text AS start_date, a.end_date::text AS end_date,
+              m.name AS module_name, m.code AS module_code, i.first_name AS instructor_first_name, i.last_name AS instructor_last_name
        FROM onec_allocations a
        JOIN onec_modules m ON a.module_id = m.id
        JOIN onec_instructors i ON a.instructor_id = i.id
@@ -159,7 +171,9 @@ async function getMine(req, res) {
     if (!instructorId) return res.json({ data: [] });
 
     const result = await req.db.query(
-      `SELECT a.*, m.name AS module_name, m.code AS module_code, c.name AS cohort_name
+      `SELECT a.id, a.cohort_id, a.module_id, a.instructor_id, a.schedule_data, a.time_block,
+              a.start_date::text AS start_date, a.end_date::text AS end_date,
+              m.name AS module_name, m.code AS module_code, c.name AS cohort_name
        FROM onec_allocations a
        JOIN onec_modules m ON a.module_id = m.id
        JOIN onec_cohorts c ON a.cohort_id = c.id

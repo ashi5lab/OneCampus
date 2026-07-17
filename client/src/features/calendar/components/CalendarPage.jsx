@@ -166,14 +166,15 @@ export function CalendarPage() {
                 const dateKey = toDateKey(day);
                 const inMonth = day.getMonth() === monthAnchor.getMonth();
                 const items = itemsByDate[dateKey] || [];
-                const types = [...new Set(items.map((i) => i.type))];
+                const visibleItems = items.slice(0, 3);
+                const overflowCount = items.length - visibleItems.length;
                 const isSelected = dateKey === selectedDate;
                 const isToday = dateKey === todayKey;
                 return (
                   <button
                     key={dateKey}
                     onClick={() => setSelectedDate(dateKey)}
-                    className={`flex min-h-[64px] flex-col items-center gap-1 border-b border-r border-border p-1.5 text-left last:border-r-0 hover:bg-surface-muted ${
+                    className={`flex min-h-[94px] flex-col items-stretch gap-1 border-b border-r border-border p-1.5 text-left last:border-r-0 hover:bg-surface-muted ${
                       isSelected ? 'bg-accent/10' : ''
                     } ${!inMonth ? 'opacity-40' : ''}`}
                   >
@@ -184,10 +185,18 @@ export function CalendarPage() {
                     >
                       {day.getDate()}
                     </span>
-                    <span className="flex flex-wrap justify-center gap-0.5">
-                      {types.slice(0, 4).map((type) => (
-                        <span key={type} className={`h-1.5 w-1.5 rounded-full ${ITEM_TYPE_META[type]?.dot || 'bg-ink-500'}`} />
+                    <span className="flex flex-col gap-0.5">
+                      {visibleItems.map((item) => (
+                        <span
+                          key={item.id}
+                          className={`truncate rounded px-1 py-[1px] text-[9.5px] font-semibold leading-[14px] text-white ${
+                            ITEM_TYPE_META[item.type]?.dot || 'bg-ink-500'
+                          }`}
+                        >
+                          {item.title}
+                        </span>
                       ))}
+                      {overflowCount > 0 && <span className="px-1 text-[9.5px] font-semibold text-ink-500">+{overflowCount} more</span>}
                     </span>
                   </button>
                 );
