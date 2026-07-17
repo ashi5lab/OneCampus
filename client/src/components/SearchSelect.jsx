@@ -5,7 +5,20 @@ import { useState, useRef, useEffect } from 'react';
 // classes, ...). Options are filtered client-side as the user types; this
 // assumes a tenant-scoped list (hundreds, not tens of thousands) fetched
 // once via React Query, same as every plain <select> it replaces.
-export function SearchSelect({ options, value, onChange, placeholder = 'Search…', disabled = false, emptyMessage = 'No matches.' }) {
+export function SearchSelect({
+  options,
+  value,
+  onChange,
+  placeholder = 'Search…',
+  disabled = false,
+  emptyMessage = 'No matches.',
+  // Optional richer per-row content for the dropdown (e.g. UserSearchSelect's
+  // name + username + role-color badge) — option.label stays a plain string
+  // throughout, since it's what the closed input's text value and the
+  // search-filter match against; a native <input> can't render JSX, so the
+  // dropdown is the only place richer content can actually show.
+  renderOption
+}) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -88,7 +101,7 @@ export function SearchSelect({ options, value, onChange, placeholder = 'Search�
                 index === highlightedIndex ? 'bg-accent/15' : 'hover:bg-surface-muted'
               } ${String(option.value) === String(value) ? 'font-semibold text-accent-dark' : 'text-ink-900'}`}
             >
-              {option.label}
+              {renderOption ? renderOption(option) : option.label}
             </button>
           ))}
         </div>

@@ -29,6 +29,9 @@ const instructorUpdateSchema = z.object({
 // as before pagination existed (see lib/pagination.js). ?search/gender are
 // independently optional filters (no unit filter — onec_instructors has no
 // unit_id/department relationship in the current schema to filter by).
+// Joins onec_users for `username` — needed by pickers like CohortFormModal's
+// "Class Teacher" search, which show name/username/role together (see
+// UserSearchSelect).
 async function getAll(req, res) {
   try {
     const { pagination, error } = parsePagination(req.query);
@@ -40,26 +43,27 @@ async function getAll(req, res) {
 
     if (search) {
       params.push(`%${search}%`);
-      conditions.push(`(first_name ILIKE $${params.length} OR last_name ILIKE $${params.length} OR staff_id ILIKE $${params.length})`);
+      conditions.push(`(i.first_name ILIKE $${params.length} OR i.last_name ILIKE $${params.length} OR i.staff_id ILIKE $${params.length})`);
     }
     if (gender) {
       params.push(gender);
-      conditions.push(`meta->>'gender' = $${params.length}`);
+      conditions.push(`i.meta->>'gender' = $${params.length}`);
     }
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const baseQuery = `FROM onec_instructors i LEFT JOIN onec_users u ON i.user_id = u.id ${whereClause}`;
 
     if (!pagination) {
-      const result = await req.db.query(`SELECT * FROM onec_instructors ${whereClause} ORDER BY id DESC`, params);
+      const result = await req.db.query(`SELECT i.*, u.username ${baseQuery} ORDER BY i.id DESC`, params);
       return res.json({ data: result.rows });
     }
 
     const pageParams = [...params, pagination.limit, pagination.offset];
     const [rows, count] = await Promise.all([
       req.db.query(
-        `SELECT * FROM onec_instructors ${whereClause} ORDER BY id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+        `SELECT i.*, u.username ${baseQuery} ORDER BY i.id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
         pageParams
       ),
-      req.db.query(`SELECT COUNT(*)::int AS total FROM onec_instructors ${whereClause}`, params)
+      req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`, params)
     ]);
     res.json({ data: rows.rows, meta: { total: count.rows[0].total, page: pagination.page, pageSize: pagination.pageSize } });
   } catch (err) {
