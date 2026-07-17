@@ -7,6 +7,19 @@ const { listUsersWithNames } = require('../../lib/userDirectory');
 
 const ALLOWED_MIME_TYPES = /^image\/(jpeg|png|webp|gif)$/;
 
+// The largest this ever renders at in the UI is 72px (see Avatar usages in
+// ProfilePictureUploader/LearnerProfilePage/InstructorProfilePage) — 256px
+// covers that at up to ~3.5x pixel density with room to spare, so there's
+// no reason to store anything bigger. `crop: 'fill' + gravity: 'auto'`
+// content-aware-crops to an exact square regardless of the source aspect
+// ratio (Avatar always renders these as circles/squares anyway);
+// `quality: 'auto:eco'` biases toward smaller files over max fidelity,
+// appropriate for a thumbnail-sized avatar; `fetch_format: 'auto'` picks
+// the smallest format the requester supports (WebP/AVIF where possible).
+const PROFILE_PICTURE_TRANSFORMATION = [
+  { width: 256, height: 256, crop: 'fill', gravity: 'auto', quality: 'auto:eco', fetch_format: 'auto' }
+];
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
@@ -32,7 +45,11 @@ async function uploadProfilePicture(req, res) {
 
   try {
     const folder = `onecampus/${req.tenantSchema}/profile-pictures`;
-    const result = await uploadBuffer(req.file.buffer, { folder, publicId: `user-${req.user.userId}` });
+    const result = await uploadBuffer(req.file.buffer, {
+      folder,
+      publicId: `user-${req.user.userId}`,
+      transformation: PROFILE_PICTURE_TRANSFORMATION
+    });
 
     await req.db.query('UPDATE onec_users SET profile_picture_url = $1 WHERE id = $2', [
       result.secure_url,
