@@ -109,7 +109,7 @@ async function getMe(req, res) {
 // (and only accepted on update) for a caller who actually has a guardian
 // row — every other role gets `whatsapp_opt_in: null` and the frontend
 // hides that toggle entirely, since it drives the guardian-only absentee
-// alert (see server/lib/whatsappNotify.js).
+// alert (see server/lib/absenteeDigest.js).
 async function getNotificationPreferences(req, res) {
   try {
     const result = await req.db.query(

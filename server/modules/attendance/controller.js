@@ -1,6 +1,5 @@
 const { z } = require('zod');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
-const { notifyAbsentee } = require('../../lib/whatsappNotify');
 
 const attendanceSchema = z.object({
   learner_id: z.number().int(),
@@ -72,7 +71,6 @@ async function mark(req, res) {
     `;
     const checkParams = allocation_id ? [learner_id, date, allocation_id] : [learner_id, date];
     const existing = await req.db.query(checkQuery, checkParams);
-    const previousStatus = existing.rows[0]?.status ?? null;
 
     let result;
     if (existing.rows.length > 0) {
@@ -91,17 +89,12 @@ async function mark(req, res) {
       `, [learner_id, cohort_id, allocation_id, date, status, remarks, marked_by]);
     }
 
-    res.status(200).json({ data: result.rows[0] });
-
-    // Fired after the response is sent — a slow/unreachable WhatsApp
-    // provider must never delay the attendance-marking response itself.
-    // Only a genuine present/late/excused -> absent transition notifies,
-    // not every edit of an already-absent record (re-saving remarks, a
-    // status correction between two non-absent values, etc.).
-    if (status === 'absent' && previousStatus !== 'absent') {
-      notifyAbsentee(req, { learnerId: learner_id, date });
-    }
-    return;
+    // No instant per-absence WhatsApp trigger here anymore — the
+    // whatsapp_absentee channel now sends as one batched digest per day
+    // instead of one call per learner-guardian pair, via an explicit
+    // manual button or a scheduled daily/weekly firing (see
+    // server/lib/absenteeDigest.js and server/lib/absenteeScheduler.js).
+    return res.status(200).json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
     if (err.code === '23503') return res.status(400).json({ error: 'Learner, cohort, or allocation does not exist' });

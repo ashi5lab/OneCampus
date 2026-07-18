@@ -15,6 +15,7 @@ router.get('/users', requirePermission('broadcast.manage'), controller.listUsers
 
 router.post('/sms', requirePermission('broadcast.manage'), controller.sendSms);
 router.post('/whatsapp', requirePermission('broadcast.manage'), controller.sendWhatsapp);
+router.post('/whatsapp-absentee/send', requirePermission('broadcast.manage'), controller.sendAbsenteeAlertsNow);
 
 // Same manual .single() wrapping as profile/routes.js — converts multer
 // rejections (wrong mimetype, over the size cap) into clean 400s.

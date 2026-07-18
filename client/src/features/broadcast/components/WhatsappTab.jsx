@@ -8,10 +8,12 @@ import { audienceLabel } from './SmsTab';
 
 const EMPTY_AUDIENCE = { audience_type: 'all', audience_ids: [] };
 
-// Testing-phase only: no message box, because the configured template
-// (Meta's sample "hello_world") takes no variables — there's nothing to
-// type yet. Once a real approved template with a body variable is
-// configured, this can grow a message field the same way SmsTab has one.
+// Testing-phase only: the message box below is inert (see draftMessage)
+// because the configured template (e.g. Meta's sample "hello_world", or a
+// Twilio Content template referenced by ContentSid) takes no free-form
+// text — there's nowhere for typed text to go yet. Once a real approved
+// template with a body variable is configured, wire draftMessage into the
+// send payload's {{message}}-equivalent the same way SmsTab does.
 // The audience picker is real and fully wired, but the actual send always
 // goes to one number (the WhatsApp config's "test_phone" Variable) — see
 // the comment on sendWhatsapp in server/modules/broadcast/controller.js.
@@ -22,6 +24,12 @@ export function WhatsappTab() {
 
   const [audience, setAudience] = useState(EMPTY_AUDIENCE);
   const [sentSummary, setSentSummary] = useState(null);
+  // Deliberately not sent anywhere — WhatsApp requires a pre-approved
+  // template for anything business-initiated, so free-form text has
+  // nowhere to go yet in test phase. Kept purely so the form doesn't look
+  // broken/incomplete; once a real template with a body variable is wired
+  // up, this becomes the {{message}}-equivalent value in the payload.
+  const [draftMessage, setDraftMessage] = useState('');
 
   function handleSend(e) {
     e.preventDefault();
@@ -54,9 +62,9 @@ export function WhatsappTab() {
     <div>
       <div className="mb-4 rounded border border-border bg-surface-muted p-4 text-[13px] text-ink-700">
         <strong>Testing phase:</strong> every send below goes to the single "test_phone" number set in the Configuration
-        panel, no matter which audience you pick here — Meta's free test number can only message a handful of
-        verified numbers, and there's no message text yet since the configured template (<code>hello_world</code>)
-        takes none. The audience you pick is still recorded for reference.
+        panel, no matter which audience you pick here — a test provider number/template can only message a handful of
+        verified numbers. The message box is inert for now (the configured template takes no free-form text). The
+        audience you pick is still recorded for reference.
       </div>
 
       {can('broadcast.manage') && (
@@ -65,6 +73,17 @@ export function WhatsappTab() {
           <div className="mb-3">
             <div className="mb-1 text-xs font-semibold text-ink-700">Send to</div>
             <AudiencePicker value={audience} onChange={setAudience} />
+          </div>
+
+          <div className="mb-3">
+            <div className="mb-1 text-xs font-semibold text-ink-700">Message (not sent yet)</div>
+            <textarea
+              className="input w-full"
+              rows={2}
+              placeholder="Free-form text isn't sent yet — testing phase uses a pre-approved template with no variables"
+              value={draftMessage}
+              onChange={(e) => setDraftMessage(e.target.value)}
+            />
           </div>
 
           {sendWhatsapp.error && <div className="mb-3 text-xs font-semibold text-danger">{sendWhatsapp.error.message}</div>}

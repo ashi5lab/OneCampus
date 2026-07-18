@@ -4,16 +4,17 @@ const { isConfigured, uploadBuffer } = require('../../lib/cloudinary');
 const { logAudit } = require('../../lib/audit');
 const { listActiveUsers } = require('../../lib/userDirectory');
 const { dispatchToAll, getActiveConfig } = require('../../lib/broadcastDispatch');
+const { sendAbsenteeDigest } = require('../../lib/absenteeDigest');
 
-// 'whatsapp_absentee' has no manual send endpoint below — it's configured
-// here (same generic Configuration UI as sms/voicemail) but only ever
-// dispatched automatically by lib/whatsappNotify.js when attendance is
-// marked absent. 'whatsapp' is the general manual-send channel (send an
-// announcement to a class/all/specific users, same shape as SMS) — kept
-// separate from 'whatsapp_absentee' because WhatsApp requires a
-// pre-approved template per distinct message shape, so each needs its own
-// onec_broadcast_configs row (different template name, different
-// variables).
+// 'whatsapp_absentee' is configured here (same generic Configuration UI as
+// sms/voicemail) but sent as one batched daily digest via
+// sendAbsenteeAlertsNow below or the scheduler (server/lib/
+// absenteeScheduler.js) — see absentee_mode on the config row. 'whatsapp'
+// is the general manual-send channel (send an announcement to a
+// class/all/specific users, same shape as SMS) — kept separate from
+// 'whatsapp_absentee' because WhatsApp requires a pre-approved template
+// per distinct message shape, so each needs its own onec_broadcast_configs
+// row (different template name, different variables).
 const CHANNELS = ['sms', 'voicemail', 'whatsapp_absentee', 'whatsapp'];
 
 // --- Configuration ---
@@ -39,7 +40,17 @@ const configSchema = z.object({
   payload_template: payloadRecord.default({}),
   params_template: stringRecord.default({}),
   variables: stringRecord.default({}),
-  is_active: z.boolean().default(false)
+  is_active: z.boolean().default(false),
+  // form-encoded (e.g. Twilio's REST API) vs the original JSON-body design —
+  // see server/lib/broadcastDispatch.js's dispatchOne.
+  body_encoding: z.enum(['json', 'form']).default('json'),
+  // Only meaningful on the whatsapp_absentee channel row — see
+  // server/lib/absenteeDigest.js / absenteeScheduler.js. Accepted (and
+  // ignored) on every other channel rather than 400ing, so the frontend
+  // doesn't need a channel-conditional request shape.
+  absentee_mode: z.enum(['manual', 'daily', 'weekly']).default('manual'),
+  absentee_schedule_time: z.string().regex(/^\d{2}:\d{2}$/, 'Use HH:MM').optional().nullable(),
+  absentee_schedule_day: z.number().int().min(0).max(6).optional().nullable()
 });
 
 async function getConfigs(req, res) {
@@ -59,19 +70,35 @@ async function upsertConfig(req, res) {
 
     const parsed = configSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
-    const { api_url, http_method, headers, payload_template, params_template, variables, is_active } = parsed.data;
+    const {
+      api_url, http_method, headers, payload_template, params_template, variables, is_active,
+      body_encoding, absentee_mode, absentee_schedule_time, absentee_schedule_day
+    } = parsed.data;
 
     if (is_active && !api_url) {
       return res.status(400).json({ error: 'An API URL is required to activate a channel' });
     }
+    if (channel === 'whatsapp_absentee') {
+      if (absentee_mode === 'daily' && !absentee_schedule_time) {
+        return res.status(400).json({ error: 'A schedule time is required for daily absentee alerts' });
+      }
+      if (absentee_mode === 'weekly' && (!absentee_schedule_time || absentee_schedule_day === undefined || absentee_schedule_day === null)) {
+        return res.status(400).json({ error: 'A schedule day and time are required for weekly absentee alerts' });
+      }
+    }
 
     const result = await req.db.query(
-      `INSERT INTO onec_broadcast_configs (channel, api_url, http_method, headers, payload_template, params_template, variables, is_active, updated_by, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
+      `INSERT INTO onec_broadcast_configs (
+         channel, api_url, http_method, headers, payload_template, params_template, variables, is_active,
+         body_encoding, absentee_mode, absentee_schedule_time, absentee_schedule_day, updated_by, updated_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
        ON CONFLICT (channel) DO UPDATE SET
          api_url = EXCLUDED.api_url, http_method = EXCLUDED.http_method, headers = EXCLUDED.headers,
          payload_template = EXCLUDED.payload_template, params_template = EXCLUDED.params_template,
          variables = EXCLUDED.variables, is_active = EXCLUDED.is_active,
+         body_encoding = EXCLUDED.body_encoding, absentee_mode = EXCLUDED.absentee_mode,
+         absentee_schedule_time = EXCLUDED.absentee_schedule_time, absentee_schedule_day = EXCLUDED.absentee_schedule_day,
          updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
       [
@@ -83,6 +110,10 @@ async function upsertConfig(req, res) {
         JSON.stringify(params_template),
         JSON.stringify(variables),
         is_active,
+        body_encoding,
+        absentee_mode,
+        absentee_schedule_time || null,
+        absentee_schedule_day ?? null,
         req.user.userId
       ]
     );
@@ -397,6 +428,43 @@ async function sendVoicemail(req, res) {
   }
 }
 
+// --- Absentee digest (manual trigger) ---
+
+// The button-click side of absentee_mode: 'manual' (see
+// server/lib/absenteeDigest.js) — batches every learner marked absent
+// today (or an explicit ?date=) into one test send, same as the scheduled
+// daily/weekly firing does automatically. Works regardless of the
+// configured mode (an admin can always trigger it by hand, even with
+// 'daily'/'weekly' selected), so switching modes never removes the
+// ability to send right now.
+function todayIso() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+async function sendAbsenteeAlertsNow(req, res) {
+  try {
+    const date = req.query.date || todayIso();
+    const result = await sendAbsenteeDigest(req.db, { date, createdBy: req.user.userId });
+    if (result.skipped === 'not_configured') {
+      return res.status(400).json({ error: 'WhatsApp absentee alerts are not configured or not active — set it up in the Configuration panel first' });
+    }
+    if (result.skipped === 'no_test_phone') {
+      return res.status(400).json({ error: 'Testing phase: add a "test_phone" Variable in the WhatsApp Absentee Alerts Configuration panel before sending' });
+    }
+    if (result.skipped === 'no_absentees') {
+      return res.json({ data: { sent: 0, failed: 0, count: 0, note: `No absentees recorded for ${date}` } });
+    }
+    logAudit(req, 'broadcast.absentee_digest_sent', { date, ...result });
+    res.json({ data: { ...result, note: `${result.count} absentee(s) for ${date}` } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   getConfigs,
   upsertConfig,
@@ -408,5 +476,6 @@ module.exports = {
   createVoicemail,
   approveVoicemail,
   rejectVoicemail,
-  sendVoicemail
+  sendVoicemail,
+  sendAbsenteeAlertsNow
 };

@@ -7,6 +7,7 @@ const { CLIENT_ORIGIN } = require('./config/env');
 const tenantResolver = require('./middleware/tenantResolver');
 const tenantDb = require('./middleware/tenantDb');
 const { scheduleRefreshTokenCleanup } = require('./lib/refreshTokenCleanup');
+const { startAbsenteeScheduler } = require('./lib/absenteeScheduler');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -128,4 +129,7 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   // onec_refresh_tokens only grows otherwise -- see lib/refreshTokenCleanup.js.
   scheduleRefreshTokenCleanup(24 * 60 * 60 * 1000);
+  // Fires scheduled (daily/weekly) whatsapp_absentee digests across every
+  // tenant — see lib/absenteeScheduler.js.
+  startAbsenteeScheduler();
 });

@@ -9,6 +9,7 @@ export const broadcastApi = {
 
   sendSms: (payload) => apiClient.post('/broadcast/sms', payload).then((res) => res.data),
   sendWhatsapp: (payload) => apiClient.post('/broadcast/whatsapp', payload).then((res) => res.data),
+  sendAbsenteeAlertsNow: () => apiClient.post('/broadcast/whatsapp-absentee/send').then((res) => res.data),
 
   submitVoicemail: (blob, durationSeconds) => {
     const formData = new FormData();

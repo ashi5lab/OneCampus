@@ -15,4 +15,4 @@
 **Business Rules**:
 - One booking per slot (`UNIQUE(slot_id)` on `onec_ptm_bookings`) — a slot is either open or taken, no shared meeting times. A race between two families booking the same slot resolves via that constraint: the losing `INSERT` gets a `409`, not a silent overwrite.
 - No overlap validation when an instructor creates slots (unlike `server/modules/timetable`'s `findConflict`) — an instructor creating two overlapping self-slots is left as their own scheduling mistake to notice, not blocked. A worthwhile follow-up if it turns out to matter in practice.
-- No notification to the instructor when a family books their slot — they'd need to check the slot list themselves. A natural extension via `server/lib/whatsappNotify.js`'s pattern, not built here.
+- No notification to the instructor when a family books their slot — they'd need to check the slot list themselves. A natural extension via `server/lib/broadcastDispatch.js`'s pattern (as `server/lib/absenteeDigest.js` does for attendance), not built here.

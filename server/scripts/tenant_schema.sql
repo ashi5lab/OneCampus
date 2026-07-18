@@ -318,6 +318,12 @@ CREATE TABLE onec_broadcast_configs (
     params_template JSONB NOT NULL DEFAULT '{}',       -- GET query params; values may contain {{variables}}
     variables JSONB NOT NULL DEFAULT '{}',             -- static name -> value, substituted into the templates
     is_active BOOLEAN NOT NULL DEFAULT false,
+    body_encoding VARCHAR(10) NOT NULL DEFAULT 'json', -- 'json' | 'form' — see server/lib/broadcastDispatch.js
+    -- Only meaningful on the whatsapp_absentee row (see server/lib/absenteeDigest.js / absenteeScheduler.js):
+    absentee_mode VARCHAR(10) NOT NULL DEFAULT 'manual',  -- 'manual' | 'daily' | 'weekly'
+    absentee_schedule_time TIME,
+    absentee_schedule_day INT,                          -- 0(Sun)-6(Sat), for 'weekly'
+    absentee_last_sent_date DATE,
     updated_by INT REFERENCES onec_users(id),
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
