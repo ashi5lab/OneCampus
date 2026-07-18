@@ -1,6 +1,8 @@
 const { z } = require('zod');
+const PDFDocument = require('pdfkit');
 const { logAudit } = require('../../lib/audit');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
+const { buildReportCard } = require('../../lib/reportCard');
 
 const evaluationSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -239,8 +241,118 @@ async function recordScore(req, res) {
   }
 }
 
+// --- Report Cards ---
+// Aggregates every schedule + score under one evaluation for one learner —
+// see server/lib/reportCard.js for the actual computation (shared by the
+// JSON and PDF representations below so they can't disagree with each
+// other). Same row-scoping pattern as certificates.getById/getPdf: a
+// learner/guardian gets a 404 (not 403) for a report card that isn't
+// theirs/their child's, so the id alone doesn't confirm it belongs to
+// someone else.
+
+async function getReportCard(req, res) {
+  try {
+    const { evaluationId, learnerId } = req.params;
+    const learnerIdNum = Number(learnerId);
+
+    const scopedLearnerIds = await getScopedLearnerIds(req);
+    if (scopedLearnerIds !== null && !scopedLearnerIds.includes(learnerIdNum)) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    const reportCard = await buildReportCard(req, evaluationId, learnerIdNum);
+    if (!reportCard) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: reportCard });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function getReportCardPdf(req, res) {
+  try {
+    const { evaluationId, learnerId } = req.params;
+    const learnerIdNum = Number(learnerId);
+
+    const scopedLearnerIds = await getScopedLearnerIds(req);
+    if (scopedLearnerIds !== null && !scopedLearnerIds.includes(learnerIdNum)) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    const reportCard = await buildReportCard(req, evaluationId, learnerIdNum);
+    if (!reportCard) return res.status(404).json({ error: 'Not found' });
+
+    const orgName = req.tenantConfig.org_name || 'OneCampus';
+    const { evaluation, learner, subjects, summary, rank } = reportCard;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="report-card-${learner.registry_no}-${evaluation.id}.pdf"`);
+
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    doc.pipe(res);
+
+    doc.fontSize(18).text(orgName, { align: 'center' });
+    doc.fontSize(13).text('Report Card', { align: 'center' });
+    doc.moveDown(1.5);
+
+    doc.fontSize(11);
+    doc.text(`Name: ${learner.first_name} ${learner.last_name}`);
+    doc.text(`Registry No: ${learner.registry_no}`);
+    if (learner.cohort_name) doc.text(`Class: ${learner.cohort_name}`);
+    doc.text(`Evaluation: ${evaluation.name} (${evaluation.time_block})`);
+    doc.moveDown(1);
+
+    const colX = { subject: 50, max: 280, obtained: 350, pct: 420, grade: 480 };
+    const rowHeight = 20;
+    let y = doc.y;
+
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text('Subject', colX.subject, y);
+    doc.text('Max', colX.max, y);
+    doc.text('Obtained', colX.obtained, y);
+    doc.text('%', colX.pct, y);
+    doc.text('Grade', colX.grade, y);
+    y += rowHeight;
+    doc.moveTo(50, y - 4).lineTo(545, y - 4).stroke();
+
+    doc.font('Helvetica');
+    for (const subj of subjects) {
+      doc.text(subj.module_name, colX.subject, y, { width: 220 });
+      doc.text(String(subj.max_score), colX.max, y);
+      doc.text(subj.score_obtained === null ? '—' : String(subj.score_obtained), colX.obtained, y);
+      doc.text(subj.percentage === null ? '—' : `${subj.percentage}%`, colX.pct, y);
+      doc.text(subj.grade || '—', colX.grade, y);
+      y += rowHeight;
+    }
+
+    doc.moveTo(50, y).lineTo(545, y).stroke();
+    y += 14;
+    doc.font('Helvetica-Bold');
+    doc.text(`Total: ${summary.total_obtained} / ${summary.total_max}`, 50, y);
+    y += 16;
+    doc.text(`Overall: ${summary.overall_percentage !== null ? summary.overall_percentage + '%' : '—'} (${summary.overall_grade || '—'})`, 50, y);
+    y += 16;
+    doc.text(`Result: ${summary.result.toUpperCase()}`, 50, y);
+    if (rank) {
+      y += 16;
+      doc.text(`Class Rank: ${rank.rank} of ${rank.pool_size}`, 50, y);
+    }
+
+    doc.moveDown(4);
+    doc.font('Helvetica').fontSize(11);
+    doc.text('_______________________', { align: 'right' });
+    doc.text('Class Teacher / Principal', { align: 'right' });
+
+    doc.end();
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   listEvaluations, getEvaluation, createEvaluation, updateEvaluation, removeEvaluation,
   listSchedules, createSchedule, updateSchedule, removeSchedule,
-  listScores, recordScore
+  listScores, recordScore,
+  getReportCard, getReportCardPdf
 };

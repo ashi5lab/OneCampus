@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -8,6 +9,8 @@ import { Avatar } from '../../../components/Avatar';
 import { ProfilePictureUploader } from '../../profile/components/ProfilePictureUploader';
 import { useLearnerProfile } from '../hooks/useLearners';
 import { certificatesApi } from '../../certificates/services/certificatesApi';
+import { evaluationsApi } from '../../evaluations/services/evaluationsApi';
+import { ReportCardModal } from '../../evaluations/components/ReportCardModal';
 
 const ATTENDANCE_STATUS_ORDER = ['present', 'absent', 'late', 'excused'];
 const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive' };
@@ -18,6 +21,7 @@ export function LearnerProfilePage() {
   const { t } = useConfig();
   const { profile: ownProfile } = useAuth();
   const { data, isLoading, error } = useLearnerProfile(learnerId);
+  const [viewingEvaluationId, setViewingEvaluationId] = useState(null);
 
   const isOwnProfile = ownProfile?.learnerId === learnerId;
 
@@ -33,6 +37,14 @@ export function LearnerProfilePage() {
   const { learner, guardians, attendance, scores, certificates } = data;
   const attendanceCounts = Object.fromEntries(attendance.summary.map((row) => [row.status, row.count]));
   const totalAttendance = attendance.summary.reduce((sum, row) => sum + row.count, 0);
+
+  // Report cards are per-evaluation (e.g. "Term 1 Exams"), but `scores` is a
+  // flat list of every individual subject score across every evaluation —
+  // derive the distinct evaluations client-side rather than adding a
+  // separate endpoint just to list "which exams has this learner sat".
+  const evaluationsWithScores = Array.from(
+    new Map(scores.map((s) => [s.evaluation_id, { id: s.evaluation_id, name: s.evaluation_name }])).values()
+  );
 
   return (
     <div>
@@ -138,6 +150,37 @@ export function LearnerProfilePage() {
         </div>
       </div>
 
+      <div className="mb-6">
+        <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Report Cards</div>
+        <div className="overflow-hidden rounded border border-border bg-surface">
+          <DataTable
+            columns={[
+              { key: 'name', header: 'Evaluation', render: (row) => row.name },
+              {
+                key: 'actions',
+                header: '',
+                render: (row) => (
+                  <div className="flex justify-end gap-3">
+                    <button onClick={() => setViewingEvaluationId(row.id)} className="text-xs font-semibold text-accent-dark hover:underline">
+                      View
+                    </button>
+                    <button
+                      onClick={() => evaluationsApi.downloadReportCardPdf(row.id, learnerId, `report-card-${learner.registry_no}-${row.id}.pdf`)}
+                      className="text-xs font-semibold text-accent-dark hover:underline"
+                    >
+                      Download PDF
+                    </button>
+                  </div>
+                )
+              }
+            ]}
+            rows={evaluationsWithScores}
+            rowKey={(row) => row.id}
+            emptyMessage="No evaluations graded yet."
+          />
+        </div>
+      </div>
+
       <div>
         <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Certificates</div>
         <div className="overflow-hidden rounded border border-border bg-surface">
@@ -169,6 +212,10 @@ export function LearnerProfilePage() {
       <Link to="/app/learners" className="mt-6 inline-block text-xs font-semibold text-ink-500 hover:text-ink-900">
         &larr; Back to {t('learners')}
       </Link>
+
+      {viewingEvaluationId && (
+        <ReportCardModal evaluationId={viewingEvaluationId} learnerId={learnerId} onClose={() => setViewingEvaluationId(null)} />
+      )}
     </div>
   );
 }
