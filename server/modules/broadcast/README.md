@@ -53,6 +53,10 @@ For SMS/voicemail (`resolveRecipients`, audience-picker driven): recipients reso
 
 For `whatsapp_absentee` there's no audience picker — `sendAbsenteeDigest` resolves straight from today's absent learners to their linked guardians (`onec_learner_guardian_map`), filtered to `whatsapp_opt_in = true` with a phone on file.
 
+## Diagnosing a failed send
+
+`dispatchOne` (`server/lib/broadcastDispatch.js`) captures the actual reason a send failed — either `"HTTP <status>: <response body>"` for a non-2xx from the provider (this is where a Twilio-style JSON error body ends up), or a thrown error's message for a network-level failure (DNS, connection refused, the 10s timeout). `dispatchToAll` surfaces the most recent one as `lastError`; every send endpoint (`sendSms`, `sendWhatsapp`, `sendVoicemail`, `sendAbsenteeAlertsNow`/the scheduler) includes it as `send_result.last_error` whenever `failed > 0`, both in the API response and the stored `onec_broadcasts` row — visible directly in each tab's history table and the post-send summary, no server log access needed.
+
 ## Known limitations (v1, intentional)
 
 - Sends are synchronous within the request — fine at school scale, would need a queue for very large tenants.

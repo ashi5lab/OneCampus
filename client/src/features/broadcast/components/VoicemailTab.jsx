@@ -41,6 +41,7 @@ export function VoicemailTab() {
           {row.status === 'sent' && row.send_result && (
             <div className="mt-1 text-[11px] text-ink-500">
               {audienceLabel(row)} · {row.send_result.sent} sent, {row.send_result.failed} failed
+              {row.send_result.last_error && <div className="text-danger">{row.send_result.last_error}</div>}
             </div>
           )}
         </div>

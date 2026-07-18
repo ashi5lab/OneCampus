@@ -54,7 +54,15 @@ export function WhatsappTab() {
     {
       key: 'result',
       header: 'Result',
-      render: (row) => (row.send_result ? `${row.send_result.sent} sent · ${row.send_result.failed} failed` : '—')
+      render: (row) =>
+        row.send_result ? (
+          <div>
+            {row.send_result.sent} sent · {row.send_result.failed} failed
+            {row.send_result.last_error && <div className="mt-0.5 text-[11px] text-danger">{row.send_result.last_error}</div>}
+          </div>
+        ) : (
+          '—'
+        )
     }
   ];
 
@@ -88,8 +96,9 @@ export function WhatsappTab() {
 
           {sendWhatsapp.error && <div className="mb-3 text-xs font-semibold text-danger">{sendWhatsapp.error.message}</div>}
           {sentSummary && (
-            <div className="mb-3 text-xs font-semibold text-success">
+            <div className={`mb-3 text-xs font-semibold ${sentSummary.failed > 0 ? 'text-danger' : 'text-success'}`}>
               Done — {sentSummary.sent} sent, {sentSummary.failed} failed. {sentSummary.note}
+              {sentSummary.last_error && <div className="mt-1 font-mono text-[11px]">{sentSummary.last_error}</div>}
             </div>
           )}
 
