@@ -122,7 +122,7 @@ async function resolveRecipients(req, audienceType, audienceIds) {
      LEFT JOIN onec_instructors i ON i.user_id = u.id
      LEFT JOIN onec_guardians g ON g.user_id = u.id
      LEFT JOIN onec_learners l ON l.user_id = u.id
-     WHERE u.is_active = true ${userFilter}`,
+     WHERE u.is_active = true AND u.broadcast_opt_out = false ${userFilter}`,
     params
   );
 

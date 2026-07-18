@@ -7,6 +7,7 @@ CREATE TABLE onec_users (
     role VARCHAR(50) NOT NULL,  -- 'admin', 'staff', 'instructor', 'learner', 'guardian'
     is_active BOOLEAN DEFAULT TRUE,
     profile_picture_url VARCHAR(500),  -- Cloudinary secure_url, see server/lib/cloudinary.js
+    broadcast_opt_out BOOLEAN NOT NULL DEFAULT false,  -- self-serve SMS/voicemail broadcast opt-out, see server/modules/profile
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

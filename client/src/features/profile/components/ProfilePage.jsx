@@ -3,7 +3,16 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 import { ProfilePictureUploader } from './ProfilePictureUploader';
-import { useMyProfile, useChangePassword, useAllUsers, useAdminChangePassword, useForceLogoutUser, MY_PROFILE_KEY } from '../hooks/useProfile';
+import {
+  useMyProfile,
+  useChangePassword,
+  useAllUsers,
+  useAdminChangePassword,
+  useForceLogoutUser,
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
+  MY_PROFILE_KEY
+} from '../hooks/useProfile';
 
 // Every authenticated user's own account screen (reached by clicking the
 // avatar/name in the sidebar): profile picture + change-own-password. An
@@ -57,6 +66,7 @@ export function ProfilePage() {
       </div>
 
       <ChangePasswordCard />
+      <NotificationPreferencesCard />
 
       {canManagePasswords && <AdminPasswordResetCard />}
       {canManagePasswords && <ForceLogoutCard />}
@@ -119,6 +129,57 @@ function ChangePasswordCard() {
         {changePassword.isPending ? 'Saving…' : 'Change Password'}
       </button>
     </form>
+  );
+}
+
+// broadcast_opt_out on onec_users defaults to false (opted in) — flip the
+// sense here so the checkbox reads as "receive broadcasts" rather than
+// "opt out of broadcasts", which is the natural framing for a user-facing
+// toggle even though the column itself is stored as an opt-out.
+function NotificationPreferencesCard() {
+  const { data: prefs, isLoading, error } = useNotificationPreferences();
+  const updatePrefs = useUpdateNotificationPreferences();
+
+  if (isLoading || error) return null;
+
+  const receivesBroadcast = !prefs.broadcast_opt_out;
+  const showWhatsapp = prefs.whatsapp_opt_in !== null;
+
+  return (
+    <div className="mb-5 rounded border border-border bg-surface p-5">
+      <div className="mb-1 text-[15px] font-bold text-ink-900">Notification Preferences</div>
+      <div className="mb-3 text-[12px] text-ink-500">Control which broadcast channels you receive.</div>
+
+      <label className="mb-3 flex items-start gap-2">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          checked={receivesBroadcast}
+          disabled={updatePrefs.isPending}
+          onChange={(e) => updatePrefs.mutate({ broadcast_opt_out: !e.target.checked })}
+        />
+        <span className="text-[13px] text-ink-700">
+          Receive SMS &amp; voicemail broadcasts sent to me
+        </span>
+      </label>
+
+      {showWhatsapp && (
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={prefs.whatsapp_opt_in}
+            disabled={updatePrefs.isPending}
+            onChange={(e) => updatePrefs.mutate({ whatsapp_opt_in: e.target.checked })}
+          />
+          <span className="text-[13px] text-ink-700">
+            Receive WhatsApp attendance alerts for my linked children
+          </span>
+        </label>
+      )}
+
+      {updatePrefs.error && <div className="mt-3 text-xs font-semibold text-danger">{updatePrefs.error.message}</div>}
+    </div>
   );
 }
 

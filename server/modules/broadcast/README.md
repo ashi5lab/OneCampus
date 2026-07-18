@@ -34,7 +34,7 @@ Three channels are manually composed and sent by an admin (SMS, Voicemail, `what
 
 ## Phone number resolution
 
-For SMS/voicemail (`resolveRecipients`, audience-picker driven): recipients resolve to `onec_users` rows, then a phone is looked up per role: `onec_instructors.phone` → `onec_guardians.phone` → `onec_learners.meta->>'phone'` (first match wins). Users with no phone anywhere are counted in `skipped_no_phone` rather than failing the whole send. Plain admin/staff accounts have no phone column at all, so they're only reachable if they also have one of those role rows.
+For SMS/voicemail (`resolveRecipients`, audience-picker driven): recipients resolve to `onec_users` rows, then a phone is looked up per role: `onec_instructors.phone` → `onec_guardians.phone` → `onec_learners.meta->>'phone'` (first match wins). Users with no phone anywhere are counted in `skipped_no_phone` rather than failing the whole send. Plain admin/staff accounts have no phone column at all, so they're only reachable if they also have one of those role rows. `resolveRecipients` also filters out any user with `onec_users.broadcast_opt_out = true` — a self-serve toggle on the Profile page (see `server/modules/profile`) — before phone lookup even runs, so an opted-out user never receives SMS/voicemail regardless of audience selection.
 
 For `whatsapp_absentee` there's no audience picker — `notifyAbsentee` resolves straight from the one learner just marked absent to their linked guardians (`onec_learner_guardian_map`), filtered to `whatsapp_opt_in = true` with a phone on file.
 

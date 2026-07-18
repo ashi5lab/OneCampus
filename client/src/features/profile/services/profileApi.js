@@ -9,6 +9,8 @@ export const profileApi = {
   removePicture: () => apiClient.delete('/profile/picture').then((res) => res.data),
   me: () => apiClient.get('/profile/me').then((res) => res.data),
   changePassword: (payload) => apiClient.put('/profile/password', payload).then((res) => res.data),
+  getNotificationPreferences: () => apiClient.get('/profile/notification-preferences').then((res) => res.data),
+  updateNotificationPreferences: (payload) => apiClient.put('/profile/notification-preferences', payload).then((res) => res.data),
   listUsers: () => apiClient.get('/profile/users').then((res) => res.data),
   adminChangePassword: (userId, payload) =>
     apiClient.put(`/profile/users/${userId}/password`, payload).then((res) => res.data),
