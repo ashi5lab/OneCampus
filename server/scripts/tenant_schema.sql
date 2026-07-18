@@ -446,6 +446,23 @@ CREATE TABLE onec_refresh_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Daily attendance for instructors and staff themselves (see
+-- server/modules/staffAttendance) — distinct from onec_attendance, which is
+-- learner-only. Keyed on the roster row, not user_id, since bulk-uploaded
+-- instructors/staff commonly have no login account at all.
+CREATE TABLE onec_staff_attendance (
+    id SERIAL PRIMARY KEY,
+    staff_role VARCHAR(20) NOT NULL,
+    roster_id INT NOT NULL,
+    user_id INT REFERENCES onec_users(id) ON DELETE SET NULL,
+    date DATE NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    remarks VARCHAR(255),
+    marked_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(staff_role, roster_id, date)
+);
+
 -- Bulk CSV/Excel import jobs (see server/modules/bulkUpload). One row per
 -- uploaded file; processing happens after the upload response is already
 -- sent, so this is what the frontend polls for status instead of holding

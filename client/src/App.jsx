@@ -38,6 +38,7 @@ import { LeavePage } from './features/leave/components/LeavePage';
 import { CalendarPage } from './features/calendar/components/CalendarPage';
 import { TimetablePage } from './features/timetable/components/TimetablePage';
 import { BulkUploadPage } from './features/bulkUpload/components/BulkUploadPage';
+import { StaffAttendancePage } from './features/staffAttendance/components/StaffAttendancePage';
 
 export default function App() {
   return (
@@ -176,6 +177,14 @@ export default function App() {
           element={
             <RequirePermission permission="bulk_upload.manage">
               <BulkUploadPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="staff-attendance"
+          element={
+            <RequirePermission permission="staff_attendance.view_own">
+              <StaffAttendancePage />
             </RequirePermission>
           }
         />

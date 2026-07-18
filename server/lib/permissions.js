@@ -34,7 +34,8 @@ const ALL_PERMISSIONS = [
   'leave.apply', 'leave.view_own', 'leave.approve',
   'calendar.view', 'calendar.manage',
   'timetable.view', 'timetable.manage',
-  'bulk_upload.manage'
+  'bulk_upload.manage',
+  'staff_attendance.view', 'staff_attendance.mark', 'staff_attendance.view_own'
 ];
 
 // messages.view/.send are granted to every role below — unlike the
@@ -57,7 +58,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
   // cohorts.view was added so staff can pick a class in the Timetable
   // module's "By Class" view (server/modules/timetable) — read-only, no
   // roster-management access comes with it (cohorts.manage stays admin-only).
-  staff: ['messages.view', 'messages.send', 'notices.view', 'notices.manage', 'leave.apply', 'leave.view_own', 'leave.approve', 'calendar.view', 'timetable.view', 'cohorts.view'],
+  staff: ['messages.view', 'messages.send', 'notices.view', 'notices.manage', 'leave.apply', 'leave.view_own', 'leave.approve', 'calendar.view', 'timetable.view', 'cohorts.view', 'staff_attendance.view', 'staff_attendance.mark', 'staff_attendance.view_own'],
   instructor: [
     'units.view', 'cohorts.view', 'modules.view', 'instructors.view',
     'learners.view', 'guardians.view',
@@ -70,7 +71,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
     'online_exams.view', 'online_exams.manage', 'online_exams.grade',
     'broadcast.view', 'broadcast.manage',
     'leave.apply', 'leave.view_own', 'leave.approve',
-    'calendar.view', 'timetable.view'
+    'calendar.view', 'timetable.view',
+    'staff_attendance.view_own'
   ],
   // Coarse-grained on purpose (see the row-level-scoping note above) — kept
   // to just enough to view their own records, not the full roster/management

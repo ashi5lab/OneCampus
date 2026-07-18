@@ -38,6 +38,7 @@ export function useNavLinks() {
     can('timetable.view') && { to: '/app/timetable', label: 'Timetable' },
     can('reports.view') && { to: '/app/reports', label: 'Reports' },
     can('access_control.manage') && { to: '/app/access-control', label: 'Access Control' },
-    can('bulk_upload.manage') && { to: '/app/bulk-upload', label: 'Bulk Upload' }
+    can('bulk_upload.manage') && { to: '/app/bulk-upload', label: 'Bulk Upload' },
+    can('staff_attendance.view_own') && { to: '/app/staff-attendance', label: 'Staff Attendance' }
   ].filter(Boolean);
 }
