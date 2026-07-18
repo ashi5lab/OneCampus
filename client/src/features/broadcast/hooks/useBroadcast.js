@@ -33,6 +33,10 @@ export function useSendSms() {
   return useInvalidatingMutation(broadcastApi.sendSms, 'sms');
 }
 
+export function useSendWhatsapp() {
+  return useInvalidatingMutation(broadcastApi.sendWhatsapp, 'whatsapp');
+}
+
 export function useSubmitVoicemail() {
   return useInvalidatingMutation(({ blob, durationSeconds }) => broadcastApi.submitVoicemail(blob, durationSeconds), 'voicemail');
 }

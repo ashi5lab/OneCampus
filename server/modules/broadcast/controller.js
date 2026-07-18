@@ -8,23 +8,35 @@ const { dispatchToAll, getActiveConfig } = require('../../lib/broadcastDispatch'
 // 'whatsapp_absentee' has no manual send endpoint below — it's configured
 // here (same generic Configuration UI as sms/voicemail) but only ever
 // dispatched automatically by lib/whatsappNotify.js when attendance is
-// marked absent. Kept as its own channel (not folded into a generic
-// 'whatsapp') because WhatsApp requires a pre-approved template per
-// distinct message shape — an absentee alert and a general announcement
-// are two different templates with two different variable sets, so each
-// needs its own onec_broadcast_configs row.
-const CHANNELS = ['sms', 'voicemail', 'whatsapp_absentee'];
+// marked absent. 'whatsapp' is the general manual-send channel (send an
+// announcement to a class/all/specific users, same shape as SMS) — kept
+// separate from 'whatsapp_absentee' because WhatsApp requires a
+// pre-approved template per distinct message shape, so each needs its own
+// onec_broadcast_configs row (different template name, different
+// variables).
+const CHANNELS = ['sms', 'voicemail', 'whatsapp_absentee', 'whatsapp'];
 
 // --- Configuration ---
 
-// A flat string->string record: header names, template fields, variables.
+// A flat string->string record: header names, query params, variables.
+// These three are always flat by nature (an HTTP header, a URL query
+// param, and a named constant are all inherently one string each).
 const stringRecord = z.record(z.string(), z.string());
+
+// payload_template is not always flat — a WhatsApp Cloud API POST body
+// nests a "template" object (name, language.code, components[]), which
+// SMS/voicemail's {to, text}-style bodies never needed. Any JSON-shaped
+// value is allowed per top-level key; server/lib/broadcastDispatch.js's
+// substituteValue recurses through it, only replacing {{name}} inside
+// actual string leaves.
+const jsonValue = z.lazy(() => z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(jsonValue), z.record(z.string(), jsonValue)]));
+const payloadRecord = z.record(z.string(), jsonValue);
 
 const configSchema = z.object({
   api_url: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
   http_method: z.enum(['POST', 'GET']).default('POST'),
   headers: stringRecord.default({}),
-  payload_template: stringRecord.default({}),
+  payload_template: payloadRecord.default({}),
   params_template: stringRecord.default({}),
   variables: stringRecord.default({}),
   is_active: z.boolean().default(false)
@@ -200,6 +212,60 @@ async function sendSms(req, res) {
   }
 }
 
+// --- WhatsApp (general announcements) ---
+
+async function sendWhatsapp(req, res) {
+  try {
+    const parsedAudience = audienceSchema.safeParse(req.body);
+    if (!parsedAudience.success) return res.status(400).json({ error: 'Invalid input', details: parsedAudience.error.format() });
+
+    const config = await getActiveConfig(req, 'whatsapp');
+    if (!config) return res.status(400).json({ error: 'WhatsApp API is not configured or not active — set it up in the Configuration panel first' });
+
+    const { audience_type, audience_ids } = parsedAudience.data;
+
+    // TESTING PHASE ONLY (tenant is still on Meta's free test number, which
+    // can only message a handful of Meta-verified recipient numbers, and
+    // every send uses the zero-variable 'hello_world' sample template — see
+    // server/modules/broadcast/README.md). Real audience fan-out is
+    // deliberately not wired up yet: every send here goes to exactly one
+    // number, the "test_phone" static Variable set in the Configuration
+    // panel, regardless of which audience was picked in the UI. The
+    // audience picked is still recorded on the onec_broadcasts row so nothing
+    // about "what would have been sent" is lost once real fan-out replaces
+    // this — that's resolveRecipients + dispatchToAll(config, recipients, ...),
+    // the exact same call sendSms already makes above.
+    const testPhone = (config.variables || {}).test_phone;
+    if (!testPhone) {
+      return res.status(400).json({
+        error: 'Testing phase: add a "test_phone" Variable (a Meta-verified test recipient number) in the WhatsApp Configuration panel before sending'
+      });
+    }
+
+    const { sent, failed } = await dispatchToAll(config, [{ phone: testPhone }], {});
+    const sendResult = { sent, failed, note: 'testing phase — sent to the configured test_phone only; real audience fan-out not yet enabled' };
+
+    const result = await req.db.query(
+      `INSERT INTO onec_broadcasts (channel, message, status, audience_type, audience_ids, send_result, created_by, sent_at)
+       VALUES ('whatsapp', $1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP) RETURNING *`,
+      [
+        'WhatsApp test template',
+        failed > 0 && sent === 0 ? 'failed' : 'sent',
+        audience_type,
+        JSON.stringify(audience_ids),
+        JSON.stringify(sendResult),
+        req.user.userId
+      ]
+    );
+
+    logAudit(req, 'broadcast.whatsapp_sent', { broadcast_id: result.rows[0].id, ...sendResult });
+    res.status(201).json({ data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 // --- Voicemail ---
 
 const ALLOWED_AUDIO = /^audio\/(webm|ogg|mpeg|mp4|wav|x-wav|aac)/;
@@ -337,6 +403,7 @@ module.exports = {
   listBroadcasts,
   listUsers,
   sendSms,
+  sendWhatsapp,
   uploadVoice,
   createVoicemail,
   approveVoicemail,

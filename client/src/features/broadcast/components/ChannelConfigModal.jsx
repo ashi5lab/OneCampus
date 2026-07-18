@@ -7,6 +7,14 @@ import { useSaveBroadcastConfig } from '../hooks/useBroadcast';
 // - headers / payload_template (POST body) / params_template (GET query)
 //   are string maps whose values may reference {{variables}} plus the
 //   runtime ones: {{phone}}, {{message}} (SMS), {{voice_url}} (voicemail).
+// Does this payload_template have any nested (non-string) top-level value?
+// SMS/voicemail's {to, text}-style bodies never do; a WhatsApp Cloud API
+// body's "template" field always is (an object, not a string) — used to
+// pick a sensible default editor mode per channel.
+function hasNestedValue(record) {
+  return Object.values(record || {}).some((v) => v !== null && typeof v === 'object');
+}
+
 export function ChannelConfigModal({ channel, existing, onClose }) {
   const saveConfig = useSaveBroadcastConfig();
 
@@ -14,15 +22,51 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
   const [method, setMethod] = useState(existing?.http_method || 'POST');
   const [isActive, setIsActive] = useState(existing?.is_active || false);
   const [headers, setHeaders] = useState(toPairs(existing?.headers));
-  const [payload, setPayload] = useState(toPairs(existing?.payload_template));
   const [params, setParams] = useState(toPairs(existing?.params_template));
   const [variables, setVariables] = useState(toPairs(existing?.variables));
   const [formError, setFormError] = useState('');
+
+  // Payload has two editors: the original flat Key/Value grid (fine for
+  // SMS/voicemail's {to, text}-style bodies) and Raw JSON (needed for
+  // anything with a nested object, like WhatsApp's "template" field — see
+  // hasNestedValue above). Defaults to whichever one can actually represent
+  // what's already saved.
+  const [payloadMode, setPayloadMode] = useState(() => (hasNestedValue(existing?.payload_template) ? 'json' : 'kv'));
+  const [payload, setPayload] = useState(toPairs(existing?.payload_template));
+  const [payloadJson, setPayloadJson] = useState(() => JSON.stringify(existing?.payload_template || {}, null, 2));
+
+  function switchPayloadMode(nextMode) {
+    if (nextMode === payloadMode) return;
+    if (nextMode === 'json') {
+      setPayloadJson(JSON.stringify(fromPairs(payload), null, 2));
+    } else {
+      // Best-effort: nested values collapse to their JSON text in this view
+      // (Key/Value pairs can only hold strings) — switch back to Raw JSON
+      // to edit those properly.
+      try {
+        setPayload(toPairs(JSON.parse(payloadJson)));
+      } catch {
+        // Leave the existing pairs alone if the JSON is currently invalid.
+      }
+    }
+    setPayloadMode(nextMode);
+  }
 
   function handleSubmit(e) {
     e.preventDefault();
     setFormError('');
     if (isActive && !apiUrl.trim()) return setFormError('An API URL is required to activate this channel.');
+
+    let payload_template;
+    if (payloadMode === 'json') {
+      try {
+        payload_template = payloadJson.trim() ? JSON.parse(payloadJson) : {};
+      } catch {
+        return setFormError('Payload is not valid JSON — check for a missing comma or bracket.');
+      }
+    } else {
+      payload_template = fromPairs(payload);
+    }
 
     saveConfig.mutate(
       {
@@ -31,7 +75,7 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
           api_url: apiUrl.trim(),
           http_method: method,
           headers: fromPairs(headers),
-          payload_template: fromPairs(payload),
+          payload_template,
           params_template: fromPairs(params),
           variables: fromPairs(variables),
           is_active: isActive
@@ -44,7 +88,13 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
   const RUNTIME_VARS_BY_CHANNEL = {
     sms: '{{phone}}, {{message}}',
     voicemail: '{{phone}}, {{voice_url}}',
-    whatsapp_absentee: '{{phone}}, {{learner_name}}, {{cohort_name}}, {{date}}'
+    whatsapp_absentee: '{{phone}}, {{learner_name}}, {{cohort_name}}, {{date}}',
+    // Testing phase — every send goes to one fixed number, not the picked
+    // audience. Add a "test_phone" Variable below with that number (a
+    // Meta-verified test recipient); the backend feeds its value into
+    // {{phone}} at send time, same as every other channel, so the payload
+    // still just references {{phone}} in the "to" field.
+    whatsapp: '{{phone}} — set via a "test_phone" Variable below (see the banner on this tab)'
   };
   const runtimeVars = RUNTIME_VARS_BY_CHANNEL[channel] || '{{phone}}';
 
@@ -79,7 +129,75 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
         <KeyValueEditor title="Variables" hint="Static values, e.g. apikey → your key. Reference as {{apikey}}." pairs={variables} onChange={setVariables} />
         <KeyValueEditor title="Headers" hint='e.g. Authorization → Bearer {{apikey}}' pairs={headers} onChange={setHeaders} />
         {method === 'POST' ? (
-          <KeyValueEditor title="Payload (JSON body fields)" hint='e.g. to → {{phone}}, text → {{message}}' pairs={payload} onChange={setPayload} />
+          <div className="mb-3 rounded border border-border bg-surface-muted p-3">
+            <div className="mb-0.5 flex items-center justify-between">
+              <div className="text-xs font-bold text-ink-700">Payload (JSON body)</div>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => switchPayloadMode('kv')}
+                  className={`rounded px-2 py-0.5 text-[10.5px] font-semibold ${payloadMode === 'kv' ? 'bg-ink-900 text-white' : 'text-ink-500'}`}
+                >
+                  Key/Value
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchPayloadMode('json')}
+                  className={`rounded px-2 py-0.5 text-[10.5px] font-semibold ${payloadMode === 'json' ? 'bg-ink-900 text-white' : 'text-ink-500'}`}
+                >
+                  Raw JSON
+                </button>
+              </div>
+            </div>
+            {payloadMode === 'kv' ? (
+              <>
+                <div className="mb-2 text-[11px] text-ink-500">e.g. to → {'{{phone}}'}, text → {'{{message}}'}</div>
+                {payload.length === 0 && <div className="text-[11.5px] text-ink-500">None yet.</div>}
+                <div className="space-y-1.5">
+                  {payload.map((pair, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        className="input w-[35%]"
+                        placeholder="name"
+                        value={pair.key}
+                        onChange={(e) => setPayload(payload.map((p, i) => (i === index ? { ...p, key: e.target.value } : p)))}
+                      />
+                      <input
+                        className="input flex-1"
+                        placeholder="value"
+                        value={pair.value}
+                        onChange={(e) => setPayload(payload.map((p, i) => (i === index ? { ...p, value: e.target.value } : p)))}
+                      />
+                      <button type="button" onClick={() => setPayload(payload.filter((_, i) => i !== index))} className="text-xs text-danger">
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPayload([...payload, { key: '', value: '' }])}
+                  className="mt-1.5 text-[11px] font-semibold text-accent-dark hover:underline"
+                >
+                  + Add
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="mb-2 text-[11px] text-ink-500">
+                  For nested bodies (e.g. WhatsApp's <code className="rounded bg-surface px-1">template</code> object) — placeholders work
+                  inside any string value, at any depth.
+                </div>
+                <textarea
+                  className="input w-full font-mono text-[12px]"
+                  rows={8}
+                  value={payloadJson}
+                  onChange={(e) => setPayloadJson(e.target.value)}
+                  spellCheck={false}
+                />
+              </>
+            )}
+          </div>
         ) : (
           <KeyValueEditor title="Query Params" hint='e.g. to → {{phone}}, msg → {{message}}' pairs={params} onChange={setParams} />
         )}
@@ -105,8 +223,15 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
   );
 }
 
+// Key/Value pairs can only hold strings — a nested value (only possible in
+// payload_template, e.g. WhatsApp's "template" object) is shown as its JSON
+// text here rather than rendering "[object Object]"; switch to Raw JSON to
+// actually edit it.
 function toPairs(record) {
-  return Object.entries(record || {}).map(([key, value]) => ({ key, value }));
+  return Object.entries(record || {}).map(([key, value]) => ({
+    key,
+    value: typeof value === 'string' ? value : JSON.stringify(value)
+  }));
 }
 
 function fromPairs(pairs) {
