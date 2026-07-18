@@ -37,6 +37,7 @@ import { AccessControlPage } from './features/accessControl/components/AccessCon
 import { LeavePage } from './features/leave/components/LeavePage';
 import { CalendarPage } from './features/calendar/components/CalendarPage';
 import { TimetablePage } from './features/timetable/components/TimetablePage';
+import { BulkUploadPage } from './features/bulkUpload/components/BulkUploadPage';
 
 export default function App() {
   return (
@@ -167,6 +168,14 @@ export default function App() {
           element={
             <RequirePermission permission="access_control.manage">
               <AccessControlPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="bulk-upload"
+          element={
+            <RequirePermission permission="bulk_upload.manage">
+              <BulkUploadPage />
             </RequirePermission>
           }
         />

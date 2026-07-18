@@ -445,3 +445,21 @@ CREATE TABLE onec_refresh_tokens (
     revoked_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Bulk CSV/Excel import jobs (see server/modules/bulkUpload). One row per
+-- uploaded file; processing happens after the upload response is already
+-- sent, so this is what the frontend polls for status instead of holding
+-- the request open for a few-hundred-row import.
+CREATE TABLE onec_bulk_upload_jobs (
+    id SERIAL PRIMARY KEY,
+    entity_type VARCHAR(20) NOT NULL,   -- 'learner' | 'instructor' | 'staff'
+    original_filename VARCHAR(255),
+    status VARCHAR(30) NOT NULL DEFAULT 'processing',  -- 'processing' | 'completed' | 'completed_with_errors' | 'failed'
+    total_rows INT NOT NULL DEFAULT 0,
+    success_count INT NOT NULL DEFAULT 0,
+    failure_count INT NOT NULL DEFAULT 0,
+    errors JSONB NOT NULL DEFAULT '[]',
+    created_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
+);
