@@ -463,6 +463,22 @@ CREATE TABLE onec_staff_attendance (
     UNIQUE(staff_role, roster_id, date)
 );
 
+-- Substitute-teacher assignments (see server/modules/substitutes) — which
+-- covering instructor was assigned to a specific timetable period on a
+-- specific date, for an approved instructor leave that would otherwise
+-- leave it uncovered. "Which periods need covering" is computed on read
+-- (server/lib/substituteCoverage.js); only an actual assignment is stored.
+CREATE TABLE onec_substitute_assignments (
+    id SERIAL PRIMARY KEY,
+    leave_request_id INT REFERENCES onec_leave_requests(id) ON DELETE CASCADE,
+    allocation_id INT NOT NULL REFERENCES onec_allocations(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    substitute_instructor_id INT NOT NULL REFERENCES onec_instructors(id),
+    assigned_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(allocation_id, date)
+);
+
 -- Bulk CSV/Excel import jobs (see server/modules/bulkUpload). One row per
 -- uploaded file; processing happens after the upload response is already
 -- sent, so this is what the frontend polls for status instead of holding
