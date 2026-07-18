@@ -1,8 +1,45 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient, setAuthToken, refreshAccessToken, logoutRequest } from '../lib/apiClient';
+import { isStandalone } from '../lib/pwa';
 
 const AuthContext = createContext(null);
+
+// Only a session running as an installed PWA (Android "Add to Home Screen"/
+// desktop install, or iOS Safari's standalone mode) gets to stay signed in
+// indefinitely — a regular browser tab (including mobile Chrome with the
+// site just open, not installed) gets logged out after this much inactivity.
+// Installed sessions still end via explicit logout, an admin revoke, or a
+// password change (handled server-side, see revokeAllUserTokens).
+const IDLE_TIMEOUT_MS = 20 * 60 * 1000;
+const IDLE_CHECK_INTERVAL_MS = 15 * 1000;
+const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'wheel', 'touchstart', 'scroll'];
+
+// A raw network failure (fetch never got a response — no `.status` on the
+// error) during the mount-time session restore is NOT the same thing as "no
+// valid session": Android often fully kills a backgrounded PWA's process to
+// reclaim memory, so reopening it is a fresh page load that can race the OS
+// still reconnecting Wi-Fi/cellular. A short, fixed retry window was still
+// losing that race on real devices and bouncing users back to the login
+// screen despite a perfectly valid refresh-token cookie — this waits for
+// actual connectivity to come back (capped per attempt) instead of just
+// sleeping blindly, and tries for longer overall before giving up.
+function waitForOnlineOrTimeout(maxMs) {
+  if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+    return new Promise((resolve) => setTimeout(resolve, maxMs));
+  }
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      window.removeEventListener('online', onOnline);
+      resolve();
+    }, maxMs);
+    function onOnline() {
+      clearTimeout(timer);
+      resolve();
+    }
+    window.addEventListener('online', onOnline, { once: true });
+  });
+}
 
 export function AuthProvider({ children }) {
   const queryClient = useQueryClient();
@@ -70,8 +107,8 @@ export function AuthProvider({ children }) {
   // cellular, so the very first request can transiently fail even though
   // the refresh-token cookie is perfectly valid. Treating that as a logout
   // was bouncing users who force-quit the app back to the login screen.
-  // Retry a couple of times before giving up; a genuine 401 still fails
-  // immediately with no retries.
+  // Retry several times with growing, connectivity-aware backoff before
+  // giving up; a genuine 401 still fails immediately with no retries.
   useEffect(() => {
     let cancelled = false;
 
@@ -79,14 +116,15 @@ export function AuthProvider({ children }) {
     // (network failures only) are exhausted — callers decide what "done"
     // means, so setInitializing(false) fires exactly once, after every
     // retry attempt, not after each intermediate one.
-    async function restoreSession(retriesLeft = 2) {
+    async function restoreSession(retriesLeft = 5, delayMs = 1000) {
       try {
         return await refreshAccessToken();
       } catch (err) {
         const isNetworkError = typeof err?.status !== 'number';
         if (isNetworkError && retriesLeft > 0 && !cancelled) {
-          await new Promise((resolve) => setTimeout(resolve, 1200));
-          return restoreSession(retriesLeft - 1);
+          await waitForOnlineOrTimeout(delayMs);
+          if (cancelled) throw err;
+          return restoreSession(retriesLeft - 1, Math.min(delayMs * 1.6, 5000));
         }
         throw err;
       }
@@ -125,6 +163,40 @@ export function AuthProvider({ children }) {
     await logoutRequest();
     clearSession();
   }, [clearSession]);
+
+  // Idle-timeout policy: a session running as an installed PWA stays signed
+  // in indefinitely (the existing behavior — ends only via explicit logout,
+  // an admin revoke, or a password change). Anything else — a regular
+  // browser tab, mobile Chrome with the site just open but not installed —
+  // auto-logs-out after IDLE_TIMEOUT_MS of no user activity, matching a
+  // conventional 20-minute web session timeout. Reading isStandalone() once
+  // per session is intentional: a session doesn't change delivery mode
+  // mid-flight.
+  const lastActivityRef = useRef(Date.now());
+  useEffect(() => {
+    if (!token || isStandalone()) return;
+
+    lastActivityRef.current = Date.now();
+    const markActive = () => {
+      lastActivityRef.current = Date.now();
+    };
+
+    function checkIdle() {
+      if (Date.now() - lastActivityRef.current >= IDLE_TIMEOUT_MS) {
+        logout();
+      }
+    }
+
+    ACTIVITY_EVENTS.forEach((evt) => window.addEventListener(evt, markActive, { passive: true }));
+    document.addEventListener('visibilitychange', checkIdle);
+    const intervalId = setInterval(checkIdle, IDLE_CHECK_INTERVAL_MS);
+
+    return () => {
+      ACTIVITY_EVENTS.forEach((evt) => window.removeEventListener(evt, markActive));
+      document.removeEventListener('visibilitychange', checkIdle);
+      clearInterval(intervalId);
+    };
+  }, [token, logout]);
 
   const can = useCallback((permission) => permissions.includes(permission), [permissions]);
 
