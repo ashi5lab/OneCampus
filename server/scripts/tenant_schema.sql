@@ -537,3 +537,17 @@ CREATE TABLE onec_bulk_upload_jobs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP
 );
+
+-- Front-desk/gate-pass visitor register (see server/modules/visitors).
+CREATE TABLE onec_visitor_logs (
+    id SERIAL PRIMARY KEY,
+    visitor_name VARCHAR(100) NOT NULL,
+    visitor_phone VARCHAR(20),
+    purpose VARCHAR(255) NOT NULL,
+    host_name VARCHAR(100) NOT NULL,
+    id_proof VARCHAR(100),
+    check_in_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    check_out_time TIMESTAMP,
+    logged_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

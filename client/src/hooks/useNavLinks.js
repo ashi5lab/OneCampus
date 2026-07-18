@@ -42,6 +42,7 @@ export function useNavLinks() {
     can('staff_attendance.view_own') && { to: '/app/staff-attendance', label: 'Staff Attendance' },
     can('discipline.view') && { to: '/app/discipline', label: 'Discipline' },
     can('ptm.view') && { to: '/app/ptm', label: 'PTM' },
-    can('learners.view') && { to: '/app/alumni', label: 'Alumni' }
+    can('learners.view') && { to: '/app/alumni', label: 'Alumni' },
+    can('visitors.view') && { to: '/app/visitors', label: 'Visitor Log' }
   ].filter(Boolean);
 }

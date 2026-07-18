@@ -73,6 +73,7 @@ const substitutesRoutes = require('./modules/substitutes/routes');
 const disciplineRoutes = require('./modules/discipline/routes');
 const idCardsRoutes = require('./modules/idCards/routes');
 const ptmRoutes = require('./modules/ptm/routes');
+const visitorsRoutes = require('./modules/visitors/routes');
 
 app.use('/api/v1/tenant', tenantRoutes);
 app.use('/api/v1/auth', authRoutes);
@@ -106,6 +107,7 @@ app.use('/api/v1/substitutes', substitutesRoutes);
 app.use('/api/v1/discipline', disciplineRoutes);
 app.use('/api/v1/id-cards', idCardsRoutes);
 app.use('/api/v1/ptm', ptmRoutes);
+app.use('/api/v1/visitors', visitorsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

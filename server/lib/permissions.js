@@ -39,7 +39,8 @@ const ALL_PERMISSIONS = [
   'substitutes.view', 'substitutes.manage',
   'discipline.view', 'discipline.log',
   'id_cards.generate',
-  'ptm.view', 'ptm.manage', 'ptm.book'
+  'ptm.view', 'ptm.manage', 'ptm.book',
+  'visitors.view', 'visitors.log'
 ];
 
 // messages.view/.send are granted to every role below — unlike the
@@ -62,7 +63,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
   // cohorts.view was added so staff can pick a class in the Timetable
   // module's "By Class" view (server/modules/timetable) — read-only, no
   // roster-management access comes with it (cohorts.manage stays admin-only).
-  staff: ['messages.view', 'messages.send', 'notices.view', 'notices.manage', 'leave.apply', 'leave.view_own', 'leave.approve', 'calendar.view', 'timetable.view', 'cohorts.view', 'staff_attendance.view', 'staff_attendance.mark', 'staff_attendance.view_own', 'substitutes.view', 'substitutes.manage', 'discipline.view', 'discipline.log', 'id_cards.generate', 'ptm.view', 'ptm.manage'],
+  staff: ['messages.view', 'messages.send', 'notices.view', 'notices.manage', 'leave.apply', 'leave.view_own', 'leave.approve', 'calendar.view', 'timetable.view', 'cohorts.view', 'staff_attendance.view', 'staff_attendance.mark', 'staff_attendance.view_own', 'substitutes.view', 'substitutes.manage', 'discipline.view', 'discipline.log', 'id_cards.generate', 'ptm.view', 'ptm.manage', 'visitors.view', 'visitors.log'],
   instructor: [
     'units.view', 'cohorts.view', 'modules.view', 'instructors.view',
     'learners.view', 'guardians.view',

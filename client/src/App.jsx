@@ -42,6 +42,7 @@ import { StaffAttendancePage } from './features/staffAttendance/components/Staff
 import { DisciplinePage } from './features/discipline/components/DisciplinePage';
 import { PtmPage } from './features/ptm/components/PtmPage';
 import { AlumniPage } from './features/alumni/components/AlumniPage';
+import { VisitorLogPage } from './features/visitors/components/VisitorLogPage';
 
 export default function App() {
   return (
@@ -212,6 +213,14 @@ export default function App() {
           element={
             <RequirePermission permission="learners.view">
               <AlumniPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="visitors"
+          element={
+            <RequirePermission permission="visitors.view">
+              <VisitorLogPage />
             </RequirePermission>
           }
         />
