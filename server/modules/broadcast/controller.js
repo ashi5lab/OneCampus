@@ -122,7 +122,16 @@ async function upsertConfig(req, res) {
     res.json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    // broadcast.configure is admin-only, and this is the config-save path
+    // itself (not a send) — folding the real DB/driver error into the
+    // message here is the same reasoning as dispatchOne's last_error: a
+    // bare "Internal server error" was exactly what made the earlier
+    // migration-gap incident (missing columns) indistinguishable from any
+    // other failure without direct database access. client/src/lib/
+    // apiClient.js's ApiError reads only the top-level `error` string, so
+    // this needs no frontend change to show up in the Configuration
+    // modal's existing error display.
+    res.status(500).json({ error: `Internal server error: ${err.message}` });
   }
 }
 
