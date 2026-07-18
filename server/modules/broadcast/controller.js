@@ -59,7 +59,7 @@ async function getConfigs(req, res) {
     res.json({ data: result.rows });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${err.message}` });
   }
 }
 
@@ -201,7 +201,7 @@ async function listBroadcasts(req, res) {
     res.json({ data: result.rows });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${err.message}` });
   }
 }
 
@@ -213,7 +213,7 @@ async function listUsers(req, res) {
     res.json({ data: users });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${err.message}` });
   }
 }
 
@@ -248,7 +248,7 @@ async function sendSms(req, res) {
     res.status(201).json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${err.message}` });
   }
 }
 
@@ -307,7 +307,7 @@ async function sendWhatsapp(req, res) {
     res.status(201).json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${err.message}` });
   }
 }
 
@@ -372,7 +372,7 @@ async function approveVoicemail(req, res) {
     res.json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${err.message}` });
   }
 }
 
@@ -395,7 +395,7 @@ async function rejectVoicemail(req, res) {
     res.json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${err.message}` });
   }
 }
 
@@ -438,7 +438,7 @@ async function sendVoicemail(req, res) {
     res.json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${err.message}` });
   }
 }
 
@@ -475,7 +475,12 @@ async function sendAbsenteeAlertsNow(req, res) {
     res.json({ data: { ...result, note: `${result.count} absentee(s) for ${date}` } });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    // Same reasoning as upsertConfig's fix — a thrown error here (as
+    // opposed to a provider rejection, which sendAbsenteeDigest already
+    // catches into send_result.last_error) is by definition something
+    // this endpoint's own testing didn't anticipate, so hiding it behind
+    // a bare 500 is exactly the wrong move while debugging it live.
+    res.status(500).json({ error: `Internal server error: ${err.message}` });
   }
 }
 
