@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
 const { listActiveUsers } = require('../../lib/userDirectory');
+const { computeFine } = require('../../lib/libraryFines');
 
 const bookSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -14,6 +15,11 @@ const issueLoanSchema = z.object({
   book_id: z.number().int(),
   borrower_id: z.number().int(),
   due_date: z.string() // YYYY-MM-DD
+});
+
+const waiveFineSchema = z.object({
+  waived_amount: z.number().min(0),
+  reason: z.string().optional().nullable()
 });
 
 // --- Books ---
@@ -114,7 +120,14 @@ async function listLoans(req, res) {
     const role = req.user.role;
     const isManager = role === 'admin' || role === 'staff';
 
-    let query = `SELECT l.*, b.title AS book_title, u.username AS borrower_username, u.role AS borrower_role
+    // borrowed_date/due_date/returned_date cast to text — node-postgres
+    // otherwise parses DATE columns into JS Date objects, which
+    // computeFine's string-based day-diff math can't work with (see the
+    // Invalid Date bug this exact pattern caused in the calendar module).
+    let query = `SELECT l.id, l.book_id, l.borrower_id, l.issued_by,
+                        l.borrowed_date::text AS borrowed_date, l.due_date::text AS due_date, l.returned_date::text AS returned_date,
+                        l.fine_waived_amount, l.fine_waived_reason, l.fine_waived_by, l.fine_waived_at,
+                        b.title AS book_title, u.username AS borrower_username, u.role AS borrower_role
                  FROM onec_library_loans l
                  JOIN onec_library_books b ON l.book_id = b.id
                  JOIN onec_users u ON l.borrower_id = u.id`;
@@ -127,7 +140,8 @@ async function listLoans(req, res) {
     query += ' ORDER BY l.borrowed_date DESC';
 
     const result = await req.db.query(query, params);
-    res.json({ data: result.rows });
+    const loans = result.rows.map((loan) => ({ ...loan, ...computeFine(loan) }));
+    res.json({ data: loans });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
@@ -207,4 +221,35 @@ async function returnLoan(req, res) {
   }
 }
 
-module.exports = { listBooks, createBook, updateBook, deleteBook, listBorrowers, listLoans, issueLoan, returnLoan };
+// Sets the total waived amount on a loan — an overwrite, not an add-on-top
+// (waiving twice with the same amount doesn't double it; calling this again
+// with a smaller/larger number replaces the prior waiver entirely). The
+// underlying fine itself is never stored (see server/lib/libraryFines.js),
+// so this can't "cap" a still-accruing fine at zero forever — a loan that's
+// still overdue keeps growing after a partial waiver, just measured against
+// the live total rather than a frozen one.
+async function waiveFine(req, res) {
+  try {
+    const { id } = req.params;
+    const parsed = waiveFineSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+    const { waived_amount, reason } = parsed.data;
+
+    const result = await req.db.query(
+      `UPDATE onec_library_loans
+       SET fine_waived_amount = $1, fine_waived_reason = $2, fine_waived_by = $3, fine_waived_at = CURRENT_TIMESTAMP
+       WHERE id = $4 RETURNING id, book_id, borrower_id, due_date::text AS due_date, returned_date::text AS returned_date, fine_waived_amount, fine_waived_reason, fine_waived_by, fine_waived_at`,
+      [waived_amount, reason ?? null, req.user.userId, id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+
+    const loan = { ...result.rows[0], ...computeFine(result.rows[0]) };
+    logAudit(req, 'library.fine_waived', { loan_id: id, waived_amount, reason });
+    res.json({ data: loan });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { listBooks, createBook, updateBook, deleteBook, listBorrowers, listLoans, issueLoan, returnLoan, waiveFine };

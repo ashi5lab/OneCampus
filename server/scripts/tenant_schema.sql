@@ -193,7 +193,14 @@ CREATE TABLE onec_library_loans (
     borrowed_date DATE NOT NULL DEFAULT CURRENT_DATE,
     due_date DATE NOT NULL,
     returned_date DATE,
-    issued_by INT REFERENCES onec_users(id)
+    issued_by INT REFERENCES onec_users(id),
+    -- Overdue fine amount is computed on read from due_date/returned_date
+    -- (see server/lib/libraryFines.js), not stored — only a waiver, an
+    -- explicit staff action, needs to persist independently of that.
+    fine_waived_amount DECIMAL(8,2) NOT NULL DEFAULT 0,
+    fine_waived_reason VARCHAR(255),
+    fine_waived_by INT REFERENCES onec_users(id),
+    fine_waived_at TIMESTAMP
 );
 
 -- School-wide announcements (see server/modules/notices). A core feature,
