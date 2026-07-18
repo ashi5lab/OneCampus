@@ -40,7 +40,15 @@ export function WhatsappAbsenteeTab({ config }) {
     {
       key: 'result',
       header: 'Result',
-      render: (row) => (row.send_result ? `${row.send_result.sent} sent · ${row.send_result.failed} failed` : '—')
+      render: (row) =>
+        row.send_result ? (
+          <div>
+            {row.send_result.sent} sent · {row.send_result.failed} failed
+            {row.send_result.last_error && <div className="mt-0.5 text-[11px] text-danger">{row.send_result.last_error}</div>}
+          </div>
+        ) : (
+          '—'
+        )
     }
   ];
 
@@ -67,7 +75,12 @@ export function WhatsappAbsenteeTab({ config }) {
             {sendNow.isPending ? 'Sending…' : 'Send Absentee Alerts Now'}
           </button>
           {sendNow.error && <div className="mt-3 text-xs font-semibold text-danger">{sendNow.error.message}</div>}
-          {result && <div className="mt-3 text-xs font-semibold text-success">{result.note}</div>}
+          {result && (
+            <div className={`mt-3 text-xs font-semibold ${result.failed > 0 ? 'text-danger' : 'text-success'}`}>
+              {result.note}
+              {result.last_error && <div className="mt-1 font-mono text-[11px]">{result.last_error}</div>}
+            </div>
+          )}
         </div>
       )}
 

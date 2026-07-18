@@ -226,8 +226,8 @@ async function sendSms(req, res) {
     const { message } = parsedSms.data;
     const { recipients, skippedNoPhone } = await resolveRecipients(req, audience_type, audience_ids);
 
-    const { sent, failed } = await dispatchToAll(config, recipients, { message });
-    const sendResult = { sent, failed, skipped_no_phone: skippedNoPhone };
+    const { sent, failed, lastError } = await dispatchToAll(config, recipients, { message });
+    const sendResult = { sent, failed, skipped_no_phone: skippedNoPhone, ...(failed > 0 ? { last_error: lastError } : {}) };
 
     const result = await req.db.query(
       `INSERT INTO onec_broadcasts (channel, message, status, audience_type, audience_ids, send_result, created_by, sent_at)
@@ -273,8 +273,13 @@ async function sendWhatsapp(req, res) {
       });
     }
 
-    const { sent, failed } = await dispatchToAll(config, [{ phone: testPhone }], {});
-    const sendResult = { sent, failed, note: 'testing phase — sent to the configured test_phone only; real audience fan-out not yet enabled' };
+    const { sent, failed, lastError } = await dispatchToAll(config, [{ phone: testPhone }], {});
+    const sendResult = {
+      sent,
+      failed,
+      note: 'testing phase — sent to the configured test_phone only; real audience fan-out not yet enabled',
+      ...(failed > 0 ? { last_error: lastError } : {})
+    };
 
     const result = await req.db.query(
       `INSERT INTO onec_broadcasts (channel, message, status, audience_type, audience_ids, send_result, created_by, sent_at)
@@ -410,8 +415,8 @@ async function sendVoicemail(req, res) {
     const { audience_type, audience_ids } = parsed.data;
     const { recipients, skippedNoPhone } = await resolveRecipients(req, audience_type, audience_ids);
 
-    const { sent, failed } = await dispatchToAll(config, recipients, { voice_url: voicemail.rows[0].voice_url });
-    const sendResult = { sent, failed, skipped_no_phone: skippedNoPhone };
+    const { sent, failed, lastError } = await dispatchToAll(config, recipients, { voice_url: voicemail.rows[0].voice_url });
+    const sendResult = { sent, failed, skipped_no_phone: skippedNoPhone, ...(failed > 0 ? { last_error: lastError } : {}) };
 
     const result = await req.db.query(
       `UPDATE onec_broadcasts

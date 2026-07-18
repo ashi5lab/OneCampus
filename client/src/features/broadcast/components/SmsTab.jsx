@@ -44,9 +44,14 @@ export function SmsTab() {
       key: 'result',
       header: 'Result',
       render: (row) =>
-        row.send_result
-          ? `${row.send_result.sent} sent · ${row.send_result.failed} failed · ${row.send_result.skipped_no_phone} no phone`
-          : '—'
+        row.send_result ? (
+          <div>
+            {row.send_result.sent} sent · {row.send_result.failed} failed · {row.send_result.skipped_no_phone} no phone
+            {row.send_result.last_error && <div className="mt-0.5 text-[11px] text-danger">{row.send_result.last_error}</div>}
+          </div>
+        ) : (
+          '—'
+        )
     },
     { key: 'by', header: 'By', render: (row) => row.created_by_username || '—' }
   ];
@@ -67,8 +72,9 @@ export function SmsTab() {
 
           {sendSms.error && <div className="mb-3 text-xs font-semibold text-danger">{sendSms.error.message}</div>}
           {sentSummary && (
-            <div className="mb-3 text-xs font-semibold text-success">
+            <div className={`mb-3 text-xs font-semibold ${sentSummary.failed > 0 ? 'text-danger' : 'text-success'}`}>
               Done — {sentSummary.sent} sent, {sentSummary.failed} failed, {sentSummary.skipped_no_phone} skipped (no phone on file).
+              {sentSummary.last_error && <div className="mt-1 font-mono text-[11px]">{sentSummary.last_error}</div>}
             </div>
           )}
 

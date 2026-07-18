@@ -37,22 +37,22 @@ async function sendAbsenteeDigest(db, { date, createdBy }) {
   const testPhone = (config.variables || {}).test_phone;
   if (!testPhone) return { skipped: 'no_test_phone' };
 
-  let sent = 0;
-  let failed = 0;
-  try {
-    const ok = await dispatchOne(config, {
-      phone: testPhone,
-      count: String(absentees.rows.length),
-      learner_name: absentees.rows.length === 1 ? `${absentees.rows[0].first_name} ${absentees.rows[0].last_name}` : `${absentees.rows.length} students`,
-      cohort_name: cohortNames.join(', '),
-      date
-    });
-    ok ? sent++ : failed++;
-  } catch {
-    failed++;
-  }
+  const { ok, detail } = await dispatchOne(config, {
+    phone: testPhone,
+    count: String(absentees.rows.length),
+    learner_name: absentees.rows.length === 1 ? `${absentees.rows[0].first_name} ${absentees.rows[0].last_name}` : `${absentees.rows.length} students`,
+    cohort_name: cohortNames.join(', '),
+    date
+  });
+  const sent = ok ? 1 : 0;
+  const failed = ok ? 0 : 1;
 
-  const sendResult = { sent, failed, note: 'testing phase — one batched send for the whole day regardless of absentee count' };
+  const sendResult = {
+    sent,
+    failed,
+    note: 'testing phase — one batched send for the whole day regardless of absentee count',
+    ...(failed > 0 ? { last_error: detail } : {})
+  };
   await db.query(
     `INSERT INTO onec_broadcasts (channel, message, status, audience_type, audience_ids, send_result, created_by, sent_at)
      VALUES ('whatsapp_absentee', $1, $2, 'learner', $3, $4, $5, CURRENT_TIMESTAMP)`,
@@ -65,7 +65,7 @@ async function sendAbsenteeDigest(db, { date, createdBy }) {
     ]
   );
 
-  return { sent, failed, count: absentees.rows.length };
+  return { sent, failed, count: absentees.rows.length, ...(failed > 0 ? { last_error: detail } : {}) };
 }
 
 module.exports = { sendAbsenteeDigest };
