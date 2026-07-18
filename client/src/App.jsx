@@ -40,6 +40,7 @@ import { TimetablePage } from './features/timetable/components/TimetablePage';
 import { BulkUploadPage } from './features/bulkUpload/components/BulkUploadPage';
 import { StaffAttendancePage } from './features/staffAttendance/components/StaffAttendancePage';
 import { DisciplinePage } from './features/discipline/components/DisciplinePage';
+import { PtmPage } from './features/ptm/components/PtmPage';
 
 export default function App() {
   return (
@@ -194,6 +195,14 @@ export default function App() {
           element={
             <RequirePermission permission="discipline.view">
               <DisciplinePage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="ptm"
+          element={
+            <RequirePermission permission="ptm.view">
+              <PtmPage />
             </RequirePermission>
           }
         />

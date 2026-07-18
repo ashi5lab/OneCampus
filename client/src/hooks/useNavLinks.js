@@ -40,6 +40,7 @@ export function useNavLinks() {
     can('access_control.manage') && { to: '/app/access-control', label: 'Access Control' },
     can('bulk_upload.manage') && { to: '/app/bulk-upload', label: 'Bulk Upload' },
     can('staff_attendance.view_own') && { to: '/app/staff-attendance', label: 'Staff Attendance' },
-    can('discipline.view') && { to: '/app/discipline', label: 'Discipline' }
+    can('discipline.view') && { to: '/app/discipline', label: 'Discipline' },
+    can('ptm.view') && { to: '/app/ptm', label: 'PTM' }
   ].filter(Boolean);
 }
