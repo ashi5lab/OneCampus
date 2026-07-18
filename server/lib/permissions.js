@@ -33,7 +33,8 @@ const ALL_PERMISSIONS = [
   'access_control.manage',
   'leave.apply', 'leave.view_own', 'leave.approve',
   'calendar.view', 'calendar.manage',
-  'timetable.view', 'timetable.manage'
+  'timetable.view', 'timetable.manage',
+  'bulk_upload.manage'
 ];
 
 // messages.view/.send are granted to every role below — unlike the

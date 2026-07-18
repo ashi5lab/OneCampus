@@ -37,6 +37,7 @@ export function useNavLinks() {
     can('calendar.view') && { to: '/app/calendar', label: 'Calendar' },
     can('timetable.view') && { to: '/app/timetable', label: 'Timetable' },
     can('reports.view') && { to: '/app/reports', label: 'Reports' },
-    can('access_control.manage') && { to: '/app/access-control', label: 'Access Control' }
+    can('access_control.manage') && { to: '/app/access-control', label: 'Access Control' },
+    can('bulk_upload.manage') && { to: '/app/bulk-upload', label: 'Bulk Upload' }
   ].filter(Boolean);
 }
