@@ -37,6 +37,10 @@ export function useSendWhatsapp() {
   return useInvalidatingMutation(broadcastApi.sendWhatsapp, 'whatsapp');
 }
 
+export function useSendAbsenteeAlertsNow() {
+  return useInvalidatingMutation(broadcastApi.sendAbsenteeAlertsNow, 'whatsapp_absentee');
+}
+
 export function useSubmitVoicemail() {
   return useInvalidatingMutation(({ blob, durationSeconds }) => broadcastApi.submitVoicemail(blob, durationSeconds), 'voicemail');
 }

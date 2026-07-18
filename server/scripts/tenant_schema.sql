@@ -7,6 +7,7 @@ CREATE TABLE onec_users (
     role VARCHAR(50) NOT NULL,  -- 'admin', 'staff', 'instructor', 'learner', 'guardian'
     is_active BOOLEAN DEFAULT TRUE,
     profile_picture_url VARCHAR(500),  -- Cloudinary secure_url, see server/lib/cloudinary.js
+    broadcast_opt_out BOOLEAN NOT NULL DEFAULT false,  -- self-serve SMS/voicemail broadcast opt-out, see server/modules/profile
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -193,7 +194,14 @@ CREATE TABLE onec_library_loans (
     borrowed_date DATE NOT NULL DEFAULT CURRENT_DATE,
     due_date DATE NOT NULL,
     returned_date DATE,
-    issued_by INT REFERENCES onec_users(id)
+    issued_by INT REFERENCES onec_users(id),
+    -- Overdue fine amount is computed on read from due_date/returned_date
+    -- (see server/lib/libraryFines.js), not stored — only a waiver, an
+    -- explicit staff action, needs to persist independently of that.
+    fine_waived_amount DECIMAL(8,2) NOT NULL DEFAULT 0,
+    fine_waived_reason VARCHAR(255),
+    fine_waived_by INT REFERENCES onec_users(id),
+    fine_waived_at TIMESTAMP
 );
 
 -- School-wide announcements (see server/modules/notices). A core feature,
@@ -310,6 +318,12 @@ CREATE TABLE onec_broadcast_configs (
     params_template JSONB NOT NULL DEFAULT '{}',       -- GET query params; values may contain {{variables}}
     variables JSONB NOT NULL DEFAULT '{}',             -- static name -> value, substituted into the templates
     is_active BOOLEAN NOT NULL DEFAULT false,
+    body_encoding VARCHAR(10) NOT NULL DEFAULT 'json', -- 'json' | 'form' — see server/lib/broadcastDispatch.js
+    -- Only meaningful on the whatsapp_absentee row (see server/lib/absenteeDigest.js / absenteeScheduler.js):
+    absentee_mode VARCHAR(10) NOT NULL DEFAULT 'manual',  -- 'manual' | 'daily' | 'weekly'
+    absentee_schedule_time TIME,
+    absentee_schedule_day INT,                          -- 0(Sun)-6(Sat), for 'weekly'
+    absentee_last_sent_date DATE,
     updated_by INT REFERENCES onec_users(id),
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -446,6 +460,73 @@ CREATE TABLE onec_refresh_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Daily attendance for instructors and staff themselves (see
+-- server/modules/staffAttendance) — distinct from onec_attendance, which is
+-- learner-only. Keyed on the roster row, not user_id, since bulk-uploaded
+-- instructors/staff commonly have no login account at all.
+CREATE TABLE onec_staff_attendance (
+    id SERIAL PRIMARY KEY,
+    staff_role VARCHAR(20) NOT NULL,
+    roster_id INT NOT NULL,
+    user_id INT REFERENCES onec_users(id) ON DELETE SET NULL,
+    date DATE NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    remarks VARCHAR(255),
+    marked_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(staff_role, roster_id, date)
+);
+
+-- Parent-teacher meeting scheduling (see server/modules/ptm).
+CREATE TABLE onec_ptm_slots (
+    id SERIAL PRIMARY KEY,
+    instructor_id INT NOT NULL REFERENCES onec_instructors(id) ON DELETE CASCADE,
+    slot_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    cohort_id INT REFERENCES onec_cohorts(id),
+    created_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE onec_ptm_bookings (
+    id SERIAL PRIMARY KEY,
+    slot_id INT NOT NULL REFERENCES onec_ptm_slots(id) ON DELETE CASCADE,
+    learner_id INT NOT NULL REFERENCES onec_learners(id) ON DELETE CASCADE,
+    booked_by INT REFERENCES onec_users(id),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(slot_id)
+);
+
+-- Incident/behavior records per learner (see server/modules/discipline).
+CREATE TABLE onec_discipline_records (
+    id SERIAL PRIMARY KEY,
+    learner_id INT NOT NULL REFERENCES onec_learners(id) ON DELETE CASCADE,
+    incident_date DATE NOT NULL,
+    severity VARCHAR(20) NOT NULL,
+    description TEXT NOT NULL,
+    action_taken TEXT,
+    reported_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Substitute-teacher assignments (see server/modules/substitutes) — which
+-- covering instructor was assigned to a specific timetable period on a
+-- specific date, for an approved instructor leave that would otherwise
+-- leave it uncovered. "Which periods need covering" is computed on read
+-- (server/lib/substituteCoverage.js); only an actual assignment is stored.
+CREATE TABLE onec_substitute_assignments (
+    id SERIAL PRIMARY KEY,
+    leave_request_id INT REFERENCES onec_leave_requests(id) ON DELETE CASCADE,
+    allocation_id INT NOT NULL REFERENCES onec_allocations(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    substitute_instructor_id INT NOT NULL REFERENCES onec_instructors(id),
+    assigned_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(allocation_id, date)
+);
+
 -- Bulk CSV/Excel import jobs (see server/modules/bulkUpload). One row per
 -- uploaded file; processing happens after the upload response is already
 -- sent, so this is what the frontend polls for status instead of holding
@@ -462,4 +543,18 @@ CREATE TABLE onec_bulk_upload_jobs (
     created_by INT REFERENCES onec_users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP
+);
+
+-- Front-desk/gate-pass visitor register (see server/modules/visitors).
+CREATE TABLE onec_visitor_logs (
+    id SERIAL PRIMARY KEY,
+    visitor_name VARCHAR(100) NOT NULL,
+    visitor_phone VARCHAR(20),
+    purpose VARCHAR(255) NOT NULL,
+    host_name VARCHAR(100) NOT NULL,
+    id_proof VARCHAR(100),
+    check_in_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    check_out_time TIMESTAMP,
+    logged_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

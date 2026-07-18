@@ -7,6 +7,7 @@ const { CLIENT_ORIGIN } = require('./config/env');
 const tenantResolver = require('./middleware/tenantResolver');
 const tenantDb = require('./middleware/tenantDb');
 const { scheduleRefreshTokenCleanup } = require('./lib/refreshTokenCleanup');
+const { startAbsenteeScheduler } = require('./lib/absenteeScheduler');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -68,6 +69,12 @@ const leaveRoutes = require('./modules/leave/routes');
 const calendarRoutes = require('./modules/calendar/routes');
 const timetableRoutes = require('./modules/timetable/routes');
 const bulkUploadRoutes = require('./modules/bulkUpload/routes');
+const staffAttendanceRoutes = require('./modules/staffAttendance/routes');
+const substitutesRoutes = require('./modules/substitutes/routes');
+const disciplineRoutes = require('./modules/discipline/routes');
+const idCardsRoutes = require('./modules/idCards/routes');
+const ptmRoutes = require('./modules/ptm/routes');
+const visitorsRoutes = require('./modules/visitors/routes');
 
 app.use('/api/v1/tenant', tenantRoutes);
 app.use('/api/v1/auth', authRoutes);
@@ -96,6 +103,12 @@ app.use('/api/v1/leave', leaveRoutes);
 app.use('/api/v1/calendar', calendarRoutes);
 app.use('/api/v1/timetable', timetableRoutes);
 app.use('/api/v1/bulk-upload', bulkUploadRoutes);
+app.use('/api/v1/staff-attendance', staffAttendanceRoutes);
+app.use('/api/v1/substitutes', substitutesRoutes);
+app.use('/api/v1/discipline', disciplineRoutes);
+app.use('/api/v1/id-cards', idCardsRoutes);
+app.use('/api/v1/ptm', ptmRoutes);
+app.use('/api/v1/visitors', visitorsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -116,4 +129,7 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   // onec_refresh_tokens only grows otherwise -- see lib/refreshTokenCleanup.js.
   scheduleRefreshTokenCleanup(24 * 60 * 60 * 1000);
+  // Fires scheduled (daily/weekly) whatsapp_absentee digests across every
+  // tenant — see lib/absenteeScheduler.js.
+  startAbsenteeScheduler();
 });

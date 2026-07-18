@@ -228,7 +228,7 @@ async function getProfile(req, res) {
       ),
       req.db.query(
         `SELECT s.id, s.score_obtained, s.remarks, sch.eval_date, sch.max_score, sch.passing_score,
-                ev.name AS evaluation_name, ev.type AS evaluation_type, m.name AS module_name
+                ev.id AS evaluation_id, ev.name AS evaluation_name, ev.type AS evaluation_type, m.name AS module_name
          FROM onec_learner_scores s
          JOIN onec_evaluation_schedules sch ON s.eval_schedule_id = sch.id
          JOIN onec_evaluations ev ON sch.evaluation_id = ev.id

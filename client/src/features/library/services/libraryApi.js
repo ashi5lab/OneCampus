@@ -8,5 +8,6 @@ export const libraryApi = {
   listBorrowers: () => apiClient.get('/library/borrowers').then((res) => res.data),
   listLoans: () => apiClient.get('/library/loans').then((res) => res.data),
   issueLoan: (payload) => apiClient.post('/library/loans', payload).then((res) => res.data),
-  returnLoan: (id) => apiClient.patch(`/library/loans/${id}/return`).then((res) => res.data)
+  returnLoan: (id) => apiClient.patch(`/library/loans/${id}/return`).then((res) => res.data),
+  waiveFine: (id, payload) => apiClient.patch(`/library/loans/${id}/waive-fine`, payload).then((res) => res.data)
 };

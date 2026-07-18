@@ -16,5 +16,6 @@ router.get('/borrowers', requirePermission('library.manage'), controller.listBor
 router.get('/loans', requirePermission('library.view'), controller.listLoans);
 router.post('/loans', requirePermission('library.manage'), controller.issueLoan);
 router.patch('/loans/:id/return', requirePermission('library.manage'), controller.returnLoan);
+router.patch('/loans/:id/waive-fine', requirePermission('library.manage'), controller.waiveFine);
 
 module.exports = router;

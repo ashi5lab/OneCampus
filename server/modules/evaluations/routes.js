@@ -23,4 +23,10 @@ router.delete('/schedules/:scheduleId', requirePermission('evaluations.manage'),
 router.get('/schedules/:scheduleId/scores', requirePermission('evaluations.view'), controller.listScores);
 router.post('/schedules/:scheduleId/scores', requirePermission('evaluations.grade'), controller.recordScore);
 
+// Row-scoped inside the handler (see controller.js) rather than at the
+// route level — evaluations.view alone doesn't limit a learner/guardian
+// to their own report card, the handler's getScopedLearnerIds check does.
+router.get('/:evaluationId/report-card/:learnerId', requirePermission('evaluations.view'), controller.getReportCard);
+router.get('/:evaluationId/report-card/:learnerId/pdf', requirePermission('evaluations.view'), controller.getReportCardPdf);
+
 module.exports = router;

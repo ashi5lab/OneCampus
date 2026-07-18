@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -8,16 +9,22 @@ import { Avatar } from '../../../components/Avatar';
 import { ProfilePictureUploader } from '../../profile/components/ProfilePictureUploader';
 import { useLearnerProfile } from '../hooks/useLearners';
 import { certificatesApi } from '../../certificates/services/certificatesApi';
+import { evaluationsApi } from '../../evaluations/services/evaluationsApi';
+import { ReportCardModal } from '../../evaluations/components/ReportCardModal';
+import { idCardsApi } from '../../idCards/services/idCardsApi';
+import { MarkAlumniModal } from '../../alumni/components/MarkAlumniModal';
 
 const ATTENDANCE_STATUS_ORDER = ['present', 'absent', 'late', 'excused'];
-const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive' };
+const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive', alumni: 'pending' };
 
 export function LearnerProfilePage() {
   const { id } = useParams();
   const learnerId = Number(id);
   const { t } = useConfig();
-  const { profile: ownProfile } = useAuth();
+  const { profile: ownProfile, can } = useAuth();
   const { data, isLoading, error } = useLearnerProfile(learnerId);
+  const [viewingEvaluationId, setViewingEvaluationId] = useState(null);
+  const [showMarkAlumni, setShowMarkAlumni] = useState(false);
 
   const isOwnProfile = ownProfile?.learnerId === learnerId;
 
@@ -34,33 +41,59 @@ export function LearnerProfilePage() {
   const attendanceCounts = Object.fromEntries(attendance.summary.map((row) => [row.status, row.count]));
   const totalAttendance = attendance.summary.reduce((sum, row) => sum + row.count, 0);
 
+  // Report cards are per-evaluation (e.g. "Term 1 Exams"), but `scores` is a
+  // flat list of every individual subject score across every evaluation —
+  // derive the distinct evaluations client-side rather than adding a
+  // separate endpoint just to list "which exams has this learner sat".
+  const evaluationsWithScores = Array.from(
+    new Map(scores.map((s) => [s.evaluation_id, { id: s.evaluation_id, name: s.evaluation_name }])).values()
+  );
+
   return (
     <div>
       <div className="mb-6">
         <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
           Management / {t('learners')}
         </div>
-        <div className="flex flex-wrap items-start gap-4">
-          {isOwnProfile ? (
-            <ProfilePictureUploader
-              name={`${learner.first_name} ${learner.last_name}`}
-              pictureUrl={learner.profile_picture_url}
-              invalidateKey={['learners', learnerId, 'profile']}
-            />
-          ) : (
-            <Avatar name={`${learner.first_name} ${learner.last_name}`} src={learner.profile_picture_url} size={72} />
-          )}
-          <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-              {learner.first_name} {learner.last_name}
-            </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-ink-500">
-              <span className="font-mono">{learner.registry_no}</span>
-              <Badge variant={STATUS_VARIANT[learner.status] || 'active'}>{learner.status}</Badge>
-              {learner.cohort_name && <span>{learner.cohort_name}</span>}
-              {learner.unit_name && <span>&middot; {learner.unit_name}</span>}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start gap-4">
+            {isOwnProfile ? (
+              <ProfilePictureUploader
+                name={`${learner.first_name} ${learner.last_name}`}
+                pictureUrl={learner.profile_picture_url}
+                invalidateKey={['learners', learnerId, 'profile']}
+              />
+            ) : (
+              <Avatar name={`${learner.first_name} ${learner.last_name}`} src={learner.profile_picture_url} size={72} />
+            )}
+            <div>
+              <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
+                {learner.first_name} {learner.last_name}
+              </h1>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-ink-500">
+                <span className="font-mono">{learner.registry_no}</span>
+                <Badge variant={STATUS_VARIANT[learner.status] || 'active'}>{learner.status}</Badge>
+                {learner.cohort_name && <span>{learner.cohort_name}</span>}
+                {learner.unit_name && <span>&middot; {learner.unit_name}</span>}
+              </div>
+              {learner.email && <div className="mt-1 text-[13px] text-ink-500">{learner.email}</div>}
             </div>
-            {learner.email && <div className="mt-1 text-[13px] text-ink-500">{learner.email}</div>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {can('learners.manage') && learner.status !== 'alumni' && (
+              <button
+                onClick={() => setShowMarkAlumni(true)}
+                className="rounded border border-border px-3.5 py-2 text-[12.5px] font-semibold text-ink-700 hover:bg-surface-muted"
+              >
+                Mark as Alumni
+              </button>
+            )}
+            <button
+              onClick={() => idCardsApi.downloadLearnerCard(learnerId, learner.registry_no)}
+              className="rounded border border-border px-3.5 py-2 text-[12.5px] font-semibold text-ink-700 hover:bg-surface-muted"
+            >
+              Download ID Card
+            </button>
           </div>
         </div>
       </div>
@@ -138,6 +171,37 @@ export function LearnerProfilePage() {
         </div>
       </div>
 
+      <div className="mb-6">
+        <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Report Cards</div>
+        <div className="overflow-hidden rounded border border-border bg-surface">
+          <DataTable
+            columns={[
+              { key: 'name', header: 'Evaluation', render: (row) => row.name },
+              {
+                key: 'actions',
+                header: '',
+                render: (row) => (
+                  <div className="flex justify-end gap-3">
+                    <button onClick={() => setViewingEvaluationId(row.id)} className="text-xs font-semibold text-accent-dark hover:underline">
+                      View
+                    </button>
+                    <button
+                      onClick={() => evaluationsApi.downloadReportCardPdf(row.id, learnerId, `report-card-${learner.registry_no}-${row.id}.pdf`)}
+                      className="text-xs font-semibold text-accent-dark hover:underline"
+                    >
+                      Download PDF
+                    </button>
+                  </div>
+                )
+              }
+            ]}
+            rows={evaluationsWithScores}
+            rowKey={(row) => row.id}
+            emptyMessage="No evaluations graded yet."
+          />
+        </div>
+      </div>
+
       <div>
         <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Certificates</div>
         <div className="overflow-hidden rounded border border-border bg-surface">
@@ -169,6 +233,11 @@ export function LearnerProfilePage() {
       <Link to="/app/learners" className="mt-6 inline-block text-xs font-semibold text-ink-500 hover:text-ink-900">
         &larr; Back to {t('learners')}
       </Link>
+
+      {viewingEvaluationId && (
+        <ReportCardModal evaluationId={viewingEvaluationId} learnerId={learnerId} onClose={() => setViewingEvaluationId(null)} />
+      )}
+      {showMarkAlumni && <MarkAlumniModal learner={learner} onClose={() => setShowMarkAlumni(false)} />}
     </div>
   );
 }

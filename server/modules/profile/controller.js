@@ -103,6 +103,60 @@ async function getMe(req, res) {
   }
 }
 
+// Self-serve notification preferences — always scoped to the caller's own
+// row, same as changeOwnPassword/uploadProfilePicture, no permission gate
+// beyond being logged in. whatsapp_opt_in is only present in the response
+// (and only accepted on update) for a caller who actually has a guardian
+// row — every other role gets `whatsapp_opt_in: null` and the frontend
+// hides that toggle entirely, since it drives the guardian-only absentee
+// alert (see server/lib/absenteeDigest.js).
+async function getNotificationPreferences(req, res) {
+  try {
+    const result = await req.db.query(
+      `SELECT u.broadcast_opt_out, g.whatsapp_opt_in
+       FROM onec_users u
+       LEFT JOIN onec_guardians g ON g.user_id = u.id
+       WHERE u.id = $1`,
+      [req.user.userId]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    const row = result.rows[0];
+    res.json({ data: { broadcast_opt_out: row.broadcast_opt_out, whatsapp_opt_in: row.whatsapp_opt_in ?? null } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+const notificationPreferencesSchema = z.object({
+  broadcast_opt_out: z.boolean().optional(),
+  whatsapp_opt_in: z.boolean().optional()
+});
+
+async function updateNotificationPreferences(req, res) {
+  try {
+    const parsed = notificationPreferencesSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+    const { broadcast_opt_out, whatsapp_opt_in } = parsed.data;
+
+    if (broadcast_opt_out !== undefined) {
+      await req.db.query('UPDATE onec_users SET broadcast_opt_out = $1 WHERE id = $2', [broadcast_opt_out, req.user.userId]);
+    }
+    // Only actually updates a row for a caller who has a guardian record —
+    // a no-op UPDATE (0 rows affected) for anyone else, not an error, so a
+    // stray field in the payload from a non-guardian caller can't 404/500.
+    if (whatsapp_opt_in !== undefined) {
+      await req.db.query('UPDATE onec_guardians SET whatsapp_opt_in = $1 WHERE user_id = $2', [whatsapp_opt_in, req.user.userId]);
+    }
+
+    logAudit(req, 'user.notification_preferences_updated', { user_id: req.user.userId, broadcast_opt_out, whatsapp_opt_in });
+    return getNotificationPreferences(req, res);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 const changePasswordSchema = z.object({
   current_password: z.string().min(1, 'Current password is required'),
   new_password: z.string().min(8, 'New password must be at least 8 characters')
@@ -224,6 +278,8 @@ module.exports = {
   removeProfilePicture,
   getMe,
   changeOwnPassword,
+  getNotificationPreferences,
+  updateNotificationPreferences,
   listUsers,
   adminChangePassword,
   forceLogoutUser

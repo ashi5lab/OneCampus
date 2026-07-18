@@ -1,4 +1,4 @@
-import { apiClient } from '../../../lib/apiClient';
+import { apiClient, downloadFile } from '../../../lib/apiClient';
 
 export const evaluationsApi = {
   list: () => apiClient.get('/evaluations').then((res) => res.data),
@@ -11,5 +11,10 @@ export const evaluationsApi = {
   listScores: (scheduleId) =>
     apiClient.get(`/evaluations/schedules/${scheduleId}/scores`).then((res) => res.data),
   recordScore: (scheduleId, payload) =>
-    apiClient.post(`/evaluations/schedules/${scheduleId}/scores`, payload).then((res) => res.data)
+    apiClient.post(`/evaluations/schedules/${scheduleId}/scores`, payload).then((res) => res.data),
+
+  getReportCard: (evaluationId, learnerId) =>
+    apiClient.get(`/evaluations/${evaluationId}/report-card/${learnerId}`).then((res) => res.data),
+  downloadReportCardPdf: (evaluationId, learnerId, filename) =>
+    downloadFile(`/evaluations/${evaluationId}/report-card/${learnerId}/pdf`, filename)
 };

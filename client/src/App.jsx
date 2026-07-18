@@ -38,6 +38,11 @@ import { LeavePage } from './features/leave/components/LeavePage';
 import { CalendarPage } from './features/calendar/components/CalendarPage';
 import { TimetablePage } from './features/timetable/components/TimetablePage';
 import { BulkUploadPage } from './features/bulkUpload/components/BulkUploadPage';
+import { StaffAttendancePage } from './features/staffAttendance/components/StaffAttendancePage';
+import { DisciplinePage } from './features/discipline/components/DisciplinePage';
+import { PtmPage } from './features/ptm/components/PtmPage';
+import { AlumniPage } from './features/alumni/components/AlumniPage';
+import { VisitorLogPage } from './features/visitors/components/VisitorLogPage';
 
 export default function App() {
   return (
@@ -176,6 +181,46 @@ export default function App() {
           element={
             <RequirePermission permission="bulk_upload.manage">
               <BulkUploadPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="staff-attendance"
+          element={
+            <RequirePermission permission="staff_attendance.view_own">
+              <StaffAttendancePage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="discipline"
+          element={
+            <RequirePermission permission="discipline.view">
+              <DisciplinePage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="ptm"
+          element={
+            <RequirePermission permission="ptm.view">
+              <PtmPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="alumni"
+          element={
+            <RequirePermission permission="learners.view">
+              <AlumniPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="visitors"
+          element={
+            <RequirePermission permission="visitors.view">
+              <VisitorLogPage />
             </RequirePermission>
           }
         />

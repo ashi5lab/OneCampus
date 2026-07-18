@@ -1,11 +1,15 @@
 import { useAnalyticsReport } from '../hooks/useReports';
 import { TrendLineChart } from '../../../components/charts/TrendLineChart';
 import { HorizontalBarChart } from '../../../components/charts/HorizontalBarChart';
+import { StatCard } from '../../../components/StatCard';
 
 const STATUS_LABEL = { present: 'Present', absent: 'Absent', late: 'Late', excused: 'Excused' };
 // Status colors are reserved (good/warning/serious/critical) and carry a
 // text label alongside them, never color alone — see the bars' own labels.
 const STATUS_COLOR = { present: 'var(--success)', absent: 'var(--danger)', late: 'var(--accent)', excused: 'var(--ink-500)' };
+
+const SEVERITY_LABEL = { positive: 'Positive', minor: 'Minor', major: 'Major' };
+const SEVERITY_COLOR = { positive: 'var(--success)', minor: 'var(--accent)', major: 'var(--danger)' };
 
 function shortDate(dateStr) {
   const d = new Date(`${dateStr}T00:00:00`);
@@ -45,23 +49,48 @@ export function AnalyticsTab() {
     .filter((row) => row.pass_rate !== null)
     .map((row) => ({ label: row.title, value: Number(row.pass_rate) }));
 
+  const visitorTrend = data.visitorTrend.map((row) => ({ label: shortDate(row.date), value: row.count }));
+
+  const disciplineBars = ['positive', 'minor', 'major'].map((severity) => ({
+    label: SEVERITY_LABEL[severity],
+    value: data.disciplineBySeverity30d.find((r) => r.severity === severity)?.count ?? 0,
+    color: SEVERITY_COLOR[severity]
+  }));
+
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <ChartCard title="Attendance Rate" subtitle="Last 14 days, tenant-wide">
-        <TrendLineChart data={attendanceTrend} valueSuffix="%" emptyMessage="No attendance recorded yet." />
-      </ChartCard>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Staff Attendance Rate (30d)" value={data.staffAttendanceRate30d != null ? `${data.staffAttendanceRate30d}%` : '—'} />
+        <StatCard label="PTM Slots Booked" value={data.ptmTotalSlots > 0 ? `${data.ptmBookedSlots} / ${data.ptmTotalSlots} (${data.ptmBookingRate}%)` : '—'} />
+        <StatCard label="Outstanding Library Fines" value={data.outstandingLibraryFines} />
+        <StatCard label="Alumni" value={data.alumniCount} />
+      </div>
 
-      <ChartCard title="Today's Attendance" subtitle="By status">
-        <HorizontalBarChart data={attendanceToday} valueSuffix="" emptyMessage="No attendance marked today." />
-      </ChartCard>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChartCard title="Attendance Rate" subtitle="Last 14 days, tenant-wide">
+          <TrendLineChart data={attendanceTrend} valueSuffix="%" emptyMessage="No attendance recorded yet." />
+        </ChartCard>
 
-      <ChartCard title="Academic Performance" subtitle="Average score by class">
-        <HorizontalBarChart data={performanceByCohort} valueSuffix="%" emptyMessage="No graded evaluations yet." />
-      </ChartCard>
+        <ChartCard title="Today's Attendance" subtitle="By status">
+          <HorizontalBarChart data={attendanceToday} valueSuffix="" emptyMessage="No attendance marked today." />
+        </ChartCard>
 
-      <ChartCard title="Online Exam Pass Rates" subtitle="Published exams with graded submissions">
-        <HorizontalBarChart data={examPassRates} valueSuffix="%" emptyMessage="No graded online exams yet." />
-      </ChartCard>
+        <ChartCard title="Academic Performance" subtitle="Average score by class">
+          <HorizontalBarChart data={performanceByCohort} valueSuffix="%" emptyMessage="No graded evaluations yet." />
+        </ChartCard>
+
+        <ChartCard title="Online Exam Pass Rates" subtitle="Published exams with graded submissions">
+          <HorizontalBarChart data={examPassRates} valueSuffix="%" emptyMessage="No graded online exams yet." />
+        </ChartCard>
+
+        <ChartCard title="Visitor Traffic" subtitle="Last 14 days, gate check-ins">
+          <TrendLineChart data={visitorTrend} valueSuffix="" emptyMessage="No visitors logged yet." />
+        </ChartCard>
+
+        <ChartCard title="Discipline Incidents" subtitle="Last 30 days, by severity">
+          <HorizontalBarChart data={disciplineBars} valueSuffix="" emptyMessage="No incidents logged in the last 30 days." />
+        </ChartCard>
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@
 
 const { hasPermission } = require('../../lib/permissions');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
+const { computeFine } = require('../../lib/libraryFines');
 
 async function overview(req, res) {
   try {
@@ -373,9 +374,20 @@ async function dashboardMine(req, res) {
 // derived from the same tables the other report endpoints already query.
 async function analytics(req, res) {
   try {
-    const [attendanceTrend, attendanceToday, performanceByCohort, examPassRates] = await Promise.all([
+    const [
+      attendanceTrend,
+      attendanceToday,
+      performanceByCohort,
+      examPassRates,
+      staffAttendance30d,
+      disciplineBySeverity30d,
+      ptmSlots,
+      visitorTrend,
+      alumniCount,
+      overdueLoansForFines
+    ] = await Promise.all([
       req.db.query(`
-        SELECT date, COUNT(*) FILTER (WHERE status = 'present') AS present, COUNT(*) AS total
+        SELECT date::text AS date, COUNT(*) FILTER (WHERE status = 'present') AS present, COUNT(*) AS total
         FROM onec_attendance
         WHERE date >= CURRENT_DATE - INTERVAL '13 days'
         GROUP BY date ORDER BY date
@@ -399,6 +411,42 @@ async function analytics(req, res) {
         GROUP BY e.id, e.title
         HAVING COUNT(s.*) FILTER (WHERE s.status = 'graded') > 0
         ORDER BY e.id DESC LIMIT 10
+      `),
+      // Staff/teacher attendance (server/modules/staffAttendance) — same
+      // present/absent/late/excused vocabulary as learner attendance above.
+      req.db.query(`
+        SELECT COUNT(*) FILTER (WHERE status = 'present') AS present, COUNT(*) AS total
+        FROM onec_staff_attendance WHERE date >= CURRENT_DATE - INTERVAL '30 days'
+      `),
+      // Discipline records (server/modules/discipline) — 'positive' notes
+      // included alongside minor/major so the breakdown isn't purely punitive.
+      req.db.query(`
+        SELECT severity, COUNT(*)::int AS count FROM onec_discipline_records
+        WHERE incident_date >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY severity
+      `),
+      // PTM (server/modules/ptm) — booking rate across every slot ever
+      // opened, not time-windowed, since "what fraction of offered slots
+      // get booked" is meaningful as a running total, not just a recent one.
+      req.db.query(`
+        SELECT COUNT(*)::int AS total_slots, COUNT(b.id)::int AS booked_slots
+        FROM onec_ptm_slots s LEFT JOIN onec_ptm_bookings b ON b.slot_id = s.id
+      `),
+      // Visitor log (server/modules/visitors) — daily check-in counts.
+      req.db.query(`
+        SELECT check_in_time::date::text AS date, COUNT(*)::int AS count
+        FROM onec_visitor_logs
+        WHERE check_in_time >= CURRENT_DATE - INTERVAL '13 days'
+        GROUP BY check_in_time::date ORDER BY date
+      `),
+      // Alumni directory (client/src/features/alumni) — onec_learners.status = 'alumni'.
+      req.db.query(`SELECT COUNT(*)::int AS count FROM onec_learners WHERE status = 'alumni'`),
+      // Library fines (server/lib/libraryFines) are computed on read, not
+      // stored — pull every still-outstanding overdue loan and run the same
+      // computeFine() the Library report/waive-fine UI uses, then sum.
+      req.db.query(`
+        SELECT due_date::text AS due_date, returned_date::text AS returned_date, fine_waived_amount
+        FROM onec_library_loans WHERE returned_date IS NULL AND due_date < CURRENT_DATE
       `)
     ]);
 
@@ -407,12 +455,28 @@ async function analytics(req, res) {
       rate: row.total > 0 ? Math.round((row.present / row.total) * 1000) / 10 : null
     }));
 
+    const staffAttendanceTotal = Number(staffAttendance30d.rows[0].total);
+    const staffAttendancePresent = Number(staffAttendance30d.rows[0].present);
+
+    const ptmTotalSlots = ptmSlots.rows[0].total_slots;
+    const ptmBookedSlots = ptmSlots.rows[0].booked_slots;
+
+    const outstandingLibraryFines = overdueLoansForFines.rows.reduce((sum, loan) => sum + computeFine(loan).net_fine_amount, 0);
+
     res.json({
       data: {
         attendanceTrend: attendanceTrendData,
         attendanceToday: attendanceToday.rows,
         performanceByCohort: performanceByCohort.rows,
-        examPassRates: examPassRates.rows
+        examPassRates: examPassRates.rows,
+        staffAttendanceRate30d: staffAttendanceTotal > 0 ? Math.round((staffAttendancePresent / staffAttendanceTotal) * 1000) / 10 : null,
+        disciplineBySeverity30d: disciplineBySeverity30d.rows,
+        ptmBookingRate: ptmTotalSlots > 0 ? Math.round((ptmBookedSlots / ptmTotalSlots) * 1000) / 10 : null,
+        ptmTotalSlots,
+        ptmBookedSlots,
+        visitorTrend: visitorTrend.rows,
+        alumniCount: alumniCount.rows[0].count,
+        outstandingLibraryFines
       }
     });
   } catch (err) {

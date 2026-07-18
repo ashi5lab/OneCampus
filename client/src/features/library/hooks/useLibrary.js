@@ -51,3 +51,7 @@ export function useIssueLoan() {
 export function useReturnLoan() {
   return useLoansMutation(libraryApi.returnLoan);
 }
+
+export function useWaiveFine() {
+  return useLoansMutation(({ id, payload }) => libraryApi.waiveFine(id, payload));
+}

@@ -48,3 +48,11 @@ export function useRecordScore(scheduleId) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['evaluations', 'schedules', scheduleId, 'scores'] })
   });
 }
+
+export function useReportCard(evaluationId, learnerId, { enabled = true } = {}) {
+  return useQuery({
+    queryKey: ['evaluations', evaluationId, 'report-card', learnerId],
+    queryFn: () => evaluationsApi.getReportCard(evaluationId, learnerId),
+    enabled: enabled && !!evaluationId && !!learnerId
+  });
+}

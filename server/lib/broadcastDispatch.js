@@ -1,8 +1,9 @@
 // The generic "describe a provider's HTTP call, we'll fill in the blanks"
 // dispatcher backing server/modules/broadcast — extracted from there so
-// other event-triggered sends (e.g. lib/whatsappNotify.js's absentee
-// alert) can reuse the exact same executor against a differently-purposed
-// onec_broadcast_configs row, instead of re-implementing HTTP dispatch.
+// other event-triggered sends (e.g. lib/absenteeDigest.js's batched
+// absentee alert) can reuse the exact same executor against a
+// differently-purposed onec_broadcast_configs row, instead of
+// re-implementing HTTP dispatch.
 
 // {{name}} substitution over every value in a template record. Runtime
 // variables (phone, message, learner_name, ...) take precedence over the
@@ -53,10 +54,21 @@ async function dispatchOne(config, runtimeVars) {
   }
 
   const payload = substitute(config.payload_template || {}, staticVars, runtimeVars);
+
+  // Most providers (the original design target) take a JSON body. Some —
+  // Twilio's REST API is the concrete case this was added for — require
+  // application/x-www-form-urlencoded instead; URLSearchParams stringifies
+  // every value, so a nested payload_template value (never used by a
+  // form-encoded provider in practice) would serialize as "[object Object]"
+  // rather than failing outright.
+  const isForm = config.body_encoding === 'form';
+  const body = isForm ? new URLSearchParams(payload).toString() : JSON.stringify(payload);
+  const defaultContentType = isForm ? 'application/x-www-form-urlencoded' : 'application/json';
+
   const response = await fetch(config.api_url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...headers },
-    body: JSON.stringify(payload),
+    headers: { 'Content-Type': defaultContentType, ...headers },
+    body,
     signal: AbortSignal.timeout(10000)
   });
   return response.ok;

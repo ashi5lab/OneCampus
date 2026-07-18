@@ -25,6 +25,14 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
   const [params, setParams] = useState(toPairs(existing?.params_template));
   const [variables, setVariables] = useState(toPairs(existing?.variables));
   const [formError, setFormError] = useState('');
+  // form-encoded is needed for providers like Twilio's REST API, which
+  // rejects a JSON body — see server/lib/broadcastDispatch.js.
+  const [bodyEncoding, setBodyEncoding] = useState(existing?.body_encoding || 'json');
+  // Only meaningful on the whatsapp_absentee channel — see
+  // server/lib/absenteeDigest.js / absenteeScheduler.js.
+  const [absenteeMode, setAbsenteeMode] = useState(existing?.absentee_mode || 'manual');
+  const [absenteeTime, setAbsenteeTime] = useState(existing?.absentee_schedule_time?.slice(0, 5) || '08:00');
+  const [absenteeDay, setAbsenteeDay] = useState(existing?.absentee_schedule_day ?? 1);
 
   // Payload has two editors: the original flat Key/Value grid (fine for
   // SMS/voicemail's {to, text}-style bodies) and Raw JSON (needed for
@@ -52,10 +60,15 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
     setPayloadMode(nextMode);
   }
 
+  const isAbsenteeChannel = channel === 'whatsapp_absentee';
+
   function handleSubmit(e) {
     e.preventDefault();
     setFormError('');
     if (isActive && !apiUrl.trim()) return setFormError('An API URL is required to activate this channel.');
+    if (isAbsenteeChannel && (absenteeMode === 'daily' || absenteeMode === 'weekly') && !absenteeTime) {
+      return setFormError('A schedule time is required for daily/weekly absentee alerts.');
+    }
 
     let payload_template;
     if (payloadMode === 'json') {
@@ -78,7 +91,15 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
           payload_template,
           params_template: fromPairs(params),
           variables: fromPairs(variables),
-          is_active: isActive
+          is_active: isActive,
+          body_encoding: bodyEncoding,
+          ...(isAbsenteeChannel
+            ? {
+                absentee_mode: absenteeMode,
+                absentee_schedule_time: absenteeMode === 'manual' ? null : absenteeTime,
+                absentee_schedule_day: absenteeMode === 'weekly' ? Number(absenteeDay) : null
+              }
+            : {})
         }
       },
       { onSuccess: onClose }
@@ -88,7 +109,10 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
   const RUNTIME_VARS_BY_CHANNEL = {
     sms: '{{phone}}, {{message}}',
     voicemail: '{{phone}}, {{voice_url}}',
-    whatsapp_absentee: '{{phone}}, {{learner_name}}, {{cohort_name}}, {{date}}',
+    // One batched test send per digest, not one per learner — {{learner_name}}
+    // is the single absentee's name if there's exactly one, otherwise "N
+    // students"; {{count}} is always the raw number. See lib/absenteeDigest.js.
+    whatsapp_absentee: '{{phone}} — set via "test_phone" below, {{count}}, {{learner_name}}, {{cohort_name}}, {{date}}',
     // Testing phase — every send goes to one fixed number, not the picked
     // audience. Add a "test_phone" Variable below with that number (a
     // Meta-verified test recipient); the backend feeds its value into
@@ -116,15 +140,69 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
           <label className="block">
             <div className="mb-1 text-xs font-semibold text-ink-700">Method</div>
             <select className="input" value={method} onChange={(e) => setMethod(e.target.value)}>
-              <option value="POST">POST (JSON payload)</option>
+              <option value="POST">POST</option>
               <option value="GET">GET (query params)</option>
             </select>
           </label>
+          {method === 'POST' && (
+            <label className="block">
+              <div className="mb-1 text-xs font-semibold text-ink-700">Body Format</div>
+              <select className="input" value={bodyEncoding} onChange={(e) => setBodyEncoding(e.target.value)}>
+                <option value="json">JSON</option>
+                <option value="form">Form-encoded (e.g. Twilio)</option>
+              </select>
+            </label>
+          )}
           <label className="flex items-center gap-2 pt-5 text-[13px] font-semibold text-ink-700">
             <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
             Active
           </label>
         </div>
+
+        {isAbsenteeChannel && (
+          <div className="mb-3 rounded border border-border bg-surface-muted p-3">
+            <div className="mb-2 text-xs font-bold text-ink-700">How should absentee alerts send?</div>
+            <div className="mb-2 flex flex-wrap gap-4">
+              {[
+                { value: 'manual', label: 'On click only' },
+                { value: 'daily', label: 'Automatically every day' },
+                { value: 'weekly', label: 'Automatically once a week' }
+              ].map((opt) => (
+                <label key={opt.value} className="flex items-center gap-1.5 text-[13px] text-ink-700">
+                  <input
+                    type="radio"
+                    name="absentee_mode"
+                    checked={absenteeMode === opt.value}
+                    onChange={() => setAbsenteeMode(opt.value)}
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+            {(absenteeMode === 'daily' || absenteeMode === 'weekly') && (
+              <div className="flex items-center gap-3">
+                {absenteeMode === 'weekly' && (
+                  <label className="block">
+                    <div className="mb-1 text-[11px] font-semibold text-ink-700">Day</div>
+                    <select className="input" value={absenteeDay} onChange={(e) => setAbsenteeDay(e.target.value)}>
+                      {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, idx) => (
+                        <option key={idx} value={idx}>{day}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <label className="block">
+                  <div className="mb-1 text-[11px] font-semibold text-ink-700">Time</div>
+                  <input type="time" className="input" value={absenteeTime} onChange={(e) => setAbsenteeTime(e.target.value)} />
+                </label>
+              </div>
+            )}
+            <div className="mt-2 text-[11px] text-ink-500">
+              "On click only" needs the "Send Absentee Alerts Now" button on the WhatsApp Absentee Alerts tab — nothing
+              sends until you press it. Scheduled sends use this server's clock, not each admin's local time.
+            </div>
+          </div>
+        )}
 
         <KeyValueEditor title="Variables" hint="Static values, e.g. apikey → your key. Reference as {{apikey}}." pairs={variables} onChange={setVariables} />
         <KeyValueEditor title="Headers" hint='e.g. Authorization → Bearer {{apikey}}' pairs={headers} onChange={setHeaders} />

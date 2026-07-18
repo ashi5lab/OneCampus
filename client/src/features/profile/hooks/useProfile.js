@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileApi } from '../services/profileApi';
 
 export const MY_PROFILE_KEY = ['profile', 'me'];
@@ -9,6 +9,20 @@ export function useMyProfile() {
 
 export function useChangePassword() {
   return useMutation({ mutationFn: profileApi.changePassword });
+}
+
+const NOTIFICATION_PREFERENCES_KEY = ['profile', 'notification-preferences'];
+
+export function useNotificationPreferences() {
+  return useQuery({ queryKey: NOTIFICATION_PREFERENCES_KEY, queryFn: profileApi.getNotificationPreferences });
+}
+
+export function useUpdateNotificationPreferences() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: profileApi.updateNotificationPreferences,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: NOTIFICATION_PREFERENCES_KEY })
+  });
 }
 
 // Admin-side (users.manage_passwords) — the query only runs when enabled,

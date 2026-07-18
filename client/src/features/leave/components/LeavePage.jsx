@@ -6,6 +6,7 @@ import { useMyLeave, useLeaveQueue, useCancelLeave } from '../hooks/useLeave';
 import { LEAVE_TYPE_LABEL, LEAVE_STATUS_LABEL } from '../types';
 import { LeaveApplyModal } from './LeaveApplyModal';
 import { ReviewLeaveModal } from './ReviewLeaveModal';
+import { SubstituteCoverageModal } from '../../substitutes/components/SubstituteCoverageModal';
 
 const STATUS_CLASS = {
   pending: 'bg-surface-muted text-ink-700',
@@ -30,9 +31,11 @@ function daysLabel(row) {
 export function LeavePage() {
   const { can } = useAuth();
   const canApprove = can('leave.approve');
+  const canViewCoverage = can('substitutes.view');
   const [tab, setTab] = useState('mine');
   const [showApply, setShowApply] = useState(false);
   const [reviewing, setReviewing] = useState(null);
+  const [coverageFor, setCoverageFor] = useState(null);
 
   const { data: mine, isLoading: mineLoading, error: mineError } = useMyLeave();
   const { data: queue, isLoading: queueLoading, error: queueError } = useLeaveQueue({ enabled: canApprove && tab === 'approvals' });
@@ -83,7 +86,14 @@ export function LeavePage() {
             Review
           </button>
         ) : (
-          <span className="text-[11.5px] text-ink-500">{row.reviewed_by_username ? `by ${row.reviewed_by_username}` : '—'}</span>
+          <div className="flex items-center justify-end gap-3">
+            <span className="text-[11.5px] text-ink-500">{row.reviewed_by_username ? `by ${row.reviewed_by_username}` : '—'}</span>
+            {canViewCoverage && row.status === 'approved' && row.applicant_role === 'instructor' && (
+              <button onClick={() => setCoverageFor(row.id)} className="text-xs font-semibold text-accent-dark hover:underline">
+                Coverage
+              </button>
+            )}
+          </div>
         )
     }
   ];
@@ -155,6 +165,7 @@ export function LeavePage() {
 
       {showApply && <LeaveApplyModal onClose={() => setShowApply(false)} />}
       {reviewing && <ReviewLeaveModal leave={reviewing} onClose={() => setReviewing(null)} />}
+      {coverageFor && <SubstituteCoverageModal leaveRequestId={coverageFor} onClose={() => setCoverageFor(null)} />}
     </div>
   );
 }

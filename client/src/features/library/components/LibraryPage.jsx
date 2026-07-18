@@ -6,6 +6,7 @@ import { Badge } from '../../../components/Badge';
 import { useBooks, useLoans, useCreateBook, useUpdateBook, useDeleteBook, useReturnLoan } from '../hooks/useLibrary';
 import { BookFormModal } from './BookFormModal';
 import { IssueLoanModal } from './IssueLoanModal';
+import { WaiveFineModal } from './WaiveFineModal';
 
 const TABS = [
   { value: 'catalog', label: 'Catalog' },
@@ -18,6 +19,7 @@ export function LibraryPage() {
   const [showAddBook, setShowAddBook] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [issuingBook, setIssuingBook] = useState(null);
+  const [waivingFineFor, setWaivingFineFor] = useState(null);
 
   const { data: books, isLoading: booksLoading, error: booksError } = useBooks();
   const { data: loans, isLoading: loansLoading, error: loansError } = useLoans();
@@ -88,21 +90,41 @@ export function LibraryPage() {
         ) : (
           <Badge variant={new Date(row.due_date) < new Date() ? 'inactive' : 'pending'}>Out</Badge>
         )
+    },
+    {
+      key: 'fine',
+      header: 'Fine',
+      render: (row) =>
+        row.fine_amount > 0 ? (
+          <div>
+            <div className={row.net_fine_amount > 0 ? 'font-semibold text-danger' : 'font-semibold text-ink-500 line-through'}>
+              {row.fine_amount}
+            </div>
+            {row.fine_waived_amount > 0 && <div className="text-[11px] text-ink-500">{row.fine_waived_amount} waived</div>}
+          </div>
+        ) : (
+          <span className="text-ink-500">—</span>
+        )
     }
   ];
   if (can('library.manage')) {
     loanColumns.push({
       key: 'actions',
       header: '',
-      render: (row) =>
-        !row.returned_date && (
-          <button
-            onClick={() => returnLoan.mutate(row.id)}
-            className="text-xs font-semibold text-accent-dark hover:underline"
-          >
-            Mark Returned
-          </button>
-        )
+      render: (row) => (
+        <div className="flex justify-end gap-3">
+          {!row.returned_date && (
+            <button onClick={() => returnLoan.mutate(row.id)} className="text-xs font-semibold text-accent-dark hover:underline">
+              Mark Returned
+            </button>
+          )}
+          {row.fine_amount > 0 && (
+            <button onClick={() => setWaivingFineFor(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
+              Waive
+            </button>
+          )}
+        </div>
+      )
     });
   }
 
@@ -182,6 +204,7 @@ export function LibraryPage() {
       )}
 
       {issuingBook && <IssueLoanModal book={issuingBook} onClose={() => setIssuingBook(null)} />}
+      {waivingFineFor && <WaiveFineModal loan={waivingFineFor} onClose={() => setWaivingFineFor(null)} />}
     </div>
   );
 }

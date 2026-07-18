@@ -65,7 +65,7 @@ export function BroadcastPage() {
       {tab === 'sms' && <SmsTab />}
       {tab === 'voicemail' && <VoicemailTab />}
       {tab === 'whatsapp' && <WhatsappTab />}
-      {tab === 'whatsapp_absentee' && <WhatsappAbsenteeTab />}
+      {tab === 'whatsapp_absentee' && <WhatsappAbsenteeTab config={canConfigure ? activeConfig : undefined} />}
 
       {configuring && (
         <ChannelConfigModal channel={tab} existing={activeConfig} onClose={() => setConfiguring(false)} />
