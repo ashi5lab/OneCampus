@@ -12,17 +12,19 @@ import { certificatesApi } from '../../certificates/services/certificatesApi';
 import { evaluationsApi } from '../../evaluations/services/evaluationsApi';
 import { ReportCardModal } from '../../evaluations/components/ReportCardModal';
 import { idCardsApi } from '../../idCards/services/idCardsApi';
+import { MarkAlumniModal } from '../../alumni/components/MarkAlumniModal';
 
 const ATTENDANCE_STATUS_ORDER = ['present', 'absent', 'late', 'excused'];
-const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive' };
+const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive', alumni: 'pending' };
 
 export function LearnerProfilePage() {
   const { id } = useParams();
   const learnerId = Number(id);
   const { t } = useConfig();
-  const { profile: ownProfile } = useAuth();
+  const { profile: ownProfile, can } = useAuth();
   const { data, isLoading, error } = useLearnerProfile(learnerId);
   const [viewingEvaluationId, setViewingEvaluationId] = useState(null);
+  const [showMarkAlumni, setShowMarkAlumni] = useState(false);
 
   const isOwnProfile = ownProfile?.learnerId === learnerId;
 
@@ -77,12 +79,22 @@ export function LearnerProfilePage() {
               {learner.email && <div className="mt-1 text-[13px] text-ink-500">{learner.email}</div>}
             </div>
           </div>
-          <button
-            onClick={() => idCardsApi.downloadLearnerCard(learnerId, learner.registry_no)}
-            className="rounded border border-border px-3.5 py-2 text-[12.5px] font-semibold text-ink-700 hover:bg-surface-muted"
-          >
-            Download ID Card
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {can('learners.manage') && learner.status !== 'alumni' && (
+              <button
+                onClick={() => setShowMarkAlumni(true)}
+                className="rounded border border-border px-3.5 py-2 text-[12.5px] font-semibold text-ink-700 hover:bg-surface-muted"
+              >
+                Mark as Alumni
+              </button>
+            )}
+            <button
+              onClick={() => idCardsApi.downloadLearnerCard(learnerId, learner.registry_no)}
+              className="rounded border border-border px-3.5 py-2 text-[12.5px] font-semibold text-ink-700 hover:bg-surface-muted"
+            >
+              Download ID Card
+            </button>
+          </div>
         </div>
       </div>
 
@@ -225,6 +237,7 @@ export function LearnerProfilePage() {
       {viewingEvaluationId && (
         <ReportCardModal evaluationId={viewingEvaluationId} learnerId={learnerId} onClose={() => setViewingEvaluationId(null)} />
       )}
+      {showMarkAlumni && <MarkAlumniModal learner={learner} onClose={() => setShowMarkAlumni(false)} />}
     </div>
   );
 }

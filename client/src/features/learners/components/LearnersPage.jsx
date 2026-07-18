@@ -10,7 +10,7 @@ import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners, useCreateLearner, useUpdateLearner, useDeleteLearner, useSetClassHead, useSetSchoolHead } from '../hooks/useLearners';
 import { LearnerFormModal } from './LearnerFormModal';
 
-const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive' };
+const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive', alumni: 'pending' };
 const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
 
 function initials(first, last) {
@@ -183,6 +183,7 @@ export function LearnersPage() {
             <option value="active">Active</option>
             <option value="pending">Pending</option>
             <option value="inactive">Inactive</option>
+            <option value="alumni">Alumni</option>
           </select>
         </label>
         {(searchInput || cohortId || gender || status) && (

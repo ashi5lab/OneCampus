@@ -41,6 +41,7 @@ export function useNavLinks() {
     can('bulk_upload.manage') && { to: '/app/bulk-upload', label: 'Bulk Upload' },
     can('staff_attendance.view_own') && { to: '/app/staff-attendance', label: 'Staff Attendance' },
     can('discipline.view') && { to: '/app/discipline', label: 'Discipline' },
-    can('ptm.view') && { to: '/app/ptm', label: 'PTM' }
+    can('ptm.view') && { to: '/app/ptm', label: 'PTM' },
+    can('learners.view') && { to: '/app/alumni', label: 'Alumni' }
   ].filter(Boolean);
 }
