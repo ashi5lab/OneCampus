@@ -8,6 +8,7 @@ export const broadcastApi = {
   listUsers: () => apiClient.get('/broadcast/users').then((res) => res.data),
 
   sendSms: (payload) => apiClient.post('/broadcast/sms', payload).then((res) => res.data),
+  sendWhatsapp: (payload) => apiClient.post('/broadcast/whatsapp', payload).then((res) => res.data),
 
   submitVoicemail: (blob, durationSeconds) => {
     const formData = new FormData();

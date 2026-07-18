@@ -4,12 +4,14 @@ import { Badge } from '../../../components/Badge';
 import { useBroadcastConfigs } from '../hooks/useBroadcast';
 import { SmsTab } from './SmsTab';
 import { VoicemailTab } from './VoicemailTab';
+import { WhatsappTab } from './WhatsappTab';
 import { WhatsappAbsenteeTab } from './WhatsappAbsenteeTab';
 import { ChannelConfigModal } from './ChannelConfigModal';
 
 const TABS = [
   { value: 'sms', label: 'SMS' },
   { value: 'voicemail', label: 'Voicemail' },
+  { value: 'whatsapp', label: 'WhatsApp' },
   { value: 'whatsapp_absentee', label: 'WhatsApp (Absentee Alerts)' }
 ];
 
@@ -62,6 +64,7 @@ export function BroadcastPage() {
 
       {tab === 'sms' && <SmsTab />}
       {tab === 'voicemail' && <VoicemailTab />}
+      {tab === 'whatsapp' && <WhatsappTab />}
       {tab === 'whatsapp_absentee' && <WhatsappAbsenteeTab />}
 
       {configuring && (

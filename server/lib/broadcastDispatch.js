@@ -8,11 +8,34 @@
 // variables (phone, message, learner_name, ...) take precedence over the
 // static ones saved in the config, so a config author can't accidentally
 // shadow the per-send values.
+//
+// payload_template values aren't always flat strings — a WhatsApp Cloud API
+// body nests a "template" object (name, language.code, components[]), which
+// SMS/voicemail's flat {to, text}-style payloads never needed. substituteValue
+// recurses through objects/arrays and only replaces placeholders inside
+// actual string leaves, so the JSON shape survives untouched; a config author
+// writing plain string values (the SMS/voicemail case) sees the exact same
+// behavior as before.
+function substituteValue(value, merged) {
+  if (typeof value === 'string') {
+    return value.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, name) => merged[name] ?? '');
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => substituteValue(item, merged));
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [key, nested] of Object.entries(value)) out[key] = substituteValue(nested, merged);
+    return out;
+  }
+  return value;
+}
+
 function substitute(template, staticVars, runtimeVars) {
   const merged = { ...staticVars, ...runtimeVars };
   const out = {};
   for (const [key, value] of Object.entries(template)) {
-    out[key] = String(value).replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, name) => merged[name] ?? '');
+    out[key] = substituteValue(value, merged);
   }
   return out;
 }
