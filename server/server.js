@@ -71,6 +71,7 @@ const bulkUploadRoutes = require('./modules/bulkUpload/routes');
 const staffAttendanceRoutes = require('./modules/staffAttendance/routes');
 const substitutesRoutes = require('./modules/substitutes/routes');
 const disciplineRoutes = require('./modules/discipline/routes');
+const idCardsRoutes = require('./modules/idCards/routes');
 
 app.use('/api/v1/tenant', tenantRoutes);
 app.use('/api/v1/auth', authRoutes);
@@ -102,6 +103,7 @@ app.use('/api/v1/bulk-upload', bulkUploadRoutes);
 app.use('/api/v1/staff-attendance', staffAttendanceRoutes);
 app.use('/api/v1/substitutes', substitutesRoutes);
 app.use('/api/v1/discipline', disciplineRoutes);
+app.use('/api/v1/id-cards', idCardsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

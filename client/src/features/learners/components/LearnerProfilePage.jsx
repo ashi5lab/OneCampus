@@ -11,6 +11,7 @@ import { useLearnerProfile } from '../hooks/useLearners';
 import { certificatesApi } from '../../certificates/services/certificatesApi';
 import { evaluationsApi } from '../../evaluations/services/evaluationsApi';
 import { ReportCardModal } from '../../evaluations/components/ReportCardModal';
+import { idCardsApi } from '../../idCards/services/idCardsApi';
 
 const ATTENDANCE_STATUS_ORDER = ['present', 'absent', 'late', 'excused'];
 const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive' };
@@ -52,28 +53,36 @@ export function LearnerProfilePage() {
         <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
           Management / {t('learners')}
         </div>
-        <div className="flex flex-wrap items-start gap-4">
-          {isOwnProfile ? (
-            <ProfilePictureUploader
-              name={`${learner.first_name} ${learner.last_name}`}
-              pictureUrl={learner.profile_picture_url}
-              invalidateKey={['learners', learnerId, 'profile']}
-            />
-          ) : (
-            <Avatar name={`${learner.first_name} ${learner.last_name}`} src={learner.profile_picture_url} size={72} />
-          )}
-          <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-              {learner.first_name} {learner.last_name}
-            </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-ink-500">
-              <span className="font-mono">{learner.registry_no}</span>
-              <Badge variant={STATUS_VARIANT[learner.status] || 'active'}>{learner.status}</Badge>
-              {learner.cohort_name && <span>{learner.cohort_name}</span>}
-              {learner.unit_name && <span>&middot; {learner.unit_name}</span>}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start gap-4">
+            {isOwnProfile ? (
+              <ProfilePictureUploader
+                name={`${learner.first_name} ${learner.last_name}`}
+                pictureUrl={learner.profile_picture_url}
+                invalidateKey={['learners', learnerId, 'profile']}
+              />
+            ) : (
+              <Avatar name={`${learner.first_name} ${learner.last_name}`} src={learner.profile_picture_url} size={72} />
+            )}
+            <div>
+              <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
+                {learner.first_name} {learner.last_name}
+              </h1>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-ink-500">
+                <span className="font-mono">{learner.registry_no}</span>
+                <Badge variant={STATUS_VARIANT[learner.status] || 'active'}>{learner.status}</Badge>
+                {learner.cohort_name && <span>{learner.cohort_name}</span>}
+                {learner.unit_name && <span>&middot; {learner.unit_name}</span>}
+              </div>
+              {learner.email && <div className="mt-1 text-[13px] text-ink-500">{learner.email}</div>}
             </div>
-            {learner.email && <div className="mt-1 text-[13px] text-ink-500">{learner.email}</div>}
           </div>
+          <button
+            onClick={() => idCardsApi.downloadLearnerCard(learnerId, learner.registry_no)}
+            className="rounded border border-border px-3.5 py-2 text-[12.5px] font-semibold text-ink-700 hover:bg-surface-muted"
+          >
+            Download ID Card
+          </button>
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { DataTable } from '../../../components/DataTable';
 import { useStaff, useCreateStaff, useUpdateStaff, useDeleteStaff, useSetStaffDesignation } from '../hooks/useStaff';
 import { StaffFormModal } from './StaffFormModal';
 import { DesignationPicker } from '../../../components/DesignationPicker';
+import { idCardsApi } from '../../idCards/services/idCardsApi';
 
 const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
 
@@ -68,6 +69,12 @@ export function StaffPage() {
       header: '',
       render: (row) => (
         <div className="flex justify-end gap-3">
+          <button
+            onClick={() => idCardsApi.downloadStaffCard(row.id, row.staff_id)}
+            className="text-xs font-semibold text-ink-500 hover:text-ink-900"
+          >
+            ID Card
+          </button>
           <button onClick={() => setEditingStaff(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
           <button
             onClick={() => {

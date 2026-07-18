@@ -7,6 +7,7 @@ import { DataTable } from '../../../components/DataTable';
 import { Avatar } from '../../../components/Avatar';
 import { ProfilePictureUploader } from '../../profile/components/ProfilePictureUploader';
 import { useInstructorProfile } from '../hooks/useInstructors';
+import { idCardsApi } from '../../idCards/services/idCardsApi';
 
 export function InstructorProfilePage() {
   const { id } = useParams();
@@ -34,26 +35,34 @@ export function InstructorProfilePage() {
         <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
           Management / {t('instructors')}
         </div>
-        <div className="flex flex-wrap items-start gap-4">
-          {isOwnProfile ? (
-            <ProfilePictureUploader
-              name={`${instructor.first_name} ${instructor.last_name}`}
-              pictureUrl={instructor.profile_picture_url}
-              invalidateKey={['instructors', instructorId, 'profile']}
-            />
-          ) : (
-            <Avatar name={`${instructor.first_name} ${instructor.last_name}`} src={instructor.profile_picture_url} size={72} />
-          )}
-          <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-              {instructor.first_name} {instructor.last_name}
-            </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-ink-500">
-              <span className="font-mono">{instructor.staff_id}</span>
-              {instructor.phone && <span>{instructor.phone}</span>}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start gap-4">
+            {isOwnProfile ? (
+              <ProfilePictureUploader
+                name={`${instructor.first_name} ${instructor.last_name}`}
+                pictureUrl={instructor.profile_picture_url}
+                invalidateKey={['instructors', instructorId, 'profile']}
+              />
+            ) : (
+              <Avatar name={`${instructor.first_name} ${instructor.last_name}`} src={instructor.profile_picture_url} size={72} />
+            )}
+            <div>
+              <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
+                {instructor.first_name} {instructor.last_name}
+              </h1>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-ink-500">
+                <span className="font-mono">{instructor.staff_id}</span>
+                {instructor.phone && <span>{instructor.phone}</span>}
+              </div>
+              {instructor.email && <div className="mt-1 text-[13px] text-ink-500">{instructor.email}</div>}
             </div>
-            {instructor.email && <div className="mt-1 text-[13px] text-ink-500">{instructor.email}</div>}
           </div>
+          <button
+            onClick={() => idCardsApi.downloadInstructorCard(instructorId, instructor.staff_id)}
+            className="rounded border border-border px-3.5 py-2 text-[12.5px] font-semibold text-ink-700 hover:bg-surface-muted"
+          >
+            Download ID Card
+          </button>
         </div>
       </div>
 
