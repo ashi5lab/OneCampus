@@ -39,6 +39,7 @@ import { CalendarPage } from './features/calendar/components/CalendarPage';
 import { TimetablePage } from './features/timetable/components/TimetablePage';
 import { BulkUploadPage } from './features/bulkUpload/components/BulkUploadPage';
 import { StaffAttendancePage } from './features/staffAttendance/components/StaffAttendancePage';
+import { DisciplinePage } from './features/discipline/components/DisciplinePage';
 
 export default function App() {
   return (
@@ -185,6 +186,14 @@ export default function App() {
           element={
             <RequirePermission permission="staff_attendance.view_own">
               <StaffAttendancePage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="discipline"
+          element={
+            <RequirePermission permission="discipline.view">
+              <DisciplinePage />
             </RequirePermission>
           }
         />

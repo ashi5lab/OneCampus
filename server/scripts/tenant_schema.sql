@@ -470,6 +470,18 @@ CREATE TABLE onec_staff_attendance (
     UNIQUE(staff_role, roster_id, date)
 );
 
+-- Incident/behavior records per learner (see server/modules/discipline).
+CREATE TABLE onec_discipline_records (
+    id SERIAL PRIMARY KEY,
+    learner_id INT NOT NULL REFERENCES onec_learners(id) ON DELETE CASCADE,
+    incident_date DATE NOT NULL,
+    severity VARCHAR(20) NOT NULL,
+    description TEXT NOT NULL,
+    action_taken TEXT,
+    reported_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Substitute-teacher assignments (see server/modules/substitutes) — which
 -- covering instructor was assigned to a specific timetable period on a
 -- specific date, for an approved instructor leave that would otherwise
