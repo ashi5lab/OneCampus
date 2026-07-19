@@ -13,7 +13,24 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Global middleware
-app.use(helmet());
+// Helmet's default CSP restricts img-src to 'self' + data: only, which
+// silently blocks every <img> tag pointed at a Cloudinary URL — profile
+// pictures, learner/instructor avatars, anything uploaded via
+// lib/cloudinary.js. The browser drops these with no thrown JS error (just
+// a console CSP violation + a permanently non-loading <img>), which is
+// exactly what made this look like "upload succeeds, then shows a blank
+// image" rather than an obvious failure. Every other Helmet default stays
+// as-is; only img-src gains Cloudinary's asset host.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        'img-src': ["'self'", 'data:', 'https://res.cloudinary.com']
+      }
+    }
+  })
+);
 // A specific origin (not '*') is required — the refresh-token flow sends an
 // httpOnly cookie cross-origin (client :5173, server :3001 in dev), and
 // browsers reject Access-Control-Allow-Origin: * on credentialed requests.
