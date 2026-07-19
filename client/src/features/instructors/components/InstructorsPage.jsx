@@ -62,12 +62,13 @@ export function InstructorsPage() {
 function TeacherSubjectsTab() {
   const { t } = useConfig();
   const { can } = useAuth();
-  const { data: instructors, isLoading: instructorsLoading, error } = useInstructors();
-  const { data: modules } = useModules();
-  const { data: links, isLoading: linksLoading } = useInstructorModules();
+  const { data: instructors, isLoading: instructorsLoading, error: instructorsError } = useInstructors();
+  const { data: modules, error: modulesError } = useModules();
+  const { data: links, isLoading: linksLoading, error: linksError } = useInstructorModules();
   const [managingInstructor, setManagingInstructor] = useState(null);
 
   const isLoading = instructorsLoading || linksLoading;
+  const error = instructorsError || modulesError || linksError;
   const moduleNameById = new Map((modules || []).map((module) => [module.id, module.name]));
 
   const columns = [

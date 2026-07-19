@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { instructorFormSchema, instructorUpdateSchema } from '../types';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useModules } from '../../modules/hooks/useModules';
+import { useInstructorModules, useCreateInstructorModule, useRemoveInstructorModule } from '../hooks/useInstructorModules';
 
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function InstructorFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
@@ -19,11 +20,24 @@ export function InstructorFormModal({ onClose, onSubmit, submitting, submitError
     defaultValues: initialData ? { ...initialData, gender: initialData.meta?.gender || '' } : {}
   });
 
-  // Only offered at creation — an existing teacher's subjects are managed
-  // afterward via the "Subjects" tab on their profile page (which also
-  // covers the same onec_instructor_modules relationship this seeds here).
-  const { data: modules } = useModules({ enabled: !isEdit });
+  // At creation, subjects are seeded transactionally with the instructor
+  // row (module_ids in the create payload — see server/modules/instructors/
+  // controller.js). Editing an existing teacher has no equivalent
+  // "module_ids" field on the update endpoint, so this reconciles the
+  // checkbox state against onec_instructor_modules directly via the same
+  // create/remove-link mutations the Teacher Subjects tab uses.
+  const { data: modules } = useModules();
+  const { data: moduleLinks } = useInstructorModules({ enabled: isEdit });
+  const createModuleLink = useCreateInstructorModule();
+  const removeModuleLink = useRemoveInstructorModule();
   const [selectedModuleIds, setSelectedModuleIds] = useState([]);
+
+  useEffect(() => {
+    if (!isEdit || !moduleLinks) return;
+    setSelectedModuleIds(
+      moduleLinks.filter((link) => link.instructor_id === initialData.id).map((link) => link.module_id)
+    );
+  }, [isEdit, moduleLinks, initialData?.id]);
 
   function toggleModule(moduleId) {
     setSelectedModuleIds((current) =>
@@ -34,7 +48,19 @@ export function InstructorFormModal({ onClose, onSubmit, submitting, submitError
   // `meta` is a JSONB grab-bag — merge the new gender into whatever was
   // already there instead of overwriting it (previously this form never
   // sent `meta` at all, so every edit silently reset it to {}).
-  function handleFormSubmit({ gender, ...values }) {
+  async function handleFormSubmit({ gender, ...values }) {
+    if (isEdit) {
+      const currentLinkedIds = (moduleLinks || [])
+        .filter((link) => link.instructor_id === initialData.id)
+        .map((link) => link.module_id);
+      const toAdd = selectedModuleIds.filter((id) => !currentLinkedIds.includes(id));
+      const toRemove = currentLinkedIds.filter((id) => !selectedModuleIds.includes(id));
+      await Promise.all([
+        ...toAdd.map((module_id) => createModuleLink.mutateAsync({ instructor_id: initialData.id, module_id })),
+        ...toRemove.map((module_id) => removeModuleLink.mutateAsync({ instructorId: initialData.id, moduleId: module_id }))
+      ]);
+    }
+
     onSubmit({
       ...values,
       meta: { ...(initialData?.meta || {}), gender: gender || undefined },
@@ -86,26 +112,24 @@ export function InstructorFormModal({ onClose, onSubmit, submitting, submitError
           </select>
         </Field>
 
-        {!isEdit && (
-          <div className="mb-3">
-            <div className="mb-1 text-xs font-semibold text-ink-700">{t('topics')} (optional)</div>
-            <div className="max-h-[160px] overflow-y-auto rounded border border-border p-2">
-              {(modules || []).length === 0 && (
-                <div className="px-1 py-1.5 text-[12.5px] text-ink-500">No {t('topics').toLowerCase()} set up yet.</div>
-              )}
-              {(modules || []).map((module) => (
-                <label key={module.id} className="flex items-center gap-2 rounded px-1 py-1.5 text-[13px] text-ink-900 hover:bg-surface-muted">
-                  <input
-                    type="checkbox"
-                    checked={selectedModuleIds.includes(module.id)}
-                    onChange={() => toggleModule(module.id)}
-                  />
-                  {module.name}
-                </label>
-              ))}
-            </div>
+        <div className="mb-3">
+          <div className="mb-1 text-xs font-semibold text-ink-700">{t('topics')} (optional)</div>
+          <div className="max-h-[160px] overflow-y-auto rounded border border-border p-2">
+            {(modules || []).length === 0 && (
+              <div className="px-1 py-1.5 text-[12.5px] text-ink-500">No {t('topics').toLowerCase()} set up yet.</div>
+            )}
+            {(modules || []).map((module) => (
+              <label key={module.id} className="flex items-center gap-2 rounded px-1 py-1.5 text-[13px] text-ink-900 hover:bg-surface-muted">
+                <input
+                  type="checkbox"
+                  checked={selectedModuleIds.includes(module.id)}
+                  onChange={() => toggleModule(module.id)}
+                />
+                {module.name}
+              </label>
+            ))}
           </div>
-        )}
+        </div>
 
         {submitError && (
           <div className="mb-3 text-xs font-semibold text-danger">{submitError}</div>

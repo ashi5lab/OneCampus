@@ -11,13 +11,14 @@ import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function InstructorModulesModal({ instructor, onClose }) {
   useBodyScrollLock();
   const { t } = useConfig();
-  const { data: modules, isLoading: modulesLoading } = useModules();
-  const { data: links, isLoading: linksLoading } = useInstructorModules();
+  const { data: modules, isLoading: modulesLoading, error: modulesError } = useModules();
+  const { data: links, isLoading: linksLoading, error: linksError } = useInstructorModules();
   const createLink = useCreateInstructorModule();
   const removeLink = useRemoveInstructorModule();
   const [selectedModuleId, setSelectedModuleId] = useState('');
 
   const isLoading = modulesLoading || linksLoading;
+  const loadError = modulesError || linksError;
   const linkedModuleIds = (links || [])
     .filter((link) => link.instructor_id === instructor.id)
     .map((link) => link.module_id);
@@ -43,8 +44,13 @@ export function InstructorModulesModal({ instructor, onClose }) {
         </div>
 
         {isLoading && <div className="py-4 text-center text-sm text-ink-500">Loading…</div>}
+        {!isLoading && loadError && (
+          <div className="mb-3 rounded border border-border bg-surface-muted p-3 text-[12.5px] font-semibold text-danger">
+            {loadError.message}
+          </div>
+        )}
 
-        {!isLoading && (
+        {!isLoading && !loadError && (
           <>
             {linkedModules.length === 0 && (
               <div className="mb-3 rounded border border-border bg-surface-muted p-3 text-[12.5px] text-ink-500">

@@ -113,13 +113,14 @@ function CohortTeachersTab({ cohortId }) {
   const { can } = useAuth();
   const canManage = can('instructor_cohorts.manage');
 
-  const { data: instructors, isLoading: instructorsLoading } = useInstructors();
-  const { data: links, isLoading: linksLoading } = useInstructorCohorts();
+  const { data: instructors, isLoading: instructorsLoading, error: instructorsError } = useInstructors();
+  const { data: links, isLoading: linksLoading, error: linksError } = useInstructorCohorts();
   const createLink = useCreateInstructorCohort();
   const removeLink = useRemoveInstructorCohort();
   const [selectedInstructorId, setSelectedInstructorId] = useState('');
 
   const isLoading = instructorsLoading || linksLoading;
+  const loadError = instructorsError || linksError;
   const linkedInstructorIds = (links || [])
     .filter((link) => link.cohort_id === cohortId)
     .map((link) => link.instructor_id);
@@ -135,6 +136,13 @@ function CohortTeachersTab({ cohortId }) {
   }
 
   if (isLoading) return <div className="p-8 text-center text-sm text-ink-500">Loading…</div>;
+  if (loadError) {
+    return (
+      <div className="rounded border border-border bg-surface p-8 text-center text-sm font-semibold text-danger">
+        {loadError.message}
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded border border-border bg-surface p-5">
