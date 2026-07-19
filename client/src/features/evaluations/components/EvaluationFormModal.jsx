@@ -2,9 +2,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { evaluationFormSchema } from '../types';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const TYPE_OPTIONS = ['exam', 'activity_log', 'project'];
 
 export function EvaluationFormModal({ onClose, onSubmit, submitting, submitError }) {
+  useBodyScrollLock();
   const {
     register,
     handleSubmit,
@@ -15,7 +17,7 @@ export function EvaluationFormModal({ onClose, onSubmit, submitting, submitError
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-[420px] rounded border border-border bg-surface p-6"
+        className="w-[420px] rounded border-2 border-accent bg-surface p-6"
       >
         <div className="mb-4 text-base font-bold text-ink-900">Add Evaluation</div>
 

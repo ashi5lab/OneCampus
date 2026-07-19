@@ -3,7 +3,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { leaveApplySchema } from '../types';
 import { useApplyLeave } from '../hooks/useLeave';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function LeaveApplyModal({ onClose }) {
+  useBodyScrollLock();
   const applyLeave = useApplyLeave();
   const {
     register,
@@ -25,7 +27,7 @@ export function LeaveApplyModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
-      <form onSubmit={handleSubmit(onSubmit)} className="my-auto w-full max-w-[440px] rounded border border-border bg-surface p-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="my-auto w-full max-w-[440px] rounded border-2 border-accent bg-surface p-6">
         <div className="mb-4 text-base font-bold text-ink-900">Apply for Leave</div>
 
         <Field label="Leave Type" error={errors.leave_type}>

@@ -1,6 +1,7 @@
 import { useReportCard } from '../hooks/useEvaluations';
 import { evaluationsApi } from '../services/evaluationsApi';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const RESULT_META = {
   pass: { label: 'Pass', className: 'text-success' },
   fail: { label: 'Fail', className: 'text-danger' },
@@ -8,11 +9,12 @@ const RESULT_META = {
 };
 
 export function ReportCardModal({ evaluationId, learnerId, onClose }) {
+  useBodyScrollLock();
   const { data: card, isLoading, error } = useReportCard(evaluationId, learnerId);
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
-      <div className="my-auto w-full max-w-[560px] rounded border border-border bg-surface p-6">
+      <div className="my-auto w-full max-w-[560px] rounded border-2 border-accent bg-surface p-6">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <div className="text-base font-bold text-ink-900">Report Card</div>

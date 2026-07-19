@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSaveBroadcastConfig } from '../hooks/useBroadcast';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 // Generic per-channel API configuration editor. The templates/variables
 // model mirrors the backend exactly (see server/modules/broadcast/README):
 // - variables: static name -> value pairs ({{apikey}} etc.)
@@ -16,6 +17,7 @@ function hasNestedValue(record) {
 }
 
 export function ChannelConfigModal({ channel, existing, onClose }) {
+  useBodyScrollLock();
   const saveConfig = useSaveBroadcastConfig();
 
   const [apiUrl, setApiUrl] = useState(existing?.api_url || '');
@@ -124,7 +126,7 @@ export function ChannelConfigModal({ channel, existing, onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
-      <form onSubmit={handleSubmit} className="my-8 w-full max-w-[640px] rounded border border-border bg-surface p-6">
+      <form onSubmit={handleSubmit} className="my-8 w-full max-w-[640px] rounded border-2 border-accent bg-surface p-6">
         <div className="mb-1 text-base font-bold capitalize text-ink-900">{channel} API Configuration</div>
         <div className="mb-4 text-[12px] text-ink-500">
           Describe your provider's HTTP call. Use <code className="rounded bg-surface-muted px-1">{'{{name}}'}</code> placeholders — your

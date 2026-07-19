@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 import { useAllPermissions, useAccessControlUsers, useCreateAccessGroup, useUpdateAccessGroup } from '../hooks/useAccessControl';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const ROLES = ['admin', 'staff', 'instructor', 'learner', 'guardian'];
 
 // Groups the flat ALL_PERMISSIONS list ("learners.view", "learners.manage",
@@ -19,6 +20,7 @@ function groupByModule(permissions) {
 }
 
 export function AccessGroupFormModal({ onClose, initialData = null }) {
+  useBodyScrollLock();
   const isEdit = !!initialData;
   const { data: allPermissions } = useAllPermissions();
   const { data: users } = useAccessControlUsers();
@@ -78,7 +80,7 @@ export function AccessGroupFormModal({ onClose, initialData = null }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
-      <form onSubmit={handleSubmit} className="my-8 w-full max-w-[640px] rounded border border-border bg-surface p-6">
+      <form onSubmit={handleSubmit} className="my-8 w-full max-w-[640px] rounded border-2 border-accent bg-surface p-6">
         <div className="mb-4 text-base font-bold text-ink-900">{isEdit ? 'Edit' : 'Create'} Access Group</div>
 
         <label className="mb-3 block">

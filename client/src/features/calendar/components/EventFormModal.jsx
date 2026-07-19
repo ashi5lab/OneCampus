@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { calendarEventSchema, WEEKDAY_LABELS } from '../types';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const AUDIENCE_OPTIONS = [
   { value: 'all', label: 'Everyone' },
   { value: 'instructors', label: 'Instructors' },
@@ -41,6 +42,7 @@ function toFormDefaults(initialData) {
 }
 
 export function EventFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
+  useBodyScrollLock();
   const isEdit = !!initialData;
   const {
     register,
@@ -86,7 +88,7 @@ export function EventFormModal({ onClose, onSubmit, submitting, submitError, ini
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
       <form
         onSubmit={handleSubmit(submit)}
-        className="my-auto max-h-[90vh] w-full max-w-[520px] overflow-y-auto rounded border border-border bg-surface p-6"
+        className="my-auto max-h-[90vh] w-full max-w-[520px] overflow-y-auto rounded border-2 border-accent bg-surface p-6"
       >
         <div className="mb-4 text-base font-bold text-ink-900">{isEdit ? 'Edit' : 'Add'} Event / Holiday</div>
 

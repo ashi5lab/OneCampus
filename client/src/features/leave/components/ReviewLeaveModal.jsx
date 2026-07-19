@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useReviewLeave } from '../hooks/useLeave';
 import { LEAVE_TYPE_LABEL } from '../types';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function ReviewLeaveModal({ leave, onClose }) {
+  useBodyScrollLock();
   const reviewLeave = useReviewLeave();
   const [note, setNote] = useState('');
 
@@ -12,7 +14,7 @@ export function ReviewLeaveModal({ leave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
-      <div className="my-auto w-full max-w-[440px] rounded border border-border bg-surface p-6">
+      <div className="my-auto w-full max-w-[440px] rounded border-2 border-accent bg-surface p-6">
         <div className="mb-1 text-base font-bold text-ink-900">
           {leave.applicant_first_name} {leave.applicant_last_name}
         </div>

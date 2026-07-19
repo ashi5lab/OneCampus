@@ -6,6 +6,7 @@ import { useModules } from '../../modules/hooks/useModules';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { SearchSelect } from '../../../components/SearchSelect';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const assignmentSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -16,6 +17,7 @@ const assignmentSchema = z.object({
 });
 
 export function AssignmentFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
+  useBodyScrollLock();
   const { t } = useConfig();
   const { data: modules } = useModules();
   const { data: cohorts } = useCohorts();
@@ -34,7 +36,7 @@ export function AssignmentFormModal({ onClose, onSubmit, submitting, submitError
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="my-auto w-full max-w-[440px] rounded border border-border bg-surface p-6"
+        className="my-auto w-full max-w-[440px] rounded border-2 border-accent bg-surface p-6"
       >
         <div className="mb-4 text-base font-bold text-ink-900">{isEdit ? 'Edit' : 'Post'} Assignment</div>
 

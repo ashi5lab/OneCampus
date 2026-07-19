@@ -8,6 +8,7 @@ import { Badge } from '../../../components/Badge';
 import { useOnlineExams, useOnlineExam, useCreateOnlineExam, useUpdateOnlineExam, useDeleteOnlineExam } from '../hooks/useOnlineExams';
 import { ExamFormModal } from './ExamFormModal';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const STATUS_LABEL = { in_progress: 'In progress', submitted: 'Submitted', graded: 'Graded' };
 
 export function OnlineExamsPage() {
@@ -118,12 +119,13 @@ export function OnlineExamsPage() {
 // editing needs the full detail fetch (including each question's text/
 // options/correct_option) before the form can prefill.
 function EditExamModal({ examId, onClose, updateExam }) {
+  useBodyScrollLock();
   const { data: exam, isLoading } = useOnlineExam(examId);
 
   if (isLoading || !exam) {
     return (
       <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4">
-        <div className="rounded border border-border bg-surface p-6 text-sm text-ink-500">Loading…</div>
+        <div className="rounded border-2 border-accent bg-surface p-6 text-sm text-ink-500">Loading…</div>
       </div>
     );
   }

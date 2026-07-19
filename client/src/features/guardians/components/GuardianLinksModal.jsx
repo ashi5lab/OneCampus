@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useGuardianLinks, useCreateGuardianLink, useRemoveGuardianLink } from '../hooks/useGuardianLinks';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function GuardianLinksModal({ guardian, onClose }) {
+  useBodyScrollLock();
   const { data: learners, isLoading: learnersLoading } = useLearners();
   const { data: links, isLoading: linksLoading } = useGuardianLinks();
   const createLink = useCreateGuardianLink();
@@ -26,7 +28,7 @@ export function GuardianLinksModal({ guardian, onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40">
-      <div className="w-[440px] rounded border border-border bg-surface p-6">
+      <div className="w-[440px] rounded border-2 border-accent bg-surface p-6">
         <div className="mb-1 text-base font-bold text-ink-900">
           Linked Learners — {guardian.first_name} {guardian.last_name}
         </div>

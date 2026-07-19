@@ -4,6 +4,7 @@ import { useInstructors } from '../../instructors/hooks/useInstructors';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useCreateSlot } from '../hooks/usePtm';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 function todayIso() {
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -15,6 +16,7 @@ function todayIso() {
 // this is an instructor opening their own availability, so the instructor
 // picker is skipped entirely — there's nothing to choose.
 export function AddSlotModal({ canManageAny, onClose }) {
+  useBodyScrollLock();
   const { profile } = useAuth();
   const { data: instructors } = useInstructors({ enabled: canManageAny });
   const { data: cohorts } = useCohorts();
@@ -44,7 +46,7 @@ export function AddSlotModal({ canManageAny, onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
-      <form onSubmit={handleSubmit} className="w-full max-w-[400px] rounded border border-border bg-surface p-6 my-auto">
+      <form onSubmit={handleSubmit} className="w-full max-w-[400px] rounded border-2 border-accent bg-surface p-6 my-auto">
         <div className="mb-4 text-base font-bold text-ink-900">Open a Meeting Slot</div>
 
         {canManageAny && (

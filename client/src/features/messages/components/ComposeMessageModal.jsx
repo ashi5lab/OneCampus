@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { useRecipients, useSendMessage } from '../hooks/useMessages';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const composeSchema = z.object({
   recipient_id: z.coerce.number({ invalid_type_error: 'Choose a recipient' }).int(),
   subject: z.string().max(255).optional(),
@@ -11,6 +12,7 @@ const composeSchema = z.object({
 });
 
 export function ComposeMessageModal({ onClose }) {
+  useBodyScrollLock();
   const { data: recipients } = useRecipients();
   const sendMessage = useSendMessage();
   const {
@@ -28,7 +30,7 @@ export function ComposeMessageModal({ onClose }) {
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="my-auto w-full max-w-[440px] rounded border border-border bg-surface p-6"
+        className="my-auto w-full max-w-[440px] rounded border-2 border-accent bg-surface p-6"
       >
         <div className="mb-4 text-base font-bold text-ink-900">New Message</div>
 

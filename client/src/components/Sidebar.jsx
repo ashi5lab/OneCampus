@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useConfig } from '../contexts/ConfigContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavLinks } from '../hooks/useNavLinks';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useUnreadCount } from '../features/messages/hooks/useMessages';
 import { useMyProfile } from '../features/profile/hooks/useProfile';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -15,6 +16,13 @@ const navItemClass = ({ isActive }) =>
   }`;
 
 export function Sidebar({ isOpen, onClose }) {
+  // Always mounted (desktop needs it visible unconditionally), so unlike a
+  // modal — which is only mounted while open — this needs the explicit
+  // isOpen check: sliding the drawer off-screen with a transform doesn't
+  // stop the page underneath from scrolling on its own. isOpen only ever
+  // toggles true from the mobile hamburger button, so this is a no-op on
+  // desktop (md:) where the drawer is permanently visible instead.
+  useBodyScrollLock(isOpen);
   const { config, hasModule } = useConfig();
   const { user, logout, can, profile } = useAuth();
 
