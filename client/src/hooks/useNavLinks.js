@@ -1,21 +1,28 @@
 import { useConfig } from '../contexts/ConfigContext';
 import { useAuth } from '../contexts/AuthContext';
-import { NAV_LINK_DEFS, DEFAULT_SIDEBAR_LINKS } from '../lib/sidebarLinks';
+import { NAV_LINK_DEFS, DEFAULT_DASHBOARD_APPS } from '../lib/sidebarLinks';
 
-// Shared by Sidebar.jsx and the Dashboard's "V2" card view — a nav item
-// shows only if the current user is actually allowed to see it (def.gate)
-// AND the tenant has opted it into the sidebar (config.sidebar_links, set
-// via the Manage Sidebar settings page — see ManageSidebarPage.jsx). The
-// tenant-level list defaults to just Students/Teachers/Classes until an
-// admin adds more; Dashboard isn't part of this list at all, it's
-// hardcoded in Sidebar.jsx and always shown.
+function toLink(def, t) {
+  return { key: def.key, to: def.to, label: def.label(t), description: def.description(t) };
+}
+
+// The Dashboard's "Your Modules" grid — every feature the tenant has pinned
+// as a dashboard app (config.dashboard_apps, set via Settings > Manage
+// Dashboard Apps) that this user can also actually access (def.gate). See
+// useAllFeatureLinks below for the unfiltered version used by the More
+// directory. The sidebar/bottom-tab nav (Dashboard/Students/Classes/More/
+// Settings) is fixed and isn't part of this list at all.
 export function useNavLinks() {
   const { t, hasModule, config } = useConfig();
   const { can } = useAuth();
-  const enabledKeys = config?.sidebar_links || DEFAULT_SIDEBAR_LINKS;
+  const enabledKeys = config?.dashboard_apps || DEFAULT_DASHBOARD_APPS;
+  return NAV_LINK_DEFS.filter((def) => enabledKeys.includes(def.key) && def.gate(can, hasModule)).map((def) => toLink(def, t));
+}
 
-  return NAV_LINK_DEFS.filter((def) => enabledKeys.includes(def.key) && def.gate(can, hasModule)).map((def) => ({
-    to: def.to,
-    label: def.label(t)
-  }));
+// The More directory — every feature this user can access, regardless of
+// whether the tenant has pinned it to the Dashboard.
+export function useAllFeatureLinks() {
+  const { t, hasModule } = useConfig();
+  const { can } = useAuth();
+  return NAV_LINK_DEFS.filter((def) => def.gate(can, hasModule)).map((def) => toLink(def, t));
 }

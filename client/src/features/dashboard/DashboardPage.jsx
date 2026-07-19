@@ -4,6 +4,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavLinks } from '../../hooks/useNavLinks';
 import { StatCard } from '../../components/StatCard';
+import { ModuleBadge } from '../../components/ModuleBadge';
 import { HorizontalBarChart } from '../../components/charts/HorizontalBarChart';
 import { useDashboardReport } from '../reports/hooks/useReports';
 
@@ -13,7 +14,12 @@ const STATUS_COLOR = { present: 'var(--success)', absent: 'var(--danger)', late:
 
 export function DashboardPage() {
   const { config } = useConfig();
-  const [view, setView] = useState(() => localStorage.getItem(DASHBOARD_VIEW_KEY) || 'reports');
+  const { user } = useAuth();
+  // Default is the "Your Modules" card grid, matching the redesign mock —
+  // the detailed per-role reports view (attendance today, teacher/student
+  // activity, etc.) is still fully there, just reachable via the toggle
+  // rather than being the landing view.
+  const [view, setView] = useState(() => localStorage.getItem(DASHBOARD_VIEW_KEY) || 'cards');
 
   function toggleView() {
     const next = view === 'reports' ? 'cards' : 'reports';
@@ -25,30 +31,24 @@ export function DashboardPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Overview</div>
+          <div className="text-[13.5px] text-ink-500">Good morning{user?.username ? `, ${user.username}` : ''}</div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
             {config?.org_name || 'Dashboard'}
           </h1>
-          <div className="mt-1 text-[13.5px] text-ink-500">
-            {config?.org_type ? `${config.org_type[0].toUpperCase()}${config.org_type.slice(1)}` : ''}
-          </div>
         </div>
 
-        {/* "V2" toggle — default is the reports view; switching shows a
-            shortcut card per accessible nav item instead. Persisted per
-            device, same pattern as the theme picker. */}
         <label className="flex items-center gap-2 text-xs font-semibold text-ink-700">
-          Card View
+          Reports View
           <button
             type="button"
             role="switch"
-            aria-checked={view === 'cards'}
+            aria-checked={view === 'reports'}
             onClick={toggleView}
-            className={`relative h-5 w-9 rounded-full transition-colors ${view === 'cards' ? 'bg-accent' : 'bg-surface-muted'}`}
+            className={`relative h-5 w-9 rounded-full transition-colors ${view === 'reports' ? 'bg-accent' : 'bg-surface-muted'}`}
           >
             <span
               className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${
-                view === 'cards' ? 'translate-x-[18px]' : 'translate-x-0.5'
+                view === 'reports' ? 'translate-x-[18px]' : 'translate-x-0.5'
               }`}
             />
           </button>
@@ -72,17 +72,23 @@ function FeatureCardsView() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-      {links.map((link) => (
-        <Link
-          key={link.to}
-          to={link.to}
-          className="block rounded-xl border border-border bg-surface p-5 transition hover:border-accent active:scale-[0.99]"
-        >
-          <div className="text-[15px] font-semibold text-ink-900">{link.label}</div>
-          <div className="mt-1 text-[13px] text-ink-500">Open {link.label}</div>
-        </Link>
-      ))}
+    <div>
+      <div className="mb-3 text-[11px] font-bold uppercase tracking-wide text-ink-500">Your Modules</div>
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+        {links.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className="flex items-start gap-3 rounded border border-border bg-surface p-4 transition hover:border-accent active:scale-[0.99]"
+          >
+            <ModuleBadge moduleKey={link.key} label={link.label} />
+            <div className="min-w-0">
+              <div className="text-[15px] font-semibold text-ink-900">{link.label}</div>
+              <div className="mt-0.5 text-[12.5px] text-ink-500">{link.description}</div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,34 +1,36 @@
 /* client/src/styles/theme.css */
 
-/* 
-  Theme 1 — Slate & Amber (Default)
-  Cool, neutral, productivity-tool feel. 
+/*
+  Default theme — clean, white-sidebar, indigo-accent design (per the
+  Q School redesign mock). Single theme for now; the CSS-custom-property
+  architecture below is what makes adding more themes later a matter of
+  defining another `.theme-x` block, not touching any component.
 */
 :root, .theme-slate {
-  --bg: #F5F6F8;
+  --bg: #F8F8FB;
   --surface: #FFFFFF;
-  --ink-900: #1C2230;
-  --ink-700: #3A4358;
-  --ink-500: #6B7488;
-  --border: #D7DBE3;
-  --surface-muted: #EEF0F4;
-  --accent: #E5A331; /* Amber */
-  --accent-dark: #B8791A;
-  --accent-ink: var(--ink-900); /* amber is light enough for dark text */
-  --success: #2E7D5B;
-  --danger: #C24545;
-  --radius: 10px;
-  --font-display: -apple-system, "Segoe UI", sans-serif;
-  --font-body: -apple-system, "Segoe UI", sans-serif;
+  --ink-900: #191924;
+  --ink-700: #45454F;
+  --ink-500: #6B6B78;
+  --border: #E5E5EC;
+  --surface-muted: #F1F1F6;
+  --accent: #4F46E5;
+  --accent-dark: #4338CA;
+  --accent-ink: #FFFFFF;
+  --success: #15803D;
+  --danger: #DC2626;
+  --radius: 14px;
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", monospace;
-  
-  --sidebar-bg: #1C2230;
-  --sidebar-bg-hover: rgba(255,255,255,0.06);
-  --sidebar-text: #C7CCD6;
-  --sidebar-text-strong: #FFFFFF;
-  --sidebar-active-bg: var(--accent);
-  --sidebar-active-text: var(--ink-900);
-  --sidebar-border: rgba(255,255,255,0.08);
+
+  --sidebar-bg: #FFFFFF;
+  --sidebar-bg-hover: #F5F5FA;
+  --sidebar-text: #5B5B68;
+  --sidebar-text-strong: #191924;
+  --sidebar-active-bg: #EEF0FD;
+  --sidebar-active-text: #4F46E5;
+  --sidebar-border: #ECECF1;
 
   /* Shared structural values mapped to this theme's tokens */
   --body-bg: var(--bg);
@@ -36,147 +38,9 @@
   --border-color: var(--border);
 }
 
-/* 
-  Theme 2 — Chalkboard Fresh
-  Warm, education-coded. 
-*/
-.theme-chalkboard {
-  --bg: #FBF7EE; /* Cream */
-  --surface: #FFFFFF;
-  --sidebar-bg: #1F3D2E; /* Forest green */
-  --sidebar-bg-hover: #2E5540;
-  --ink-900: #26301F; /* --ink */
-  --ink-700: #26301F;
-  --ink-500: #6B7460; /* --ink-soft */
-  --accent: #E0A83B; /* Mustard */
-  --accent-dark: #E27554; /* Coral */
-  --accent-ink: var(--ink-900); /* mustard is light enough for dark text */
-  --border: #E7E1D2;
-  --surface-muted: #FBF7EE; /* reusing cream */
-  --success: #4C8B5B;
-  --danger: #E27554;
-  --radius: 16px;
-  --font-display: Georgia, "Iowan Old Style", serif;
-  --font-body: -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "Courier New", monospace;
-  
-  --sidebar-text: #DCE7DD;
-  --sidebar-text-strong: #FFFFFF;
-  --sidebar-active-bg: var(--accent);
-  --sidebar-active-text: var(--ink-900);
-  --sidebar-border: rgba(255,255,255,0.08);
-}
-
-/* 
-  Theme 3 — Blueprint Precision
-  Technical, structured, enterprise feel. 
-*/
-.theme-blueprint {
-  /* Using --bg with grid requires a bit of CSS if applied to body */
-  --bg: #FAFBFC; 
-  --grid-line: #DCE4EC;
-  --surface: #FFFFFF;
-  --ink-900: #0F1A2B;
-  --ink-700: #5A6B7D; /* --steel */
-  --ink-500: #5A6B7D; 
-  --sidebar-bg: #0B3D66; /* Navy */
-  --sidebar-bg-hover: rgba(255,255,255,0.05);
-  --sidebar-text: #C6D8E8;
-  --sidebar-text-strong: #FFFFFF;
-  --sidebar-active-bg: var(--accent);
-  --sidebar-active-text: var(--ink-900);
-  --sidebar-border: rgba(255,255,255,0.08);
-  --accent: #1B5C93; /* blue-600 */
-  --accent-dark: #7FB93F; /* lime, as positive/active */
-  --accent-ink: #FFFFFF; /* blue-600 is too dark for dark text */
-  --surface-muted: #E4EEF6; /* blue-100 */
-  --border: #DCE4EC; /* grid-line */
-  --success: #7FB93F;
-  --danger: #C2542B; /* rust */
-  --radius: 4px;
-  --font-display: "Inter", -apple-system, "Segoe UI", sans-serif;
-  --font-body: "Inter", -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", monospace;
-}
-
-/*
-  Theme 4 — Purple
-  Sourced from OneCampus.dc.html (the purple portal design reference).
-  Unlike the first three, this uses a light (white) sidebar rather than a
-  dark one, so it overrides the sidebar text/active/border tokens instead
-  of relying on the dark-sidebar defaults.
-*/
-.theme-purple {
-  --bg: oklch(0.98 0.003 300);
-  --surface: #FFFFFF;
-  --surface-muted: oklch(0.95 0.005 300);
-  --ink-900: oklch(0.22 0.01 300);
-  --ink-700: oklch(0.35 0.01 300);
-  --ink-500: oklch(0.5 0.01 300);
-  --border: oklch(0.9 0.005 300);
-  --accent: oklch(0.52 0.19 302);
-  --accent-dark: oklch(0.45 0.19 302);
-  --accent-ink: #FFFFFF; /* this purple is too dark/saturated for dark text */
-  --success: oklch(0.6 0.14 145);
-  --danger: oklch(0.55 0.18 25);
-  --radius: 16px;
-  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", monospace;
-
-  --sidebar-bg: #FFFFFF;
-  --sidebar-bg-hover: oklch(0.96 0.005 300);
-  --sidebar-text: oklch(0.4 0.01 300);
-  --sidebar-text-strong: var(--ink-900);
-  --sidebar-active-bg: oklch(0.95 0.03 302);
-  --sidebar-active-text: oklch(0.45 0.19 302);
-  --sidebar-border: var(--border);
-}
-
-/*
-  Theme 5 — Monochrome (Geist Mono)
-  Pure black & white, modeled on the default create-next-app boilerplate
-  theme (--background/--foreground, Arial-simple layout) but using Geist
-  Mono as the typeface throughout instead of Geist Sans, per spec.
-*/
-.theme-mono {
-  --bg: #FFFFFF;
-  --surface: #FFFFFF;
-  --surface-muted: #F5F5F5;
-  --ink-900: #171717;
-  --ink-700: #404040;
-  --ink-500: #737373;
-  --border: #E5E5E5;
-  --accent: #000000;
-  --accent-dark: #171717;
-  --accent-ink: #FFFFFF;
-  --success: #0F7A3D;
-  --danger: #C0362C;
-  --radius: 6px;
-  --font-display: 'Geist Mono', ui-monospace, "SF Mono", monospace;
-  --font-body: 'Geist Mono', ui-monospace, "SF Mono", monospace;
-  --font-mono: 'Geist Mono', ui-monospace, "SF Mono", monospace;
-
-  --sidebar-bg: #0A0A0A;
-  --sidebar-bg-hover: rgba(255, 255, 255, 0.08);
-  --sidebar-text: #A3A3A3;
-  --sidebar-text-strong: #FFFFFF;
-  --sidebar-active-bg: #FFFFFF;
-  --sidebar-active-text: #0A0A0A;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-}
-
 /* Global utility classes to apply tokens */
 body {
   background-color: var(--bg);
   color: var(--ink-900);
   font-family: var(--font-body);
-}
-
-.theme-blueprint body {
-  background-image:
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 24px 24px;
-  background-attachment: fixed;
 }

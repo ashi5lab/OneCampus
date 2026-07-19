@@ -1,4 +1,4 @@
-const { DEFAULT_SIDEBAR_LINKS } = require('./sidebarLinks');
+const { DEFAULT_DASHBOARD_APPS } = require('./sidebarLinks');
 
 // Default active_modules per org_type, applied at tenant provisioning time
 // (both the CLI script and the self-serve registration flow in
@@ -18,7 +18,7 @@ function defaultConfigForOrgType(type) {
     active_modules: activeModules,
     branding: { primaryColor: '#4f46e5', logoUrl: '/logo.png' },
     vocabulary_override: {},
-    sidebar_links: DEFAULT_SIDEBAR_LINKS
+    dashboard_apps: DEFAULT_DASHBOARD_APPS
   };
 }
 

@@ -106,7 +106,7 @@ export function CalendarPage() {
             </button>
             <button
               onClick={() => setShowForm(true)}
-              className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
             >
               + Add Event/Holiday
             </button>

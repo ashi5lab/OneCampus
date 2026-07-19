@@ -4,12 +4,11 @@ import { resolveVocabulary } from '../lib/vocabulary';
 
 const ConfigContext = createContext(null);
 
+// Single theme for now (see theme.css) — the key/class-switching mechanism
+// stays in place so adding another theme later is a matter of defining a
+// new `.theme-x` block and adding it here, not touching this file's logic.
 const THEME_CLASS_BY_KEY = {
-  slate: 'theme-slate',
-  chalkboard: 'theme-chalkboard',
-  blueprint: 'theme-blueprint',
-  purple: 'theme-purple',
-  mono: 'theme-mono'
+  slate: 'theme-slate'
 };
 const THEME_STORAGE_KEY = 'onecampus.theme';
 

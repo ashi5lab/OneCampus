@@ -2,24 +2,26 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import { NAV_LINK_DEFS, DEFAULT_SIDEBAR_LINKS } from '../../../lib/sidebarLinks';
-import { useUpdateSidebarLinks } from '../hooks/useSidebarLinks';
+import { NAV_LINK_DEFS, DEFAULT_DASHBOARD_APPS } from '../../../lib/sidebarLinks';
+import { useUpdateDashboardApps } from '../hooks/useSidebarLinks';
 
-// Tenant-wide: this changes what every user at this organisation sees in
-// their sidebar, not a personal preference — see useNavLinks.js, which
-// combines this list with each individual user's own permission/module
-// gates, so toggling something on here never exposes it to a role that
-// couldn't already see it.
-export function ManageSidebarPage() {
+// Tenant-wide: this changes what every user at this organisation sees on
+// their Home dashboard, not a personal preference — see useNavLinks.js,
+// which combines this list with each individual user's own permission/
+// module gates, so toggling something on here never exposes it to a role
+// that couldn't already see it. The sidebar/bottom-tab nav itself
+// (Dashboard/Students/Classes/More/Settings) is fixed and unaffected —
+// everything is still reachable via the More directory regardless.
+export function ManageDashboardAppsPage() {
   const { t, hasModule, config, reloadConfig } = useConfig();
   const { can } = useAuth();
-  const updateSidebarLinks = useUpdateSidebarLinks();
-  const [selected, setSelected] = useState(config?.sidebar_links || DEFAULT_SIDEBAR_LINKS);
+  const updateDashboardApps = useUpdateDashboardApps();
+  const [selected, setSelected] = useState(config?.dashboard_apps || DEFAULT_DASHBOARD_APPS);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setSelected(config?.sidebar_links || DEFAULT_SIDEBAR_LINKS);
-  }, [config?.sidebar_links]);
+    setSelected(config?.dashboard_apps || DEFAULT_DASHBOARD_APPS);
+  }, [config?.dashboard_apps]);
 
   // Filtered by the viewing admin's own gate — in practice this hides only
   // items gated behind an inactive module (an admin role has every
@@ -34,7 +36,7 @@ export function ManageSidebarPage() {
   }
 
   function handleSave() {
-    updateSidebarLinks.mutate(selected, {
+    updateDashboardApps.mutate(selected, {
       onSuccess: () => {
         reloadConfig();
         setSaved(true);
@@ -45,16 +47,17 @@ export function ManageSidebarPage() {
   return (
     <div className="max-w-[640px]">
       <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Account / Settings</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Manage Sidebar</h1>
+        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Settings / Manage Dashboard Apps</div>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Manage Dashboard Apps</h1>
         <p className="mt-1 text-[13px] text-ink-500">
-          Choose which navigation items appear in the sidebar for everyone in your organisation. Dashboard, {t('learners')}, {t('instructors')}, and {t('cohorts')} are shown by default.
+          Choose which modules appear on the Home dashboard for everyone in your organisation. Everything is always
+          reachable from More, whether or not it's pinned here.
         </p>
       </div>
 
       <div className="rounded border border-border bg-surface p-5">
         {availableDefs.length === 0 && (
-          <div className="text-sm text-ink-500">No optional navigation items are available for your organisation yet.</div>
+          <div className="text-sm text-ink-500">No optional modules are available for your organisation yet.</div>
         )}
         {availableDefs.length > 0 && (
           <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
@@ -70,18 +73,18 @@ export function ManageSidebarPage() {
           </div>
         )}
 
-        {updateSidebarLinks.error && (
-          <div className="mt-3 text-xs font-semibold text-danger">{updateSidebarLinks.error.message}</div>
+        {updateDashboardApps.error && (
+          <div className="mt-3 text-xs font-semibold text-danger">{updateDashboardApps.error.message}</div>
         )}
-        {saved && <div className="mt-3 text-xs font-semibold text-success">Sidebar updated.</div>}
+        {saved && <div className="mt-3 text-xs font-semibold text-success">Dashboard apps updated.</div>}
 
         <button
           type="button"
           onClick={handleSave}
-          disabled={updateSidebarLinks.isPending}
-          className="mt-4 rounded bg-accent px-4 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
+          disabled={updateDashboardApps.isPending}
+          className="mt-4 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
         >
-          {updateSidebarLinks.isPending ? 'Saving…' : 'Save'}
+          {updateDashboardApps.isPending ? 'Saving…' : 'Save'}
         </button>
       </div>
 
