@@ -7,8 +7,13 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg font-body text-ink-900 md:grid md:h-screen md:grid-cols-[248px_1fr] md:overflow-hidden">
-      {/* Mobile Header */}
-      <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 md:hidden">
+      {/* Mobile Header — pt uses env(safe-area-inset-top) so this doesn't
+          render under the status bar/notch when installed as a standalone
+          PWA on iOS (see Sidebar.jsx for the matching drawer fix). */}
+      <div
+        className="flex items-center justify-between border-b border-border bg-surface px-4 pb-3 md:hidden"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+      >
         <div className="text-[15px] font-semibold tracking-tight">OneCampus</div>
         <button
           onClick={() => setSidebarOpen(true)}
