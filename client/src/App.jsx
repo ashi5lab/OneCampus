@@ -33,6 +33,7 @@ import { OnlineExamDetailPage } from './features/onlineExams/components/OnlineEx
 import { ExamsPage } from './features/exams/components/ExamsPage';
 import { ReportsPage } from './features/reports/components/ReportsPage';
 import { ProfilePage } from './features/profile/components/ProfilePage';
+import { ManageSidebarPage } from './features/sidebarSettings/components/ManageSidebarPage';
 import { BroadcastPage } from './features/broadcast/components/BroadcastPage';
 import { AccessControlPage } from './features/accessControl/components/AccessControlPage';
 import { LeavePage } from './features/leave/components/LeavePage';
@@ -80,6 +81,14 @@ export default function App() {
             gate, all routes inside touch only the caller's own row (the
             admin reset section hides itself without users.manage_passwords). */}
         <Route path="profile" element={<ProfilePage />} />
+        <Route
+          path="manage-sidebar"
+          element={
+            <RequirePermission permission="users.manage_passwords">
+              <ManageSidebarPage />
+            </RequirePermission>
+          }
+        />
         <Route
           path="learners"
           element={
