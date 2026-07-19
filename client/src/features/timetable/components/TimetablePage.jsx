@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { DAY_NAMES, DAY_ABBR } from '../types';
@@ -167,8 +168,14 @@ export function TimetablePage() {
   const isInstructor = user?.role === 'instructor';
   const isSelfScoped = user?.role === 'learner' || user?.role === 'guardian';
 
-  const [tab, setTab] = useState(isInstructor ? 'mine' : 'class');
-  const [selectedCohortId, setSelectedCohortId] = useState(null);
+  // A cohort's "Timetable" module tile (see CohortDetailPage) deep-links
+  // here with ?cohort=<id> — preselect it and jump straight to the class
+  // tab, rather than defaulting to "mine"/the first cohort alphabetically.
+  const [searchParams] = useSearchParams();
+  const cohortParam = Number(searchParams.get('cohort')) || null;
+
+  const [tab, setTab] = useState(cohortParam ? 'class' : isInstructor ? 'mine' : 'class');
+  const [selectedCohortId, setSelectedCohortId] = useState(cohortParam);
   const [modalState, setModalState] = useState(null); // { period, prefill, cohortId } | null
 
   const { data: allCohorts } = useCohorts({ enabled: !isSelfScoped });

@@ -28,11 +28,24 @@ const TABS = [
 // it's the one every role is most likely to actually want to touch.
 // Force-logout and admin password reset are grouped into one "Admin" tab
 // (users.manage_passwords) rather than kept as standalone cards.
+// Mobile rows (no "Admin" bucket — Manage Dashboard Apps links straight
+// out, and admin password tools get their own row) — matches the
+// redesign mock's plain navigable list, distinct from the desktop
+// tab-strip layout below it.
+const MOBILE_ROWS = [
+  { key: 'notifications', label: 'Notification Preferences' },
+  { key: 'password', label: 'Change Password' },
+  { key: 'display', label: 'Display' },
+  { key: 'dashboard-apps', label: 'Manage Dashboard Apps', adminOnly: true, to: '/app/manage-dashboard-apps' },
+  { key: 'admin-tools', label: 'Admin Tools', adminOnly: true }
+];
+
 export function ProfilePage() {
-  const { can, profile } = useAuth();
+  const { can, profile, logout } = useAuth();
   const { data: me, isLoading, error } = useMyProfile();
   const canManagePasswords = can('users.manage_passwords');
   const [tab, setTab] = useState('notifications');
+  const [mobileSection, setMobileSection] = useState(null);
 
   // Learners/instructors also have an academic profile page (marks,
   // attendance, insights) — link across to it from the account screen.
@@ -47,6 +60,8 @@ export function ProfilePage() {
 
   const visibleTabs = TABS.filter((t) => !t.adminOnly || canManagePasswords);
   const activeTab = visibleTabs.find((t) => t.key === tab) ? tab : 'notifications';
+  const visibleMobileRows = MOBILE_ROWS.filter((r) => !r.adminOnly || canManagePasswords);
+  const activeMobileRow = MOBILE_ROWS.find((r) => r.key === mobileSection);
 
   return (
     <div className="max-w-[860px]">
@@ -80,8 +95,73 @@ export function ProfilePage() {
         )}
       </div>
 
-      <div className="flex flex-col gap-5 sm:flex-row">
-        <div className="flex flex-row gap-1 overflow-x-auto sm:w-[190px] sm:flex-shrink-0 sm:flex-col sm:overflow-visible">
+      {/* Mobile: a plain navigable list — tapping a row swaps in that
+          panel with a back row above it, rather than the desktop's
+          always-visible side-by-side tab strip. */}
+      <div className="md:hidden">
+        {!activeMobileRow && (
+          <div className="overflow-hidden rounded border border-border bg-surface">
+            {visibleMobileRows.map((row, i) => (
+              row.to ? (
+                <Link
+                  key={row.key}
+                  to={row.to}
+                  className={`flex items-center justify-between px-4 py-3.5 text-[13.5px] font-semibold text-accent-dark ${i > 0 ? 'border-t border-surface-muted' : ''}`}
+                >
+                  {row.label}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="text-ink-500">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+                  </svg>
+                </Link>
+              ) : (
+                <button
+                  key={row.key}
+                  type="button"
+                  onClick={() => setMobileSection(row.key)}
+                  className={`flex w-full items-center justify-between px-4 py-3.5 text-left text-[13.5px] font-semibold text-accent-dark ${i > 0 ? 'border-t border-surface-muted' : ''}`}
+                >
+                  {row.label}
+                </button>
+              )
+            ))}
+            <button
+              type="button"
+              onClick={logout}
+              className="flex w-full items-center justify-between border-t border-surface-muted px-4 py-3.5 text-left text-[13.5px] font-semibold text-danger"
+            >
+              Log out
+            </button>
+          </div>
+        )}
+
+        {activeMobileRow && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setMobileSection(null)}
+              className="mb-3 flex items-center gap-1 text-[12.5px] font-semibold text-ink-500"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              {activeMobileRow.label}
+            </button>
+            {mobileSection === 'notifications' && <NotificationPreferencesCard />}
+            {mobileSection === 'password' && <ChangePasswordCard />}
+            {mobileSection === 'display' && <DisplayCard />}
+            {mobileSection === 'admin-tools' && canManagePasswords && (
+              <div className="space-y-5">
+                <AdminPasswordResetCard />
+                <ForceLogoutCard />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: side-by-side tab strip + content, everything visible at once. */}
+      <div className="hidden gap-5 md:flex">
+        <div className="flex w-[190px] flex-shrink-0 flex-col gap-1">
           {visibleTabs.map((t) => (
             <button
               key={t.key}

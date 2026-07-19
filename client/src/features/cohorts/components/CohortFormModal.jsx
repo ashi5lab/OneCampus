@@ -8,7 +8,7 @@ import { useInstructors } from '../../instructors/hooks/useInstructors';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
-export function CohortFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
+export function CohortFormModal({ onClose, onSubmit, submitting, submitError, initialData = null, onDelete = null }) {
   useBodyScrollLock();
   const { t } = useConfig();
   const { can } = useAuth();
@@ -84,21 +84,30 @@ export function CohortFormModal({ onClose, onSubmit, submitting, submitError, in
           <div className="mb-3 text-xs font-semibold text-danger">{submitError}</div>
         )}
 
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded border border-border px-3.5 py-2 text-xs font-semibold text-ink-700"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded bg-accent px-3.5 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
-          >
-            {submitting ? 'Saving…' : 'Save'}
-          </button>
+        <div className="mt-4 flex items-center justify-between gap-2">
+          {isEdit && onDelete ? (
+            <button type="button" onClick={onDelete} className="text-xs font-semibold text-danger hover:opacity-80">
+              Delete class
+            </button>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded border border-border px-3.5 py-2 text-xs font-semibold text-ink-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded bg-accent px-3.5 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
+            >
+              {submitting ? 'Saving…' : 'Save'}
+            </button>
+          </div>
         </div>
       </form>
     </div>

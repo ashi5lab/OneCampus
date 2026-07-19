@@ -280,7 +280,7 @@ function TeachersTab() {
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
         {instructors && (
-          <DataTable columns={columns} rows={instructors} rowKey={(row) => row.id} emptyMessage="No matching instructors." />
+          <DataTable columns={columns} rows={instructors} rowKey={(row) => row.id} emptyMessage="No matching instructors." mobileCompact />
         )}
       </div>
 

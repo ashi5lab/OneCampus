@@ -11,7 +11,7 @@ import { useState } from 'react';
 // needing to say so explicitly. A column with no header (the common
 // convention for an actions column, `header: ''`) renders without a label
 // row too, rather than a blank uppercase chip next to it.
-export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records found.', pageSize = 10 }) {
+export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records found.', pageSize = 10, mobileCompact = false }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   if (rows.length === 0) {
@@ -29,30 +29,47 @@ export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records fo
 
   return (
     <>
-      {/* Mobile view — one clearly separated card per row instead of a
-          continuous stacked list, so each record reads as its own tappable
-          item rather than a spreadsheet dump. */}
-      <div className="grid grid-cols-1 gap-2.5 p-3 md:hidden">
-        {paginatedRows.map((row) => (
-          <div key={rowKey(row)} className="rounded border border-border bg-surface p-4 shadow-sm">
-            <div className="text-[15px] font-semibold leading-snug text-ink-900">{primaryColumn.render(row)}</div>
-            {restColumns.length > 0 && (
-              <div className="mt-3 space-y-2 border-t border-surface-muted pt-3">
-                {restColumns.map((col) => (
-                  <div key={col.key} className="flex items-center justify-between gap-3">
-                    {col.header && (
-                      <span className="text-[10.5px] font-bold uppercase tracking-wide text-ink-500">{col.header}</span>
-                    )}
-                    <div className={col.header ? 'text-right text-[13.5px] text-ink-900' : 'flex-1 text-[13.5px] text-ink-900'}>
-                      {col.render(row)}
+      {/* Mobile view. Compact mode (used by rosters that link out to a full
+          profile/detail page) shows just the primary column + a chevron in
+          a flat navigable list — the rest of a row's data lives on that
+          detail page instead of being crammed into the list. Non-compact
+          rosters (no detail page to drill into) keep every column visible
+          as a self-contained card, since there's nowhere else for that
+          data or its row actions to go. */}
+      {mobileCompact ? (
+        <div className="overflow-hidden rounded border border-border bg-surface md:hidden">
+          {paginatedRows.map((row, i) => (
+            <div key={rowKey(row)} className={`flex items-center gap-2 px-4 py-3 ${i > 0 ? 'border-t border-surface-muted' : ''}`}>
+              <div className="min-w-0 flex-1 text-[14px] font-medium text-ink-900">{primaryColumn.render(row)}</div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="flex-shrink-0 text-ink-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-2.5 p-3 md:hidden">
+          {paginatedRows.map((row) => (
+            <div key={rowKey(row)} className="rounded border border-border bg-surface p-4 shadow-sm">
+              <div className="text-[15px] font-semibold leading-snug text-ink-900">{primaryColumn.render(row)}</div>
+              {restColumns.length > 0 && (
+                <div className="mt-3 space-y-2 border-t border-surface-muted pt-3">
+                  {restColumns.map((col) => (
+                    <div key={col.key} className="flex items-center justify-between gap-3">
+                      {col.header && (
+                        <span className="text-[10.5px] font-bold uppercase tracking-wide text-ink-500">{col.header}</span>
+                      )}
+                      <div className={col.header ? 'text-right text-[13.5px] text-ink-900' : 'flex-1 text-[13.5px] text-ink-900'}>
+                        {col.render(row)}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Desktop view */}
       <div className="hidden w-full overflow-x-auto md:block">
