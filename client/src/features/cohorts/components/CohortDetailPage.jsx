@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useCohorts } from '../hooks/useCohorts';
+import { useCohorts, useUpdateCohort, useDeleteCohort } from '../hooks/useCohorts';
 import { useUnits } from '../../units/hooks/useUnits';
 import { useInstructors } from '../../instructors/hooks/useInstructors';
 import {
@@ -10,10 +10,15 @@ import {
   useCreateInstructorCohort,
   useRemoveInstructorCohort
 } from '../../instructors/hooks/useInstructorCohorts';
+import { ModuleBadge } from '../../../components/ModuleBadge';
+import { CohortFormModal } from './CohortFormModal';
 
-const TABS = [
-  { value: 'overview', label: 'Overview' },
-  { value: 'teachers', label: 'Teachers' }
+const MODULE_TILES = [
+  { key: 'attendance', label: 'Mark Attendance', to: () => '/app/attendance' },
+  { key: 'timetable', label: 'Timetable', to: (id) => `/app/timetable?cohort=${id}` },
+  { key: 'assignments', label: 'Assignments', to: () => '/app/assignments' },
+  { key: 'exams', label: 'Exams', to: () => '/app/exams' },
+  { key: 'reports', label: 'Reports', to: () => '/app/reports' }
 ];
 
 // No dedicated getById/getProfile endpoint for cohorts — useCohorts()
@@ -22,10 +27,15 @@ const TABS = [
 export function CohortDetailPage() {
   const { id } = useParams();
   const cohortId = Number(id);
+  const navigate = useNavigate();
   const { t } = useConfig();
+  const { can } = useAuth();
   const { data: cohorts, isLoading, error } = useCohorts();
   const { data: units } = useUnits();
-  const [tab, setTab] = useState('overview');
+  const updateCohort = useUpdateCohort();
+  const deleteCohort = useDeleteCohort();
+  const [view, setView] = useState('modules');
+  const [showEdit, setShowEdit] = useState(false);
 
   if (isLoading) return <div className="p-8 text-center text-sm text-ink-500">Loading…</div>;
   if (error) {
@@ -47,60 +57,100 @@ export function CohortDetailPage() {
 
   const unitName = cohort.unit_id ? (units || []).find((u) => u.id === cohort.unit_id)?.name : null;
 
+  const tiles = [
+    ...MODULE_TILES.map((m) => ({ ...m, kind: 'link', to: m.to(cohortId) })),
+    { key: 'instructor_cohorts', label: 'Teachers', kind: 'view', view: 'teachers' },
+    { key: 'cohorts', label: 'Settings', kind: 'action', onClick: () => setShowEdit(true) }
+  ];
+
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-          Management / {t('cohorts')}
-        </div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">{cohort.name}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-ink-500">
-          {unitName && <span>{unitName}</span>}
-          <span>{cohort.time_block}</span>
-          {cohort.advisor_first_name && (
-            <span>Class Teacher: {cohort.advisor_first_name} {cohort.advisor_last_name}</span>
-          )}
-        </div>
-      </div>
+      {view === 'modules' && (
+        <>
+          <div className="mb-6">
+            <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
+              Management / {t('cohorts')}
+            </div>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">{cohort.name}</h1>
+            <div className="mt-1 text-[13px] text-ink-500">
+              {cohort.learner_count} students{cohort.advisor_first_name ? ` · ${cohort.advisor_first_name} ${cohort.advisor_last_name}` : ''}
+            </div>
+            {(unitName || cohort.time_block) && (
+              <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] text-ink-500">
+                {unitName && <span>{unitName}</span>}
+                {unitName && cohort.time_block && <span>&middot;</span>}
+                {cohort.time_block && <span>{cohort.time_block}</span>}
+              </div>
+            )}
+          </div>
 
-      <div className="mb-5 flex gap-2">
-        {TABS.map((tabOption) => (
-          <button
-            key={tabOption.value}
-            onClick={() => setTab(tabOption.value)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
-              tab === tabOption.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
-            }`}
-          >
-            {tabOption.label}
-          </button>
-        ))}
-      </div>
+          <div className="mb-3 text-[11px] font-bold uppercase tracking-wide text-ink-500">Modules</div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {tiles.map((tile) =>
+              tile.kind === 'link' ? (
+                <Link
+                  key={tile.key}
+                  to={tile.to}
+                  className="flex flex-col items-start gap-2.5 rounded border border-border bg-surface p-4 transition hover:border-accent"
+                >
+                  <ModuleBadge moduleKey={tile.key} label={tile.label} size={34} />
+                  <div className="text-[13.5px] font-semibold text-ink-900">{tile.label}</div>
+                </Link>
+              ) : (
+                <button
+                  key={tile.key}
+                  type="button"
+                  onClick={tile.kind === 'view' ? () => setView(tile.view) : tile.onClick}
+                  className="flex flex-col items-start gap-2.5 rounded border border-border bg-surface p-4 text-left transition hover:border-accent"
+                >
+                  <ModuleBadge moduleKey={tile.key} label={tile.label} size={34} />
+                  <div className="text-[13.5px] font-semibold text-ink-900">{tile.label}</div>
+                </button>
+              )
+            )}
+          </div>
 
-      {tab === 'overview' && (
-        <div className="overflow-hidden rounded border border-border bg-surface p-5 text-[13px] text-ink-700">
-          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-semibold text-ink-500">Unit</dt>
-              <dd>{unitName || '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold text-ink-500">{t('term')}</dt>
-              <dd>{cohort.time_block}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold text-ink-500">Class Teacher</dt>
-              <dd>{cohort.advisor_first_name ? `${cohort.advisor_first_name} ${cohort.advisor_last_name}` : '—'}</dd>
-            </div>
-          </dl>
-        </div>
+          <Link to="/app/cohorts" className="mt-6 inline-block text-xs font-semibold text-ink-500 hover:text-ink-900">
+            &larr; Back to {t('cohorts')}
+          </Link>
+        </>
       )}
 
-      {tab === 'teachers' && <CohortTeachersTab cohortId={cohortId} />}
+      {view === 'teachers' && (
+        <>
+          <button
+            type="button"
+            onClick={() => setView('modules')}
+            className="mb-4 flex items-center gap-1 text-[12.5px] font-semibold text-ink-500"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            {cohort.name} / Teachers
+          </button>
+          <CohortTeachersTab cohortId={cohortId} />
+        </>
+      )}
 
-      <Link to="/app/cohorts" className="mt-6 inline-block text-xs font-semibold text-ink-500 hover:text-ink-900">
-        &larr; Back to {t('cohorts')}
-      </Link>
+      {showEdit && (
+        <CohortFormModal
+          initialData={cohort}
+          onClose={() => setShowEdit(false)}
+          submitting={updateCohort.isPending}
+          submitError={updateCohort.error?.message}
+          onSubmit={(values) =>
+            updateCohort.mutate({ id: cohortId, payload: values }, { onSuccess: () => setShowEdit(false) })
+          }
+          onDelete={
+            can('cohorts.manage')
+              ? () => {
+                  if (!window.confirm(`Are you sure you want to delete ${cohort.name}?`)) return;
+                  deleteCohort.mutate(cohortId, { onSuccess: () => navigate('/app/cohorts') });
+                }
+              : null
+          }
+        />
+      )}
     </div>
   );
 }

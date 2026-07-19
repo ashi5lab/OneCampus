@@ -30,8 +30,11 @@ export function CohortsPage() {
       key: 'name',
       header: t('cohort'),
       render: (row) => (
-        <Link to={`/app/cohorts/${row.id}`} className="font-semibold hover:underline">
-          {row.name}
+        <Link to={`/app/cohorts/${row.id}`} className="hover:underline">
+          <div className="font-semibold">{row.name}</div>
+          <div className="text-[11.5px] text-ink-500">
+            {row.learner_count} students{row.advisor_first_name ? ` · ${row.advisor_first_name} ${row.advisor_last_name}` : ''}
+          </div>
         </Link>
       )
     },
@@ -96,7 +99,7 @@ export function CohortsPage() {
         {error && (
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
-        {cohorts && <DataTable columns={columns} rows={cohorts} rowKey={(row) => row.id} />}
+        {cohorts && <DataTable columns={columns} rows={cohorts} rowKey={(row) => row.id} mobileCompact />}
       </div>
 
       {showForm && (

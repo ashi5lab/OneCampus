@@ -104,7 +104,7 @@ export function AlumniPage() {
           </div>
         )}
         {alumni && (
-          <DataTable columns={columns} rows={alumni} rowKey={(row) => row.id} emptyMessage="No alumni yet." />
+          <DataTable columns={columns} rows={alumni} rowKey={(row) => row.id} emptyMessage="No alumni yet." mobileCompact />
         )}
       </div>
     </div>

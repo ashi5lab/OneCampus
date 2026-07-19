@@ -21,17 +21,21 @@ async function getAll(req, res) {
     // display name instead of a bare id.
     const advisorJoin = `LEFT JOIN onec_instructors adv ON adv.user_id = c.advisor_id`;
     const advisorSelect = `adv.first_name AS advisor_first_name, adv.last_name AS advisor_last_name`;
+    // Correlated subquery rather than a LEFT JOIN + GROUP BY — cohorts are a
+    // small table (one row per class/section), so this stays cheap while
+    // avoiding the aggregation dance for a single count column.
+    const learnerCountSelect = `(SELECT COUNT(*)::int FROM onec_learners l WHERE l.cohort_id = c.id) AS learner_count`;
 
     if (!pagination) {
       const result = await req.db.query(
-        `SELECT c.*, ${advisorSelect} FROM onec_cohorts c ${advisorJoin} ORDER BY c.id DESC`
+        `SELECT c.*, ${advisorSelect}, ${learnerCountSelect} FROM onec_cohorts c ${advisorJoin} ORDER BY c.id DESC`
       );
       return res.json({ data: result.rows });
     }
 
     const [rows, count] = await Promise.all([
       req.db.query(
-        `SELECT c.*, ${advisorSelect} FROM onec_cohorts c ${advisorJoin} ORDER BY c.id DESC LIMIT $1 OFFSET $2`,
+        `SELECT c.*, ${advisorSelect}, ${learnerCountSelect} FROM onec_cohorts c ${advisorJoin} ORDER BY c.id DESC LIMIT $1 OFFSET $2`,
         [pagination.limit, pagination.offset]
       ),
       req.db.query('SELECT COUNT(*)::int AS total FROM onec_cohorts')

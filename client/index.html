@@ -12,11 +12,11 @@
          nonzero value to read. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <!-- Initial/pre-JS values — ConfigContext.jsx overwrites both of these
-         at runtime to track the active theme's --sidebar-bg (e.g. slate's
-         navy #1C2230), the same color the mobile header/nav drawer paint
-         full-bleed under the status bar. These defaults match the "slate"
+         at runtime to track the active theme's --sidebar-bg (white for the
+         default "slate" theme), the same color the mobile header/nav drawer
+         paint full-bleed under the status bar. These defaults match that
          theme so there's no flash of the wrong color before React mounts. -->
-    <meta name="theme-color" content="#1C2230" />
+    <meta name="theme-color" content="#FFFFFF" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <!-- iOS ignores the web app manifest for "Add to Home Screen" — these
          three tags are what actually control its standalone icon/display
@@ -30,18 +30,20 @@
          (time/battery/signal) always render white once translucent, with no
          way to request dark icons — so this only works where the top of the
          page has a sufficiently dark/colored background for them to sit on.
-         Themes with a light --sidebar-bg (see theme.css's theme-purple) get
-         switched back to 'default' (opaque, black icons) by ConfigContext,
-         since white-on-white icons would be unreadable there. -->
+         The default theme's --sidebar-bg is white, so ConfigContext sets
+         this to 'default' (opaque, dark icons) at runtime — this static
+         pre-JS value matches that, rather than the black-translucent style
+         meant for a dark sidebar, to avoid a flash of invisible
+         white-on-white icons before React mounts. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="OneCampus" />
     <!-- Launch screen shown while the installed PWA is starting, before
          index.css/main.jsx paint anything — only applies to a standalone/
          home-screen launch, exactly like the three tags above; visiting the
          site as a normal Safari tab never shows this. iOS doesn't derive a
          launch screen from the web manifest the way Android does, so it
-         needs this explicit image (white background + the same OC mark/
+         needs this explicit image (white background + the same OneC mark/
          wordmark as icon-512x512.svg, generated at client/public/apple-
          splash-1284x2778.png). No media query — Safari scales/letterboxes
          it to fit any device, and since both the image and the fallback

@@ -205,7 +205,7 @@ export function LearnersPage() {
           </div>
         )}
         {learners && (
-          <DataTable columns={columns} rows={learners} rowKey={(row) => row.id} emptyMessage="No matching learners." />
+          <DataTable columns={columns} rows={learners} rowKey={(row) => row.id} emptyMessage="No matching learners." mobileCompact />
         )}
       </div>
 
