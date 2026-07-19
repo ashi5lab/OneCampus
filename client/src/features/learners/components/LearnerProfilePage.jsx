@@ -109,7 +109,7 @@ export function LearnerProfilePage() {
         </div>
       </div>
 
-      <div className="mb-5 grid grid-cols-3 gap-3">
+      <div className="mb-5 grid max-w-[500px] grid-cols-3 gap-3">
         <StatCard label="Attendance" value={attendanceRate != null ? `${attendanceRate}%` : '—'} />
         <StatCard label="Avg Score" value={avgScorePct != null ? `${avgScorePct}%` : '—'} />
         <StatCard label="Roles" value={rolesCount} />
@@ -130,48 +130,50 @@ export function LearnerProfilePage() {
       </div>
 
       {tab === 'overview' && (
-        <div className="space-y-5">
-          {guardians.length > 0 && (
-            <div>
-              <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Guardians</div>
-              <div className="space-y-2">
-                {guardians.map((g) => (
-                  <div key={g.id} className="rounded border border-border bg-surface p-3.5 text-[13px]">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-ink-500">Name</span>
-                      <span className="font-semibold text-ink-900">{g.first_name} {g.last_name}</span>
+        <div className="max-w-[760px] space-y-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
+            {guardians.length > 0 && (
+              <div>
+                <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Guardians</div>
+                <div className="space-y-2">
+                  {guardians.map((g) => (
+                    <div key={g.id} className="rounded border border-border bg-surface p-3.5 text-[13px]">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-ink-500">Name</span>
+                        <span className="font-semibold text-ink-900">{g.first_name} {g.last_name}</span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
+                        <span className="text-ink-500">Phone</span>
+                        <span className="font-semibold text-ink-900">{g.phone}</span>
+                      </div>
                     </div>
-                    <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
-                      <span className="text-ink-500">Phone</span>
-                      <span className="font-semibold text-ink-900">{g.phone}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Personal Details</div>
-            <div className="rounded border border-border bg-surface p-3.5 text-[13px]">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-ink-500">Gender</span>
-                <span className="font-semibold text-ink-900">{learner.meta?.gender ? learner.meta.gender[0].toUpperCase() + learner.meta.gender.slice(1) : '—'}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
-                <span className="text-ink-500">Date of birth</span>
-                <span className="font-semibold text-ink-900">{learner.meta?.date_of_birth ? new Date(learner.meta.date_of_birth).toLocaleDateString() : '—'}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
-                <span className="text-ink-500">Admitted</span>
-                <span className="font-semibold text-ink-900">{learner.meta?.admission_date ? new Date(learner.meta.admission_date).toLocaleDateString() : '—'}</span>
-              </div>
-              {learner.email && (
-                <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
-                  <span className="text-ink-500">Email</span>
-                  <span className="font-semibold text-ink-900">{learner.email}</span>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
+
+            <div>
+              <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Personal Details</div>
+              <div className="rounded border border-border bg-surface p-3.5 text-[13px]">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-ink-500">Gender</span>
+                  <span className="font-semibold text-ink-900">{learner.meta?.gender ? learner.meta.gender[0].toUpperCase() + learner.meta.gender.slice(1) : '—'}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
+                  <span className="text-ink-500">Date of birth</span>
+                  <span className="font-semibold text-ink-900">{learner.meta?.date_of_birth ? new Date(learner.meta.date_of_birth).toLocaleDateString() : '—'}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
+                  <span className="text-ink-500">Admitted</span>
+                  <span className="font-semibold text-ink-900">{learner.meta?.admission_date ? new Date(learner.meta.admission_date).toLocaleDateString() : '—'}</span>
+                </div>
+                {learner.email && (
+                  <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
+                    <span className="text-ink-500">Email</span>
+                    <span className="font-semibold text-ink-900">{learner.email}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
