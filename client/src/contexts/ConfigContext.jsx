@@ -57,6 +57,29 @@ export function ConfigProvider({ children }) {
     const className = THEME_CLASS_BY_KEY[themeKey] || THEME_CLASS_BY_KEY.slate;
     document.documentElement.className = className;
     localStorage.setItem(THEME_STORAGE_KEY, themeKey);
+
+    // The mobile header/nav drawer paint full-bleed under the status bar in
+    // --sidebar-bg (see Layout.jsx/Sidebar.jsx), and index.html's
+    // black-translucent status bar is a transparent overlay whose own icons
+    // (time/battery/signal) always render white with no way to request dark
+    // ones — so theme-color needs to track --sidebar-bg per theme, and
+    // themes whose --sidebar-bg is too light for white icons (theme-purple)
+    // need to fall back to an opaque 'default' bar with dark icons instead.
+    // --sidebar-bg is declared as a plain #RRGGBB literal in every theme in
+    // theme.css (never a var()/oklch() chain), so getPropertyValue returns
+    // it as-is with no resolution needed.
+    const sidebarBg = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-bg').trim();
+    const hexMatch = /^#([0-9a-f]{6})$/i.exec(sidebarBg);
+    if (hexMatch) {
+      const r = parseInt(hexMatch[1].slice(0, 2), 16);
+      const g = parseInt(hexMatch[1].slice(2, 4), 16);
+      const b = parseInt(hexMatch[1].slice(4, 6), 16);
+      const isLight = 0.299 * r + 0.587 * g + 0.114 * b > 170;
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', sidebarBg);
+      document
+        .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+        ?.setAttribute('content', isLight ? 'default' : 'black-translucent');
+    }
   }, [themeKey]);
 
   // Applied as an inline style (not a className) so it can't collide with

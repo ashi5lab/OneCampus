@@ -7,23 +7,23 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg font-body text-ink-900 md:grid md:h-screen md:grid-cols-[248px_1fr] md:overflow-hidden">
-      {/* Mobile Header — deliberately has no background/border of its own so
-          it reads as part of the page (bg-bg, inherited from the wrapper
-          below) instead of a separate white card sitting on top of it; a
-          native iOS/Android top bar isn't a bordered box, it's the same
-          surface as the status bar and the content beneath it (see
-          index.html's theme-color, which matches --bg for the same reason).
-          pt uses env(safe-area-inset-top) so this doesn't render under the
-          status bar/notch when installed as a standalone PWA on iOS (see
-          Sidebar.jsx for the matching drawer fix). */}
+      {/* Mobile Header — painted in --sidebar-bg (same token as the nav
+          drawer) and extended under the status bar via env(safe-area-inset-
+          top) padding, so the two form one continuous full-bleed colored
+          bar from the very top of the screen down through the title, the
+          way native apps (e.g. Outlook) do it — rather than a separate
+          white/bordered card sitting on top of the page. See
+          ConfigContext.jsx for the matching theme-color/status-bar-style
+          updates that keep the OS status bar icons legible against
+          whichever theme is active. */}
       <div
-        className="flex items-center justify-between px-4 pb-3 md:hidden"
+        className="flex items-center justify-between bg-sidebar-bg px-4 pb-3 text-sidebar-textStrong md:hidden"
         style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
         <div className="text-[15px] font-semibold tracking-tight">OneCampus</div>
         <button
           onClick={() => setSidebarOpen(true)}
-          className="rounded p-2 text-ink-500 hover:bg-surface-muted hover:text-ink-900"
+          className="rounded p-2 text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-textStrong"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
