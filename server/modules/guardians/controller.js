@@ -31,14 +31,16 @@ async function getAll(req, res) {
     const { pagination, error } = parsePagination(req.query);
     if (error) return res.status(400).json({ error: 'Invalid pagination parameters', details: error });
 
+    const baseQuery = 'FROM onec_guardians g LEFT JOIN onec_users u ON g.user_id = u.id';
+
     if (!pagination) {
-      const result = await req.db.query('SELECT * FROM onec_guardians ORDER BY id DESC');
+      const result = await req.db.query(`SELECT g.*, u.profile_picture_url ${baseQuery} ORDER BY g.id DESC`);
       return res.json({ data: result.rows });
     }
 
     const [rows, count] = await Promise.all([
-      req.db.query('SELECT * FROM onec_guardians ORDER BY id DESC LIMIT $1 OFFSET $2', [pagination.limit, pagination.offset]),
-      req.db.query('SELECT COUNT(*)::int AS total FROM onec_guardians')
+      req.db.query(`SELECT g.*, u.profile_picture_url ${baseQuery} ORDER BY g.id DESC LIMIT $1 OFFSET $2`, [pagination.limit, pagination.offset]),
+      req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`)
     ]);
     res.json({ data: rows.rows, meta: { total: count.rows[0].total, page: pagination.page, pageSize: pagination.pageSize } });
   } catch (err) {

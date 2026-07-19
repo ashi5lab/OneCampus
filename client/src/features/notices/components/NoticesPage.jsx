@@ -44,7 +44,7 @@ export function NoticesPage() {
 
       <div className="space-y-3">
         {(notices || []).map((notice) => (
-          <div key={notice.id} className="rounded-xl border border-border bg-surface p-4 sm:p-5">
+          <div key={notice.id} className="rounded border border-border bg-surface p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <div className="flex flex-wrap items-center gap-2">

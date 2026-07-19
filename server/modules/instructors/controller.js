@@ -58,14 +58,14 @@ async function getAll(req, res) {
     const baseQuery = `FROM onec_instructors i LEFT JOIN onec_users u ON i.user_id = u.id ${whereClause}`;
 
     if (!pagination) {
-      const result = await req.db.query(`SELECT i.*, u.username ${baseQuery} ORDER BY i.id DESC`, params);
+      const result = await req.db.query(`SELECT i.*, u.username, u.profile_picture_url ${baseQuery} ORDER BY i.id DESC`, params);
       return res.json({ data: result.rows });
     }
 
     const pageParams = [...params, pagination.limit, pagination.offset];
     const [rows, count] = await Promise.all([
       req.db.query(
-        `SELECT i.*, u.username ${baseQuery} ORDER BY i.id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+        `SELECT i.*, u.username, u.profile_picture_url ${baseQuery} ORDER BY i.id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
         pageParams
       ),
       req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`, params)

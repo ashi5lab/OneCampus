@@ -4,6 +4,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
+import { Avatar } from '../../../components/Avatar';
 import { useInstructors, useCreateInstructor, useUpdateInstructor, useDeleteInstructor, useSetInstructorDesignation } from '../hooks/useInstructors';
 import { useModules } from '../../modules/hooks/useModules';
 import { useInstructorModules } from '../hooks/useInstructorModules';
@@ -76,9 +77,12 @@ function TeacherSubjectsTab() {
       key: 'name',
       header: t('instructor'),
       render: (row) => (
-        <div>
-          <div className="font-semibold">{row.first_name} {row.last_name}</div>
-          <div className="font-mono text-[11.5px] text-ink-500">{row.staff_id}</div>
+        <div className="flex items-center gap-2.5">
+          <Avatar name={`${row.first_name} ${row.last_name}`} src={row.profile_picture_url} size={32} />
+          <div>
+            <div className="font-semibold">{row.first_name} {row.last_name}</div>
+            <div className="font-mono text-[11.5px] text-ink-500">{row.staff_id}</div>
+          </div>
         </div>
       )
     },
@@ -163,9 +167,12 @@ function TeachersTab() {
       key: 'name',
       header: t('instructor'),
       render: (row) => (
-        <Link to={`/app/instructors/${row.id}`} className="hover:underline">
-          <div className="font-semibold">{row.first_name} {row.last_name}</div>
-          <div className="font-mono text-[11.5px] text-ink-500">{row.staff_id}</div>
+        <Link to={`/app/instructors/${row.id}`} className="flex items-center gap-2.5 hover:underline">
+          <Avatar name={`${row.first_name} ${row.last_name}`} src={row.profile_picture_url} size={32} />
+          <div>
+            <div className="font-semibold">{row.first_name} {row.last_name}</div>
+            <div className="font-mono text-[11.5px] text-ink-500">{row.staff_id}</div>
+          </div>
         </Link>
       )
     },

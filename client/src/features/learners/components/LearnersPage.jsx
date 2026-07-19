@@ -6,16 +6,13 @@ import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { SearchSelect } from '../../../components/SearchSelect';
+import { Avatar } from '../../../components/Avatar';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners, useCreateLearner, useUpdateLearner, useDeleteLearner, useSetClassHead, useSetSchoolHead } from '../hooks/useLearners';
 import { LearnerFormModal } from './LearnerFormModal';
 
 const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive', alumni: 'pending' };
 const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
-
-function initials(first, last) {
-  return `${first?.[0] || ''}${last?.[0] || ''}`.toUpperCase();
-}
 
 export function LearnersPage() {
   const { t } = useConfig();
@@ -53,9 +50,7 @@ export function LearnersPage() {
       header: t('learner'),
       render: (row) => (
         <Link to={`/app/learners/${row.id}`} className="flex items-center gap-2.5 hover:underline">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-[11.5px] font-bold text-ink-700">
-            {initials(row.first_name, row.last_name)}
-          </div>
+          <Avatar name={`${row.first_name} ${row.last_name}`} src={row.profile_picture_url} size={32} />
           <div>
             <div className="font-semibold">{row.first_name} {row.last_name}</div>
             <div className="font-mono text-[11.5px] text-ink-500">{row.registry_no}</div>
