@@ -23,6 +23,14 @@
   html, body {
     overflow-x: hidden;
   }
+
+  /* Suppresses the elastic "rubber-band" scroll bounce past the top/bottom
+     of the page — standard in native iOS/Android apps, but on by default in
+     mobile Safari/Chrome, which is one more thing that reads as "a website"
+     rather than an installed app. */
+  html {
+    overscroll-behavior-y: none;
+  }
 }
 
 @layer components {
