@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
@@ -25,7 +26,15 @@ export function CohortsPage() {
   }
 
   const columns = [
-    { key: 'name', header: t('cohort'), render: (row) => <span className="font-semibold">{row.name}</span> },
+    {
+      key: 'name',
+      header: t('cohort'),
+      render: (row) => (
+        <Link to={`/app/cohorts/${row.id}`} className="font-semibold hover:underline">
+          {row.name}
+        </Link>
+      )
+    },
     { key: 'unit', header: 'Unit', render: (row) => unitName(row.unit_id) },
     { key: 'time_block', header: t('term'), render: (row) => row.time_block },
     {

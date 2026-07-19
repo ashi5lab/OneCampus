@@ -14,7 +14,12 @@ const instructorCreateSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
   phone: z.string().optional().nullable(),
-  meta: z.record(z.any()).optional().default({})
+  meta: z.record(z.any()).optional().default({}),
+  // Subjects this teacher can teach, picked at creation time — optional,
+  // same relationship the "Subjects" tab on InstructorProfilePage manages
+  // afterward (onec_instructor_modules), just seeded in the same
+  // transaction as the instructor row so there's no separate round-trip.
+  module_ids: z.array(z.number().int()).optional().default([])
 });
 
 const instructorUpdateSchema = z.object({
@@ -93,7 +98,7 @@ async function create(req, res) {
     const parsed = instructorCreateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { username, email, password, staff_id, first_name, last_name, phone, meta } = parsed.data;
+    const { username, email, password, staff_id, first_name, last_name, phone, meta, module_ids } = parsed.data;
     const password_hash = await bcrypt.hash(password, 10);
 
     await req.db.query('BEGIN');
@@ -109,9 +114,17 @@ async function create(req, res) {
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
         [user_id, staff_id, first_name, last_name, phone, meta]
       );
+      const instructor = instructorResult.rows[0];
+
+      for (const module_id of module_ids) {
+        await req.db.query(
+          'INSERT INTO onec_instructor_modules (instructor_id, module_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [instructor.id, module_id]
+        );
+      }
 
       await req.db.query('COMMIT');
-      res.status(201).json({ data: instructorResult.rows[0] });
+      res.status(201).json({ data: instructor });
     } catch (err) {
       await req.db.query('ROLLBACK');
       throw err;
@@ -119,6 +132,7 @@ async function create(req, res) {
   } catch (err) {
     console.error(err);
     if (err.code === '23505') return res.status(400).json({ error: 'Username, email, or staff ID is already in use' });
+    if (err.code === '23503') return res.status(400).json({ error: 'One of the selected subjects does not exist' });
     res.status(500).json({ error: 'Internal server error' });
   }
 }

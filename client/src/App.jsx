@@ -15,6 +15,7 @@ import { LearnerProfilePage } from './features/learners/components/LearnerProfil
 import { InstructorsPage } from './features/instructors/components/InstructorsPage';
 import { InstructorProfilePage } from './features/instructors/components/InstructorProfilePage';
 import { CohortsPage } from './features/cohorts/components/CohortsPage';
+import { CohortDetailPage } from './features/cohorts/components/CohortDetailPage';
 import { AttendancePage } from './features/attendance/components/AttendancePage';
 import { EvaluationDetailPage } from './features/evaluations/components/EvaluationDetailPage';
 import { ScoreEntryPage } from './features/evaluations/components/ScoreEntryPage';
@@ -113,6 +114,14 @@ export default function App() {
           element={
             <RequirePermission permission="cohorts.view">
               <CohortsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="cohorts/:id"
+          element={
+            <RequirePermission permission="cohorts.view">
+              <CohortDetailPage />
             </RequirePermission>
           }
         />

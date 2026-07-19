@@ -40,7 +40,9 @@ const ALL_PERMISSIONS = [
   'discipline.view', 'discipline.log',
   'id_cards.generate',
   'ptm.view', 'ptm.manage', 'ptm.book',
-  'visitors.view', 'visitors.log'
+  'visitors.view', 'visitors.log',
+  'instructor_modules.view', 'instructor_modules.manage',
+  'instructor_cohorts.view', 'instructor_cohorts.manage'
 ];
 
 // messages.view/.send are granted to every role below — unlike the
@@ -66,6 +68,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
   staff: ['messages.view', 'messages.send', 'notices.view', 'notices.manage', 'leave.apply', 'leave.view_own', 'leave.approve', 'calendar.view', 'timetable.view', 'cohorts.view', 'staff_attendance.view', 'staff_attendance.mark', 'staff_attendance.view_own', 'substitutes.view', 'substitutes.manage', 'discipline.view', 'discipline.log', 'id_cards.generate', 'ptm.view', 'ptm.manage', 'visitors.view', 'visitors.log'],
   instructor: [
     'units.view', 'cohorts.view', 'modules.view', 'instructors.view',
+    'instructor_modules.view', 'instructor_cohorts.view',
     'learners.view', 'guardians.view',
     'attendance.view', 'attendance.mark',
     'evaluations.view', 'evaluations.manage', 'evaluations.grade',
