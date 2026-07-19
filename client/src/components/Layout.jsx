@@ -35,8 +35,13 @@ export function Layout() {
 
       {/* Its own scroll container — the sidebar is pinned/scrolls independently
           (see Sidebar.jsx's overflow-y-auto), so a long page here shouldn't
-          drag the nav out of view with it. */}
-      <div className="mx-auto w-full max-w-[1180px] px-4 py-4 sm:px-6 md:overflow-y-auto md:px-9 md:py-7">
+          drag the nav out of view with it. Bottom padding grows past
+          env(safe-area-inset-bottom) on iPhones with no home button, so the
+          last bit of content isn't sitting behind the home indicator. */}
+      <div
+        className="mx-auto w-full max-w-[1180px] px-4 py-4 sm:px-6 md:overflow-y-auto md:px-9 md:py-7"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
         <Outlet />
       </div>
     </div>
