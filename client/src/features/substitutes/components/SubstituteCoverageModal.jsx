@@ -3,11 +3,13 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useInstructors } from '../../instructors/hooks/useInstructors';
 import { useSubstituteCoverage, useAssignSubstitute, useUnassignSubstitute } from '../hooks/useSubstitutes';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 function periodKey(period) {
   return `${period.allocation_id}-${period.date}`;
 }
 
 export function SubstituteCoverageModal({ leaveRequestId, onClose }) {
+  useBodyScrollLock();
   const { can } = useAuth();
   const canManage = can('substitutes.manage');
   const { data: coverage, isLoading, error } = useSubstituteCoverage(leaveRequestId);
@@ -29,7 +31,7 @@ export function SubstituteCoverageModal({ leaveRequestId, onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
-      <div className="my-auto w-full max-w-[640px] rounded border border-border bg-surface p-6">
+      <div className="my-auto w-full max-w-[640px] rounded border-2 border-accent bg-surface p-6">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <div className="text-base font-bold text-ink-900">Substitute Coverage</div>

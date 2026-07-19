@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useUpdateTenant } from '../hooks/useSuperAdminTenants';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function TenantEditModal({ tenant, onClose }) {
+  useBodyScrollLock();
   const updateTenant = useUpdateTenant();
   const [orgName, setOrgName] = useState(tenant.org_name || '');
   const [contactName, setContactName] = useState(tenant.contact_name || '');
@@ -30,7 +32,7 @@ export function TenantEditModal({ tenant, onClose }) {
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
       <form
         onSubmit={handleSubmit}
-        className="my-auto w-full max-w-[420px] rounded border border-border bg-surface p-6"
+        className="my-auto w-full max-w-[420px] rounded border-2 border-accent bg-surface p-6"
       >
         <div className="mb-4 text-base font-bold text-ink-900">Edit {tenant.org_name}</div>
 

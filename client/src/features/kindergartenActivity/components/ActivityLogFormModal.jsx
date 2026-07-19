@@ -4,7 +4,9 @@ import { activityLogFormSchema } from '../types';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useConfig } from '../../../contexts/ConfigContext';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function ActivityLogFormModal({ onClose, onSubmit, submitting, submitError }) {
+  useBodyScrollLock();
   const { t } = useConfig();
   const { data: learners } = useLearners();
   const {
@@ -26,7 +28,7 @@ export function ActivityLogFormModal({ onClose, onSubmit, submitting, submitErro
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40">
       <form
         onSubmit={handleSubmit(handleFormSubmit)}
-        className="w-[420px] rounded border border-border bg-surface p-6"
+        className="w-[420px] rounded border-2 border-accent bg-surface p-6"
       >
         <div className="mb-4 text-base font-bold text-ink-900">Log Daily Activity</div>
 

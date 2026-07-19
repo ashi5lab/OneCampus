@@ -1,3 +1,5 @@
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+
 // Illustrative mockup of Safari's share sheet, not a literal screenshot —
 // good enough to point at "this icon, then this row" without depending on
 // a real device capture that would go stale the moment Apple redesigns it.
@@ -29,9 +31,10 @@ function ShareSheetIllustration() {
 }
 
 export function IosInstallModal({ onClose }) {
+  useBodyScrollLock();
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
-      <div className="my-auto w-full max-w-[400px] rounded border border-border bg-surface p-6">
+      <div className="my-auto w-full max-w-[400px] rounded border-2 border-accent bg-surface p-6">
         <div className="mb-1 text-base font-bold text-ink-900">Install on iPhone or iPad</div>
         <div className="mb-4 text-[12px] text-ink-500">
           iOS doesn't offer a one-tap install button — a few taps in Safari does it.

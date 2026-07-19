@@ -4,6 +4,7 @@ import { useModules } from '../../modules/hooks/useModules';
 import { useInstructors } from '../../instructors/hooks/useInstructors';
 import { periodFormSchema, DAY_NAMES, DAY_ABBR } from '../types';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 function toFormDefaults(initialData, defaultTimeBlock, prefill) {
   if (!initialData) {
     return {
@@ -31,6 +32,7 @@ function toFormDefaults(initialData, defaultTimeBlock, prefill) {
 }
 
 export function PeriodFormModal({ onClose, onSubmit, onDelete, submitting, submitError, initialData = null, defaultTimeBlock, prefill }) {
+  useBodyScrollLock();
   const isEdit = !!initialData;
   const { data: modules } = useModules();
   const { data: instructors } = useInstructors();
@@ -70,7 +72,7 @@ export function PeriodFormModal({ onClose, onSubmit, onDelete, submitting, submi
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
       <form
         onSubmit={handleSubmit(submit)}
-        className="my-auto max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded border border-border bg-surface p-6"
+        className="my-auto max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded border-2 border-accent bg-surface p-6"
       >
         <div className="mb-4 text-base font-bold text-ink-900">{isEdit ? 'Edit' : 'Add'} Period</div>
 

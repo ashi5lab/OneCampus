@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useCreateDisciplineRecord } from '../hooks/useDiscipline';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const SEVERITY_OPTIONS = [
   { value: 'positive', label: 'Positive note' },
   { value: 'minor', label: 'Minor incident' },
@@ -16,6 +17,7 @@ function todayIso() {
 }
 
 export function IncidentFormModal({ onClose }) {
+  useBodyScrollLock();
   const { data: learners } = useLearners();
   const createRecord = useCreateDisciplineRecord();
 
@@ -41,7 +43,7 @@ export function IncidentFormModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
-      <form onSubmit={handleSubmit} className="w-full max-w-[440px] rounded border border-border bg-surface p-6 my-auto">
+      <form onSubmit={handleSubmit} className="w-full max-w-[440px] rounded border-2 border-accent bg-surface p-6 my-auto">
         <div className="mb-4 text-base font-bold text-ink-900">Log Incident</div>
 
         <label className="mb-3 block">

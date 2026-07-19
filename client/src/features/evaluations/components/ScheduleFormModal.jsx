@@ -4,7 +4,9 @@ import { scheduleFormSchema } from '../types';
 import { useModules } from '../../modules/hooks/useModules';
 import { useConfig } from '../../../contexts/ConfigContext';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function ScheduleFormModal({ onClose, onSubmit, submitting, submitError }) {
+  useBodyScrollLock();
   const { t } = useConfig();
   const { data: modules } = useModules();
   const {
@@ -17,7 +19,7 @@ export function ScheduleFormModal({ onClose, onSubmit, submitting, submitError }
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-[420px] rounded border border-border bg-surface p-6"
+        className="w-[420px] rounded border-2 border-accent bg-surface p-6"
       >
         <div className="mb-4 text-base font-bold text-ink-900">Add Schedule</div>
 

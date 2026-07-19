@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useCheckInVisitor } from '../hooks/useVisitors';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function CheckInModal({ onClose }) {
+  useBodyScrollLock();
   const checkIn = useCheckInVisitor();
 
   const [visitorName, setVisitorName] = useState('');
@@ -26,7 +28,7 @@ export function CheckInModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
-      <form onSubmit={handleSubmit} className="w-full max-w-[440px] rounded border border-border bg-surface p-6 my-auto">
+      <form onSubmit={handleSubmit} className="w-full max-w-[440px] rounded border-2 border-accent bg-surface p-6 my-auto">
         <div className="mb-4 text-base font-bold text-ink-900">Check In Visitor</div>
 
         <label className="mb-3 block">

@@ -2,7 +2,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { guardianFormSchema, guardianUpdateSchema } from '../types';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function GuardianFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
+  useBodyScrollLock();
   const isEdit = !!initialData;
   const {
     register,
@@ -17,7 +19,7 @@ export function GuardianFormModal({ onClose, onSubmit, submitting, submitError, 
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-[420px] rounded border border-border bg-surface p-6 my-auto"
+        className="w-full max-w-[420px] rounded border-2 border-accent bg-surface p-6 my-auto"
       >
         <div className="mb-4 text-base font-bold text-ink-900">
           {isEdit ? 'Edit' : 'Add'} Guardian

@@ -2,6 +2,7 @@ import { DataTable } from '../../../components/DataTable';
 import { bulkUploadApi } from '../services/bulkUploadApi';
 import { useBulkUploadJob } from '../hooks/useBulkUpload';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const columns = [
   { key: 'row', header: 'Row', render: (e) => e.row },
   { key: 'identifier', header: 'Name', render: (e) => e.data?.['First Name *'] ? `${e.data['First Name *']} ${e.data['Last Name *'] || ''}`.trim() : '—' },
@@ -9,11 +10,12 @@ const columns = [
 ];
 
 export function JobErrorsModal({ jobId, onClose }) {
+  useBodyScrollLock();
   const { data: job, isLoading } = useBulkUploadJob(jobId);
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
-      <div className="my-auto w-full max-w-[720px] rounded border border-border bg-surface p-6">
+      <div className="my-auto w-full max-w-[720px] rounded border-2 border-accent bg-surface p-6">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <div className="text-base font-bold text-ink-900">Failed rows</div>

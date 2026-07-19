@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { useBorrowers, useIssueLoan } from '../hooks/useLibrary';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const issueSchema = z.object({
   book_id: z.coerce.number().int(),
   borrower_id: z.coerce.number({ invalid_type_error: 'Choose a borrower' }).int(),
@@ -11,6 +12,7 @@ const issueSchema = z.object({
 });
 
 export function IssueLoanModal({ book, onClose }) {
+  useBodyScrollLock();
   const { data: borrowers } = useBorrowers();
   const issueLoan = useIssueLoan();
   const {
@@ -28,7 +30,7 @@ export function IssueLoanModal({ book, onClose }) {
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="my-auto w-full max-w-[420px] rounded border border-border bg-surface p-6"
+        className="my-auto w-full max-w-[420px] rounded border-2 border-accent bg-surface p-6"
       >
         <div className="mb-4 text-base font-bold text-ink-900">Issue "{book.title}"</div>
         <input type="hidden" {...register('book_id')} />

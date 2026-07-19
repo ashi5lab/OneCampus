@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useUpdateLearner } from '../../learners/hooks/useLearners';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 // Reuses the existing generic PUT /learners/:id — there's no dedicated
 // alumni endpoint or table; "alumni" is just another value of
 // onec_learners.status (already a free-text column), same as active/
 // pending/inactive. graduation_year lives in meta, same place gender/dob
 // already do for other optional per-learner details.
 export function MarkAlumniModal({ learner, onClose }) {
+  useBodyScrollLock();
   const updateLearner = useUpdateLearner();
   const [graduationYear, setGraduationYear] = useState(String(new Date().getFullYear()));
 
@@ -30,7 +32,7 @@ export function MarkAlumniModal({ learner, onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
-      <form onSubmit={handleSubmit} className="w-full max-w-[360px] rounded border border-border bg-surface p-6 my-auto">
+      <form onSubmit={handleSubmit} className="w-full max-w-[360px] rounded border-2 border-accent bg-surface p-6 my-auto">
         <div className="mb-1 text-base font-bold text-ink-900">Mark as Alumni</div>
         <div className="mb-4 text-[12.5px] text-ink-500">
           {learner.first_name} {learner.last_name} will move to the Alumni directory. This can be undone from there.

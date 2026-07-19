@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useMyLearners, useBookSlot } from '../hooks/usePtm';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function BookSlotModal({ slot, onClose }) {
+  useBodyScrollLock();
   const { data: learners, isLoading } = useMyLearners();
   const bookSlot = useBookSlot();
   const [learnerId, setLearnerId] = useState('');
@@ -23,7 +25,7 @@ export function BookSlotModal({ slot, onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
-      <form onSubmit={handleSubmit} className="w-full max-w-[380px] rounded border border-border bg-surface p-6 my-auto">
+      <form onSubmit={handleSubmit} className="w-full max-w-[380px] rounded border-2 border-accent bg-surface p-6 my-auto">
         <div className="mb-1 text-base font-bold text-ink-900">Book This Slot</div>
         <div className="mb-4 text-[12.5px] text-ink-500">
           {slot.instructor_first_name} {slot.instructor_last_name} — {slot.slot_date}, {slot.start_time}–{slot.end_time}

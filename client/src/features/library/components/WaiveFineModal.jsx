@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useWaiveFine } from '../hooks/useLibrary';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 // Sets the loan's total waived amount — an overwrite, not additive (see
 // server/modules/library/README.md) — so the field starts pre-filled with
 // whatever's already been waived, not zero, and "Waive full amount" fills
 // in the current raw fine rather than adding to an existing waiver.
 export function WaiveFineModal({ loan, onClose }) {
+  useBodyScrollLock();
   const waiveFine = useWaiveFine();
   const [amount, setAmount] = useState(String(loan.fine_waived_amount || 0));
   const [reason, setReason] = useState(loan.fine_waived_reason || '');
@@ -20,7 +22,7 @@ export function WaiveFineModal({ loan, onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-ink-900/40 p-4 overflow-y-auto">
-      <form onSubmit={handleSubmit} className="w-full max-w-[400px] rounded border border-border bg-surface p-6 my-auto">
+      <form onSubmit={handleSubmit} className="w-full max-w-[400px] rounded border-2 border-accent bg-surface p-6 my-auto">
         <div className="mb-1 text-base font-bold text-ink-900">Waive Fine</div>
         <div className="mb-4 text-[12.5px] text-ink-500">
           {loan.book_title} — {loan.borrower_username} · {loan.days_overdue} day{loan.days_overdue === 1 ? '' : 's'} overdue, {loan.fine_amount} total

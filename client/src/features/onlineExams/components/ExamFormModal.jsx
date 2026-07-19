@@ -4,6 +4,7 @@ import { useModules } from '../../modules/hooks/useModules';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { SearchSelect } from '../../../components/SearchSelect';
 
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 function emptyQuestion(type = 'text') {
   return { question_text: '', question_type: type, options: ['', ''], correct_option: 0, max_score: 1 };
 }
@@ -12,6 +13,7 @@ function emptyQuestion(type = 'text') {
 // arrays are simpler to manage as plain state than as RHF field arrays,
 // and this form has no other fields worth RHF's validation wiring.
 export function ExamFormModal({ onClose, onSubmit, submitting, submitError, initialData = null, questionsLocked = false }) {
+  useBodyScrollLock();
   const { t } = useConfig();
   const { data: modules } = useModules();
   const { data: cohorts } = useCohorts();
@@ -126,7 +128,7 @@ export function ExamFormModal({ onClose, onSubmit, submitting, submitError, init
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-ink-900/40 p-4">
-      <form onSubmit={handleSubmit} className="my-8 w-full max-w-[640px] rounded border border-border bg-surface p-6">
+      <form onSubmit={handleSubmit} className="my-8 w-full max-w-[640px] rounded border-2 border-accent bg-surface p-6">
         <div className="mb-4 text-base font-bold text-ink-900">{isEdit ? 'Edit' : 'Create'} Online Exam</div>
 
         <Field label="Title">
