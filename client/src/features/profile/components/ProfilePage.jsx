@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useConfig } from '../../../contexts/ConfigContext';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 import { ProfilePictureUploader } from './ProfilePictureUploader';
 import {
@@ -14,14 +15,25 @@ import {
   MY_PROFILE_KEY
 } from '../hooks/useProfile';
 
+const TABS = [
+  { key: 'notifications', label: 'Notification Preferences' },
+  { key: 'password', label: 'Change Password' },
+  { key: 'display', label: 'Display' },
+  { key: 'admin', label: 'Admin', adminOnly: true }
+];
+
 // Every authenticated user's own account screen (reached by clicking the
-// avatar/name in the sidebar): profile picture + change-own-password. An
-// admin (users.manage_passwords) additionally gets a reset-any-user's-
-// password section at the bottom.
+// avatar/name in the sidebar) — a settings page with vertical tabs.
+// Notification Preferences is the default tab (not password change), since
+// it's the one every role is most likely to actually want to touch.
+// Force-logout and admin password reset are grouped into one "Admin" tab
+// (users.manage_passwords) rather than kept as standalone cards.
 export function ProfilePage() {
   const { can, profile } = useAuth();
   const { data: me, isLoading, error } = useMyProfile();
   const canManagePasswords = can('users.manage_passwords');
+  const [tab, setTab] = useState('notifications');
+
   // Learners/instructors also have an academic profile page (marks,
   // attendance, insights) — link across to it from the account screen.
   const insightsLink = profile?.learnerId
@@ -33,11 +45,14 @@ export function ProfilePage() {
   if (isLoading) return <div className="p-8 text-center text-sm text-ink-500">Loading…</div>;
   if (error) return <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>;
 
+  const visibleTabs = TABS.filter((t) => !t.adminOnly || canManagePasswords);
+  const activeTab = visibleTabs.find((t) => t.key === tab) ? tab : 'notifications';
+
   return (
-    <div className="max-w-[560px]">
+    <div className="max-w-[860px]">
       <div className="mb-6">
         <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Account</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">My Profile</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Settings</h1>
       </div>
 
       <div className="mb-5 rounded border border-border bg-surface p-5">
@@ -65,11 +80,34 @@ export function ProfilePage() {
         )}
       </div>
 
-      <ChangePasswordCard />
-      <NotificationPreferencesCard />
+      <div className="flex flex-col gap-5 sm:flex-row">
+        <div className="flex flex-row gap-1 overflow-x-auto sm:w-[190px] sm:flex-shrink-0 sm:flex-col sm:overflow-visible">
+          {visibleTabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={`whitespace-nowrap rounded px-3 py-2 text-left text-[13px] font-semibold transition-colors ${
+                activeTab === t.key ? 'bg-accent/15 text-accent-dark' : 'text-ink-700 hover:bg-surface-muted'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-      {canManagePasswords && <AdminPasswordResetCard />}
-      {canManagePasswords && <ForceLogoutCard />}
+        <div className="min-w-0 flex-1">
+          {activeTab === 'notifications' && <NotificationPreferencesCard />}
+          {activeTab === 'password' && <ChangePasswordCard />}
+          {activeTab === 'display' && <DisplayCard />}
+          {activeTab === 'admin' && canManagePasswords && (
+            <div className="space-y-5">
+              <AdminPasswordResetCard />
+              <ForceLogoutCard />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -103,7 +141,7 @@ function ChangePasswordCard() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-5 rounded border border-border bg-surface p-5">
+    <form onSubmit={handleSubmit} className="rounded border border-border bg-surface p-5">
       <div className="mb-3 text-[15px] font-bold text-ink-900">Change Password</div>
 
       <Field label="Current Password">
@@ -146,7 +184,7 @@ function NotificationPreferencesCard() {
   const showWhatsapp = prefs.whatsapp_opt_in !== null;
 
   return (
-    <div className="mb-5 rounded border border-border bg-surface p-5">
+    <div className="rounded border border-border bg-surface p-5">
       <div className="mb-1 text-[15px] font-bold text-ink-900">Notification Preferences</div>
       <div className="mb-3 text-[12px] text-ink-500">Control which broadcast channels you receive.</div>
 
@@ -183,6 +221,67 @@ function NotificationPreferencesCard() {
   );
 }
 
+// The slider applies live (via ConfigContext's zoom effect, same
+// instant-apply pattern as the theme switcher) rather than needing a Save
+// button — there's no server round-trip, it's a per-device localStorage
+// preference. The preview block below is styled directly from fontScale
+// rather than relying on the reader noticing the whole page just resized,
+// so there's still an explicit "here's what this looks like" reference.
+function DisplayCard() {
+  const { fontScale, setFontScale, defaultFontScale } = useConfig();
+
+  return (
+    <div className="rounded border border-border bg-surface p-5">
+      <div className="mb-1 text-[15px] font-bold text-ink-900">Text Size</div>
+      <div className="mb-4 text-[12px] text-ink-500">
+        Adjust the size of text throughout the app. Applies immediately and is remembered on this device.
+      </div>
+
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-ink-500">Smaller</span>
+        <span className="text-[13px] font-bold text-ink-900">{fontScale}%</span>
+        <span className="text-[11px] font-semibold text-ink-500">Larger</span>
+      </div>
+      <input
+        type="range"
+        min={85}
+        max={140}
+        step={5}
+        value={fontScale}
+        onChange={(e) => setFontScale(Number(e.target.value))}
+        className="w-full accent-accent"
+      />
+
+      {fontScale !== defaultFontScale && (
+        <button
+          type="button"
+          onClick={() => setFontScale(defaultFontScale)}
+          className="mt-3 text-[11px] font-semibold text-accent-dark hover:underline"
+        >
+          Reset to default (100%)
+        </button>
+      )}
+
+      <div className="mt-5 rounded border border-border bg-surface-muted p-4">
+        <div className="mb-2 text-[10.5px] font-bold uppercase tracking-wide text-ink-500">Preview</div>
+        <div style={{ fontSize: `${(15 * fontScale) / 100}px` }} className="font-bold text-ink-900">
+          Sample Heading
+        </div>
+        <div style={{ fontSize: `${(13 * fontScale) / 100}px` }} className="mt-1 text-ink-700">
+          This is how regular text will look across the app at this size.
+        </div>
+        <button
+          type="button"
+          style={{ fontSize: `${(12 * fontScale) / 100}px` }}
+          className="mt-3 rounded bg-accent px-3 py-1.5 font-semibold text-accent-ink"
+        >
+          Sample Button
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AdminPasswordResetCard() {
   const { data: users } = useAllUsers({ enabled: true });
   const adminChangePassword = useAdminChangePassword();
@@ -214,7 +313,7 @@ function AdminPasswordResetCard() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-5 rounded border border-border bg-surface p-5">
+    <form onSubmit={handleSubmit} className="rounded border border-border bg-surface p-5">
       <div className="mb-1 text-[15px] font-bold text-ink-900">Reset a User's Password</div>
       <div className="mb-3 text-[12px] text-ink-500">
         Admin only — sets a new password for any user in this organisation without needing their current one.
@@ -273,7 +372,7 @@ function ForceLogoutCard() {
   }
 
   return (
-    <div className="mb-5 rounded border border-border bg-surface p-5">
+    <div className="rounded border border-border bg-surface p-5">
       <div className="mb-1 text-[15px] font-bold text-ink-900">Force Logout</div>
       <div className="mb-3 text-[12px] text-ink-500">
         Admin only — ends a user's session on every device immediately, without changing their password.
