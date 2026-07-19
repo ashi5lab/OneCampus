@@ -82,6 +82,22 @@ CREATE TABLE onec_learner_guardian_map (
     PRIMARY KEY (learner_id, guardian_id)
 );
 
+-- A teacher can teach multiple subjects, and a class can have multiple
+-- teachers assigned to it — independent of any specific scheduled Timetable
+-- period (see onec_allocations below, which ties instructor+module+cohort
+-- together but only for an actual scheduled slot).
+CREATE TABLE onec_instructor_modules (
+    instructor_id INT REFERENCES onec_instructors(id) ON DELETE CASCADE,
+    module_id INT REFERENCES onec_modules(id) ON DELETE CASCADE,
+    PRIMARY KEY (instructor_id, module_id)
+);
+
+CREATE TABLE onec_instructor_cohorts (
+    instructor_id INT REFERENCES onec_instructors(id) ON DELETE CASCADE,
+    cohort_id INT REFERENCES onec_cohorts(id) ON DELETE CASCADE,
+    PRIMARY KEY (instructor_id, cohort_id)
+);
+
 -- The Timetable module (see server/modules/timetable). start_date/end_date
 -- are optional: null on both (the common case) means the weekly pattern
 -- in schedule_data applies for the whole time_block; setting them scopes

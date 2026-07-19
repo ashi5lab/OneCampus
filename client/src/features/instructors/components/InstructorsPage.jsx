@@ -5,44 +5,131 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { useInstructors, useCreateInstructor, useUpdateInstructor, useDeleteInstructor, useSetInstructorDesignation } from '../hooks/useInstructors';
+import { useModules } from '../../modules/hooks/useModules';
+import { useInstructorModules } from '../hooks/useInstructorModules';
 import { InstructorFormModal } from './InstructorFormModal';
+import { InstructorModulesModal } from './InstructorModulesModal';
 import { StaffPage } from '../../staff/components/StaffPage';
 import { DesignationPicker } from '../../../components/DesignationPicker';
 
 const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
 
-const TABS = [
-  { value: 'teachers', label: 'Teachers' },
-  { value: 'staff', label: 'Staff' }
-];
-
-// Same URL (/app/instructors) and permission gate as before "Staff" existed
-// — only adds a tab switcher, and only for callers who can actually see the
-// Staff tab (staff.view), so most roles see exactly what they saw before.
+// Same URL (/app/instructors) and permission gates as before "Staff"/
+// "Teacher Subjects" existed — only adds tabs, and only for callers who can
+// actually see them (staff.view / instructor_modules.view), so most roles
+// see exactly what they saw before.
 export function InstructorsPage() {
+  const { t } = useConfig();
   const { can } = useAuth();
   const showStaffTab = can('staff.view');
+  const showTeacherSubjectsTab = can('instructor_modules.view');
+  const tabs = [
+    { value: 'teachers', label: t('instructors') },
+    ...(showStaffTab ? [{ value: 'staff', label: 'Staff' }] : []),
+    ...(showTeacherSubjectsTab ? [{ value: 'teacherSubjects', label: `${t('instructor')} ${t('topics')}` }] : [])
+  ];
   const [tab, setTab] = useState('teachers');
 
   return (
     <div>
-      {showStaffTab && (
+      {tabs.length > 1 && (
         <div className="mb-5 flex gap-2">
-          {TABS.map((t) => (
+          {tabs.map((tabOption) => (
             <button
-              key={t.value}
-              onClick={() => setTab(t.value)}
+              key={tabOption.value}
+              onClick={() => setTab(tabOption.value)}
               className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
-                tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
+                tab === tabOption.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
               }`}
             >
-              {t.label}
+              {tabOption.label}
             </button>
           ))}
         </div>
       )}
 
-      {tab === 'teachers' || !showStaffTab ? <TeachersTab /> : <StaffPage />}
+      {tab === 'staff' && showStaffTab && <StaffPage />}
+      {tab === 'teacherSubjects' && showTeacherSubjectsTab && <TeacherSubjectsTab />}
+      {(tab === 'teachers' || (tab === 'staff' && !showStaffTab) || (tab === 'teacherSubjects' && !showTeacherSubjectsTab)) && <TeachersTab />}
+    </div>
+  );
+}
+
+// Roster of every teacher with their currently assigned subjects — "Manage"
+// opens InstructorModulesModal to add/remove onec_instructor_modules links
+// for that one teacher, same relationship InstructorFormModal seeds at
+// creation time.
+function TeacherSubjectsTab() {
+  const { t } = useConfig();
+  const { can } = useAuth();
+  const { data: instructors, isLoading: instructorsLoading, error } = useInstructors();
+  const { data: modules } = useModules();
+  const { data: links, isLoading: linksLoading } = useInstructorModules();
+  const [managingInstructor, setManagingInstructor] = useState(null);
+
+  const isLoading = instructorsLoading || linksLoading;
+  const moduleNameById = new Map((modules || []).map((module) => [module.id, module.name]));
+
+  const columns = [
+    {
+      key: 'name',
+      header: t('instructor'),
+      render: (row) => (
+        <div>
+          <div className="font-semibold">{row.first_name} {row.last_name}</div>
+          <div className="font-mono text-[11.5px] text-ink-500">{row.staff_id}</div>
+        </div>
+      )
+    },
+    {
+      key: 'subjects',
+      header: t('topics'),
+      render: (row) => {
+        const names = (links || [])
+          .filter((link) => link.instructor_id === row.id)
+          .map((link) => moduleNameById.get(link.module_id))
+          .filter(Boolean);
+        if (names.length === 0) return <span className="text-ink-500">—</span>;
+        return (
+          <div className="flex flex-wrap gap-1.5">
+            {names.map((name) => (
+              <span key={name} className="rounded-full bg-surface-muted px-2.5 py-0.5 text-[11.5px] font-semibold text-ink-700">
+                {name}
+              </span>
+            ))}
+          </div>
+        );
+      }
+    }
+  ];
+
+  if (can('instructor_modules.manage')) {
+    columns.push({
+      key: 'actions',
+      header: '',
+      render: (row) => (
+        <div className="flex justify-end">
+          <button onClick={() => setManagingInstructor(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
+            Manage
+          </button>
+        </div>
+      )
+    });
+  }
+
+  return (
+    <div>
+      <div className="mb-6 overflow-hidden rounded border border-border bg-surface">
+        {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
+        {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
+        {instructors && (
+          <DataTable columns={columns} rows={instructors} rowKey={(row) => row.id} emptyMessage={`No ${t('instructors').toLowerCase()} yet.`} />
+        )}
+      </div>
+
+      {managingInstructor && (
+        <InstructorModulesModal instructor={managingInstructor} onClose={() => setManagingInstructor(null)} />
+      )}
     </div>
   );
 }

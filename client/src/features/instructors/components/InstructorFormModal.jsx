@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { instructorFormSchema, instructorUpdateSchema } from '../types';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useModules } from '../../modules/hooks/useModules';
 
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 export function InstructorFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
@@ -17,11 +19,27 @@ export function InstructorFormModal({ onClose, onSubmit, submitting, submitError
     defaultValues: initialData ? { ...initialData, gender: initialData.meta?.gender || '' } : {}
   });
 
+  // Only offered at creation — an existing teacher's subjects are managed
+  // afterward via the "Subjects" tab on their profile page (which also
+  // covers the same onec_instructor_modules relationship this seeds here).
+  const { data: modules } = useModules({ enabled: !isEdit });
+  const [selectedModuleIds, setSelectedModuleIds] = useState([]);
+
+  function toggleModule(moduleId) {
+    setSelectedModuleIds((current) =>
+      current.includes(moduleId) ? current.filter((id) => id !== moduleId) : [...current, moduleId]
+    );
+  }
+
   // `meta` is a JSONB grab-bag — merge the new gender into whatever was
   // already there instead of overwriting it (previously this form never
   // sent `meta` at all, so every edit silently reset it to {}).
   function handleFormSubmit({ gender, ...values }) {
-    onSubmit({ ...values, meta: { ...(initialData?.meta || {}), gender: gender || undefined } });
+    onSubmit({
+      ...values,
+      meta: { ...(initialData?.meta || {}), gender: gender || undefined },
+      ...(isEdit ? {} : { module_ids: selectedModuleIds })
+    });
   }
 
   return (
@@ -67,6 +85,27 @@ export function InstructorFormModal({ onClose, onSubmit, submitting, submitError
             <option value="other">Other</option>
           </select>
         </Field>
+
+        {!isEdit && (
+          <div className="mb-3">
+            <div className="mb-1 text-xs font-semibold text-ink-700">{t('topics')} (optional)</div>
+            <div className="max-h-[160px] overflow-y-auto rounded border border-border p-2">
+              {(modules || []).length === 0 && (
+                <div className="px-1 py-1.5 text-[12.5px] text-ink-500">No {t('topics').toLowerCase()} set up yet.</div>
+              )}
+              {(modules || []).map((module) => (
+                <label key={module.id} className="flex items-center gap-2 rounded px-1 py-1.5 text-[13px] text-ink-900 hover:bg-surface-muted">
+                  <input
+                    type="checkbox"
+                    checked={selectedModuleIds.includes(module.id)}
+                    onChange={() => toggleModule(module.id)}
+                  />
+                  {module.name}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         {submitError && (
           <div className="mb-3 text-xs font-semibold text-danger">{submitError}</div>
