@@ -11,21 +11,31 @@
          blank inset — required for env(safe-area-inset-*) below to have a
          nonzero value to read. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <!-- Matches --bg (theme.css) — the mobile header (Layout.jsx) has no
-         background of its own and shows the page's --bg through, so
-         theme-color (which tints Safari/Android's own chrome above the
-         app) needs to match that, not a separate white "surface", or the
-         OS-drawn status bar reads as a visually distinct box sitting on
-         top of the app instead of one continuous top area. -->
-    <meta name="theme-color" content="#F5F6F8" />
+    <!-- Initial/pre-JS values — ConfigContext.jsx overwrites both of these
+         at runtime to track the active theme's --sidebar-bg (e.g. slate's
+         navy #1C2230), the same color the mobile header/nav drawer paint
+         full-bleed under the status bar. These defaults match the "slate"
+         theme so there's no flash of the wrong color before React mounts. -->
+    <meta name="theme-color" content="#1C2230" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <!-- iOS ignores the web app manifest for "Add to Home Screen" — these
          three tags are what actually control its standalone icon/display
          mode/status bar; vite-plugin-pwa's manifest.webmanifest only
-         covers Android/Chrome install. -->
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+         covers Android/Chrome install.
+         black-translucent makes the status bar a transparent overlay (app
+         content, incl. the header/drawer's own background, extends fully
+         underneath it) instead of an opaque OS-painted strip — this is what
+         actually achieves the edge-to-edge "one continuous bar" look (e.g.
+         Outlook). Its one hard constraint: the status bar's own icons
+         (time/battery/signal) always render white once translucent, with no
+         way to request dark icons — so this only works where the top of the
+         page has a sufficiently dark/colored background for them to sit on.
+         Themes
+         with a light --sidebar-bg (see theme.css's theme-purple) get
+         switched back to 'default' (opaque, black icons) by ConfigContext,
+         since white-on-white icons would be unreadable there. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="OneCampus" />
     <title>OneCampus</title>
   </head>

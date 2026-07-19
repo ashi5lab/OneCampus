@@ -16,11 +16,13 @@ export default defineConfig({
         name: 'OneCampus',
         short_name: 'OneCampus',
         description: 'OneCampus Management System',
-        // Matches --bg (theme.css) — see index.html's theme-color meta tag
-        // for why: the mobile header has no background of its own, so this
-        // needs to match the page background it shows through to, not a
-        // separate white "surface".
-        theme_color: '#F5F6F8',
+        // Static fallback for the initial launch/task-switcher tint, before
+        // ConfigContext.jsx can update the live <meta name="theme-color">
+        // tag to track the active theme — matches the default "slate"
+        // theme's --sidebar-bg. background_color (splash screen) stays on
+        // the light page background since that's what's behind the logo
+        // while the app is still loading, not the header bar.
+        theme_color: '#1C2230',
         background_color: '#F5F6F8',
         display: 'standalone',
         // Keeps an installed app anchored to the tenant app shell rather
