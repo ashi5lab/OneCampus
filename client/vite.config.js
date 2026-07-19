@@ -26,7 +26,7 @@ export default defineConfig({
         // screen design; see index.html's apple-touch-startup-image for the
         // matching iOS version, which needs an explicit image rather than
         // relying on the manifest.
-        theme_color: '#1C2230',
+        theme_color: '#FFFFFF',
         background_color: '#FFFFFF',
         display: 'standalone',
         // Keeps an installed app anchored to the tenant app shell rather

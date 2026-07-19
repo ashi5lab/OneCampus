@@ -12,18 +12,18 @@ function ShareSheetIllustration() {
       <circle cx="160" cy="23" r="4" fill="#8A93A3" />
       <rect x="0" y="44" width="320" height="1" fill="#E5E8ED" />
 
-      <rect x="16" y="58" width="288" height="34" rx="8" fill="#FFFFFF" stroke="#E5A331" strokeWidth="2" />
-      <path d="M32 68v14M25 75h14" stroke="#E5A331" strokeWidth="2.4" strokeLinecap="round" />
-      <text x="48" y="79" fontFamily="sans-serif" fontSize="12" fill="#1C2230">Share</text>
+      <rect x="16" y="58" width="288" height="34" rx="8" fill="#FFFFFF" stroke="#4F46E5" strokeWidth="2" />
+      <path d="M32 68v14M25 75h14" stroke="#4F46E5" strokeWidth="2.4" strokeLinecap="round" />
+      <text x="48" y="79" fontFamily="sans-serif" fontSize="12" fill="#191924">Share</text>
       <text x="270" y="79" fontFamily="sans-serif" fontSize="10" fill="#8A93A3" textAnchor="end">tap this</text>
 
       <rect x="16" y="102" width="288" height="1" fill="#E5E8ED" />
 
-      <rect x="16" y="112" width="288" height="34" rx="8" fill="#FFF7E8" stroke="#E5A331" strokeWidth="2" />
-      <rect x="27" y="121" width="16" height="16" rx="3" fill="#E5A331" />
-      <path d="M35 125v8M31 129h8" stroke="#1C2230" strokeWidth="1.8" strokeLinecap="round" />
-      <text x="52" y="133" fontFamily="sans-serif" fontSize="12" fill="#1C2230" fontWeight="bold">Add to Home Screen</text>
-      <text x="270" y="133" fontFamily="sans-serif" fontSize="10" fill="#B8860B" textAnchor="end">then this</text>
+      <rect x="16" y="112" width="288" height="34" rx="8" fill="#EAE9FF" stroke="#4F46E5" strokeWidth="2" />
+      <rect x="27" y="121" width="16" height="16" rx="3" fill="#4F46E5" />
+      <path d="M35 125v8M31 129h8" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
+      <text x="52" y="133" fontFamily="sans-serif" fontSize="12" fill="#191924" fontWeight="bold">Add to Home Screen</text>
+      <text x="270" y="133" fontFamily="sans-serif" fontSize="10" fill="#4338CA" textAnchor="end">then this</text>
 
       <rect x="16" y="156" width="288" height="18" rx="4" fill="#FFFFFF" stroke="#E5E8ED" />
     </svg>
