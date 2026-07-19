@@ -30,13 +30,23 @@
          (time/battery/signal) always render white once translucent, with no
          way to request dark icons — so this only works where the top of the
          page has a sufficiently dark/colored background for them to sit on.
-         Themes
-         with a light --sidebar-bg (see theme.css's theme-purple) get
+         Themes with a light --sidebar-bg (see theme.css's theme-purple) get
          switched back to 'default' (opaque, black icons) by ConfigContext,
          since white-on-white icons would be unreadable there. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="OneCampus" />
+    <!-- Launch screen shown while the installed PWA is starting, before
+         index.css/main.jsx paint anything — only applies to a standalone/
+         home-screen launch, exactly like the three tags above; visiting the
+         site as a normal Safari tab never shows this. iOS doesn't derive a
+         launch screen from the web manifest the way Android does, so it
+         needs this explicit image (white background + the same OC mark/
+         wordmark as icon-512x512.svg, generated at client/public/apple-
+         splash-1284x2778.png). No media query — Safari scales/letterboxes
+         it to fit any device, and since both the image and the fallback
+         background are solid white, any letterboxing is invisible. -->
+    <link rel="apple-touch-startup-image" href="/apple-splash-1284x2778.png" />
     <title>OneCampus</title>
   </head>
   <body>
