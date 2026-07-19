@@ -276,7 +276,7 @@ export function TimetablePage() {
             {canManage && selectedCohortId && (
               <button
                 onClick={() => setModalState({ period: null, prefill: null, cohortId: selectedCohortId })}
-                className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+                className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
               >
                 + Add Period
               </button>

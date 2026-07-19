@@ -283,21 +283,21 @@ function DisplayCard() {
   );
 }
 
-// Tenant-wide sidebar customization lives on its own page (the picker over
-// every optional nav item doesn't fit this card-stack layout) — this is
+// Tenant-wide dashboard customization lives on its own page (the picker
+// over every optional module doesn't fit this card-stack layout) — this is
 // just the entry point into it, grouped with the other admin-only actions.
 function ManageSidebarCard() {
   return (
     <div className="rounded border border-border bg-surface p-5">
-      <div className="mb-1 text-[15px] font-bold text-ink-900">Manage Sidebar</div>
+      <div className="mb-1 text-[15px] font-bold text-ink-900">Manage Dashboard Apps</div>
       <div className="mb-3 text-[12px] text-ink-500">
-        Admin only — choose which navigation items appear in the sidebar for everyone in your organisation.
+        Admin only — choose which modules appear on the Home dashboard for everyone in your organisation.
       </div>
       <Link
-        to="/app/manage-sidebar"
-        className="inline-block rounded bg-accent px-4 py-2 text-xs font-semibold text-accent-ink"
+        to="/app/manage-dashboard-apps"
+        className="inline-block rounded-full bg-accent px-4 py-2 text-xs font-semibold text-accent-ink"
       >
-        Manage Sidebar
+        Manage Dashboard Apps
       </Link>
     </div>
   );

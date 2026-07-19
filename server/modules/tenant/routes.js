@@ -9,9 +9,10 @@ const requirePermission = require('../../middleware/permissionGuard');
 router.get('/config', controller.getConfig);
 
 // users.manage_passwords is the same permission the "Admin" tab on the
-// account Settings page is gated behind — Manage Sidebar lives there too,
-// so this stays consistent with that existing "tenant-wide admin action"
-// grouping rather than introducing a new granular permission for one page.
-router.patch('/config/sidebar-links', auth, requirePermission('users.manage_passwords'), controller.updateSidebarLinks);
+// account Settings page is gated behind — Manage Dashboard Apps lives there
+// too, so this stays consistent with that existing "tenant-wide admin
+// action" grouping rather than introducing a new granular permission for
+// one page.
+router.patch('/config/dashboard-apps', auth, requirePermission('users.manage_passwords'), controller.updateDashboardApps);
 
 module.exports = router;
