@@ -28,3 +28,11 @@ export function useDeleteGuardian() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guardians'] })
   });
 }
+
+export function useGuardianProfile(id) {
+  return useQuery({
+    queryKey: ['guardians', id, 'profile'],
+    queryFn: () => guardiansApi.getProfile(id),
+    enabled: id !== undefined && id !== null
+  });
+}
