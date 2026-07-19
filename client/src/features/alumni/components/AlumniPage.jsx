@@ -4,6 +4,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
+import { Avatar } from '../../../components/Avatar';
 import { useLearners, useUpdateLearner } from '../../learners/hooks/useLearners';
 
 // The alumni directory is just the learners list filtered to status=alumni —
@@ -45,9 +46,12 @@ export function AlumniPage() {
       key: 'name',
       header: t('learner'),
       render: (row) => (
-        <Link to={`/app/learners/${row.id}`} className="hover:underline">
-          <div className="font-semibold">{row.first_name} {row.last_name}</div>
-          <div className="font-mono text-[11.5px] text-ink-500">{row.registry_no}</div>
+        <Link to={`/app/learners/${row.id}`} className="flex items-center gap-2.5 hover:underline">
+          <Avatar name={`${row.first_name} ${row.last_name}`} src={row.profile_picture_url} size={32} />
+          <div>
+            <div className="font-semibold">{row.first_name} {row.last_name}</div>
+            <div className="font-mono text-[11.5px] text-ink-500">{row.registry_no}</div>
+          </div>
         </Link>
       )
     },

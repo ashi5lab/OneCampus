@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
+import { Avatar } from '../../../components/Avatar';
 import { useStaff, useCreateStaff, useUpdateStaff, useDeleteStaff, useSetStaffDesignation } from '../hooks/useStaff';
 import { StaffFormModal } from './StaffFormModal';
 import { DesignationPicker } from '../../../components/DesignationPicker';
@@ -39,9 +40,12 @@ export function StaffPage() {
       key: 'name',
       header: 'Staff Member',
       render: (row) => (
-        <div>
-          <div className="font-semibold">{row.first_name} {row.last_name}</div>
-          <div className="font-mono text-[11.5px] text-ink-500">{row.staff_id}</div>
+        <div className="flex items-center gap-2.5">
+          <Avatar name={`${row.first_name} ${row.last_name}`} src={row.profile_picture_url} size={32} />
+          <div>
+            <div className="font-semibold">{row.first_name} {row.last_name}</div>
+            <div className="font-mono text-[11.5px] text-ink-500">{row.staff_id}</div>
+          </div>
         </div>
       )
     },

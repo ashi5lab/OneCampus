@@ -62,17 +62,17 @@ async function getAll(req, res) {
       conditions.push(`l.status = $${params.length}`);
     }
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const baseQuery = `FROM onec_learners l LEFT JOIN onec_cohorts c ON l.cohort_id = c.id ${whereClause}`;
+    const baseQuery = `FROM onec_learners l LEFT JOIN onec_cohorts c ON l.cohort_id = c.id LEFT JOIN onec_users u ON l.user_id = u.id ${whereClause}`;
 
     if (!pagination) {
-      const result = await req.db.query(`SELECT l.*, c.name AS cohort_name ${baseQuery} ORDER BY l.id DESC`, params);
+      const result = await req.db.query(`SELECT l.*, c.name AS cohort_name, u.profile_picture_url ${baseQuery} ORDER BY l.id DESC`, params);
       return res.json({ data: result.rows });
     }
 
     const pageParams = [...params, pagination.limit, pagination.offset];
     const [rows, count] = await Promise.all([
       req.db.query(
-        `SELECT l.*, c.name AS cohort_name ${baseQuery} ORDER BY l.id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+        `SELECT l.*, c.name AS cohort_name, u.profile_picture_url ${baseQuery} ORDER BY l.id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
         pageParams
       ),
       req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`, params)

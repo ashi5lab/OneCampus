@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
+import { Avatar } from '../../../components/Avatar';
 import { useGuardians, useCreateGuardian, useUpdateGuardian, useDeleteGuardian } from '../hooks/useGuardians';
 import { useGuardianLinks } from '../hooks/useGuardianLinks';
 import { useLearners } from '../../learners/hooks/useLearners';
@@ -31,9 +32,12 @@ export function GuardiansPage() {
       key: 'name',
       header: 'Guardian',
       render: (row) => (
-        <div>
-          <div className="font-semibold">{row.first_name} {row.last_name}</div>
-          <div className="font-mono text-[11.5px] text-ink-500">{row.phone}</div>
+        <div className="flex items-center gap-2.5">
+          <Avatar name={`${row.first_name} ${row.last_name}`} src={row.profile_picture_url} size={32} />
+          <div>
+            <div className="font-semibold">{row.first_name} {row.last_name}</div>
+            <div className="font-mono text-[11.5px] text-ink-500">{row.phone}</div>
+          </div>
         </div>
       )
     },
