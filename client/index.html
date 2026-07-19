@@ -11,7 +11,13 @@
          blank inset — required for env(safe-area-inset-*) below to have a
          nonzero value to read. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#F5F6F8" />
+    <!-- Matches --surface (the mobile header/nav drawer's actual
+         background across every theme in theme.css), not --bg (the general
+         page background) — theme-color tints Safari/Android's own chrome
+         above the app, and it was set to --bg (#F5F6F8, a visibly distinct
+         light gray), creating a seam against the white header directly
+         below it. -->
+    <meta name="theme-color" content="#FFFFFF" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <!-- iOS ignores the web app manifest for "Add to Home Screen" — these
          three tags are what actually control its standalone icon/display
