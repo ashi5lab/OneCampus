@@ -55,8 +55,13 @@ export function Sidebar({ isOpen, onClose }) {
       {/* Sidebar Content — its own scroll container (overflow-y-auto +
           md:h-screen) so a long page's scroll doesn't drag the nav along
           with it; see Layout.jsx's matching md:overflow-y-auto on the main
-          content column. */}
-      <div className={`fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar-bg px-4 py-6 text-sidebar-textStrong transition-transform duration-300 md:relative md:h-screen md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          content column. pt-[max(...)] keeps the 24px design padding on
+          browsers/desktop while growing to clear the status bar/notch when
+          running as an edge-to-edge standalone PWA on iOS. */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar-bg px-4 pb-6 text-sidebar-textStrong transition-transform duration-300 md:relative md:h-screen md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+      >
         <div className="mb-7 flex items-center justify-between px-2">
           <div>
             <div className="text-[15px] font-semibold tracking-tight">
