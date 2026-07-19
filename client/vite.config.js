@@ -16,10 +16,11 @@ export default defineConfig({
         name: 'OneCampus',
         short_name: 'OneCampus',
         description: 'OneCampus Management System',
-        // Matches --surface (white, the mobile header/nav drawer's actual
-        // background), not --bg — see index.html's theme-color meta tag for
-        // the matching iOS fix and why.
-        theme_color: '#FFFFFF',
+        // Matches --bg (theme.css) — see index.html's theme-color meta tag
+        // for why: the mobile header has no background of its own, so this
+        // needs to match the page background it shows through to, not a
+        // separate white "surface".
+        theme_color: '#F5F6F8',
         background_color: '#F5F6F8',
         display: 'standalone',
         // Keeps an installed app anchored to the tenant app shell rather
