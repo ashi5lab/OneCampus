@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomTabBar } from './BottomTabBar';
@@ -14,6 +15,19 @@ export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const isRoot = ROOT_PATHS.includes(location.pathname);
+  const contentRef = useRef(null);
+
+  // Client-side route changes don't reset scroll position the way a full
+  // page load does. On mobile the document itself scrolls, but on desktop
+  // it's this content pane's own overflow-y-auto — a scrollTop carried over
+  // from a long previous page (e.g. a big roster) lands you mid-scroll on
+  // whatever's next, with its heading pushed up above the visible area
+  // ("cut off"). Resetting both on every navigation is what a normal
+  // (non-SPA) page load would do for free.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    contentRef.current?.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
     <div className="flex min-h-screen flex-col bg-bg font-body text-ink-900 md:grid md:h-screen md:grid-cols-[248px_1fr] md:overflow-hidden">
@@ -29,7 +43,8 @@ export function Layout() {
           env(safe-area-inset-bottom) and the bottom tab bar's height, so
           content never sits behind either. */}
       <div
-        className="mx-auto w-full max-w-[1180px] px-4 py-4 sm:px-6 md:overflow-y-auto md:px-9 md:py-7"
+        ref={contentRef}
+        className="mx-auto w-full max-w-[1180px] px-4 pb-4 pt-5 sm:px-6 md:overflow-y-auto md:px-9 md:py-7"
         style={{ paddingBottom: 'max(4.5rem, calc(3.75rem + env(safe-area-inset-bottom)))' }}
       >
         {!isRoot && (
