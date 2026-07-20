@@ -7,6 +7,7 @@
 const { hasPermission } = require('../../lib/permissions');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
 const { computeFine } = require('../../lib/libraryFines');
+const { getMyCohorts } = require('../../lib/myCohorts');
 
 async function overview(req, res) {
   try {
@@ -302,16 +303,51 @@ async function dashboardMine(req, res) {
   const role = req.user.role;
 
   if (role === 'instructor') {
-    const [stats, myClasses] = await Promise.all([
+    const myCohorts = await getMyCohorts(req);
+    const cohortIds = myCohorts.map((c) => c.id);
+    const [stats, pendingSubmissions, ownLeave] = await Promise.all([
       req.db.query(
         `SELECT
            (SELECT COUNT(*) FROM onec_attendance WHERE marked_by = $1 AND date >= CURRENT_DATE - INTERVAL '7 days') AS attendance_marked,
            (SELECT COUNT(*) FROM onec_learner_scores WHERE graded_by = $1) AS scores_graded`,
         [req.user.userId]
       ),
-      req.db.query(`SELECT id, name FROM onec_cohorts WHERE advisor_id = $1`, [req.user.userId])
+      cohortIds.length > 0
+        ? req.db.query(
+            `SELECT a.id, a.title, m.name AS module_name,
+                    COUNT(sub.*) FILTER (WHERE sub.submitted_at IS NOT NULL AND sub.score_obtained IS NULL) AS ungraded_count
+             FROM onec_assignments a
+             JOIN onec_modules m ON a.module_id = m.id
+             LEFT JOIN onec_assignment_submissions sub ON sub.assignment_id = a.id
+             WHERE a.cohort_id = ANY($1)
+             GROUP BY a.id, a.title, m.name
+             HAVING COUNT(sub.*) FILTER (WHERE sub.submitted_at IS NOT NULL AND sub.score_obtained IS NULL) > 0
+             ORDER BY a.due_date DESC LIMIT 5`,
+            [cohortIds]
+          )
+        : { rows: [] },
+      req.db.query(
+        `SELECT id, leave_type, start_date FROM onec_leave_requests WHERE user_id = $1 AND status = 'pending' ORDER BY created_at DESC LIMIT 3`,
+        [req.user.userId]
+      )
     ]);
-    return res.json({ data: { scope: 'instructor', stats: stats.rows[0], myClasses: myClasses.rows } });
+
+    const pendingActions = [
+      ...pendingSubmissions.rows.map((row) => ({
+        type: 'grading',
+        title: `Grade: ${row.title}`,
+        subtitle: `${row.ungraded_count} submission${row.ungraded_count === '1' ? '' : 's'} awaiting grading · ${row.module_name}`
+      })),
+      ...ownLeave.rows.map((row) => ({
+        type: 'leave',
+        title: `Leave request — ${row.leave_type}`,
+        subtitle: `Starting ${row.start_date} · Awaiting approval`
+      }))
+    ];
+
+    return res.json({
+      data: { scope: 'instructor', stats: stats.rows[0], myClasses: myCohorts, pendingActions }
+    });
   }
 
   if (role === 'learner') {
@@ -319,19 +355,73 @@ async function dashboardMine(req, res) {
     const learner = learnerResult.rows[0];
     if (!learner) return res.json({ data: { scope: 'learner', stats: null } });
 
-    const stats = await req.db.query(
-      `SELECT
-         (SELECT COUNT(*) FILTER (WHERE status = 'present') FROM onec_attendance WHERE learner_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days') AS present_30d,
-         (SELECT COUNT(*) FROM onec_attendance WHERE learner_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days') AS marked_30d,
-         (SELECT COUNT(*) FROM onec_assignments a WHERE a.cohort_id = $2 AND a.due_date >= CURRENT_DATE) AS assignments_open,
-         (SELECT COUNT(*) FROM onec_online_exams e WHERE e.cohort_id = $2 AND e.published = true) AS exams_published`,
-      [learner.id, learner.cohort_id]
-    );
+    const [stats, academicByModule, dueAssignments, upcomingExams, ownLeave] = await Promise.all([
+      req.db.query(
+        `SELECT
+           (SELECT COUNT(*) FILTER (WHERE status = 'present') FROM onec_attendance WHERE learner_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days') AS present_30d,
+           (SELECT COUNT(*) FROM onec_attendance WHERE learner_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days') AS marked_30d,
+           (SELECT COUNT(*) FROM onec_assignments a WHERE a.cohort_id = $2 AND a.due_date >= CURRENT_DATE) AS assignments_open,
+           (SELECT COUNT(*) FROM onec_online_exams e WHERE e.cohort_id = $2 AND e.published = true) AS exams_published`,
+        [learner.id, learner.cohort_id]
+      ),
+      // Most recently evaluated subjects first — the Home tab's Academic
+      // Scores card shows only the top few, not a full transcript.
+      req.db.query(
+        `SELECT m.name AS module_name, s.score_obtained, es.max_score, es.eval_date
+         FROM onec_learner_scores s
+         JOIN onec_evaluation_schedules es ON s.eval_schedule_id = es.id
+         JOIN onec_modules m ON es.module_id = m.id
+         WHERE s.learner_id = $1
+         ORDER BY es.eval_date DESC LIMIT 3`,
+        [learner.id]
+      ),
+      req.db.query(
+        `SELECT a.id, a.title, a.due_date
+         FROM onec_assignments a
+         LEFT JOIN onec_assignment_submissions sub ON sub.assignment_id = a.id AND sub.learner_id = $1
+         WHERE a.cohort_id = $2 AND a.due_date >= CURRENT_DATE AND sub.id IS NULL
+         ORDER BY a.due_date ASC LIMIT 3`,
+        [learner.id, learner.cohort_id]
+      ),
+      req.db.query(
+        `SELECT e.id, e.title
+         FROM onec_online_exams e
+         LEFT JOIN onec_exam_submissions sub ON sub.exam_id = e.id AND sub.learner_id = $1
+         WHERE e.cohort_id = $2 AND e.published = true AND sub.id IS NULL
+         ORDER BY e.id DESC LIMIT 2`,
+        [learner.id, learner.cohort_id]
+      ),
+      req.db.query(
+        `SELECT id, leave_type, start_date FROM onec_leave_requests WHERE user_id = $1 AND status = 'pending' ORDER BY created_at DESC LIMIT 2`,
+        [req.user.userId]
+      )
+    ]);
+
     const row = stats.rows[0];
+    const pendingActions = [
+      ...dueAssignments.rows.map((a) => ({
+        type: 'assignment',
+        title: `Submit: ${a.title}`,
+        subtitle: `Due ${new Date(a.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+      })),
+      ...upcomingExams.rows.map((e) => ({
+        type: 'exam',
+        title: `Online Exam: ${e.title}`,
+        subtitle: 'Not yet attempted'
+      })),
+      ...ownLeave.rows.map((l) => ({
+        type: 'leave',
+        title: `Leave request — ${l.leave_type}`,
+        subtitle: `Starting ${l.start_date} · Awaiting approval`
+      }))
+    ];
+
     return res.json({
       data: {
         scope: 'learner',
-        stats: { ...row, attendanceRate30d: row.marked_30d > 0 ? Math.round((row.present_30d / row.marked_30d) * 1000) / 10 : null }
+        stats: { ...row, attendanceRate30d: row.marked_30d > 0 ? Math.round((row.present_30d / row.marked_30d) * 1000) / 10 : null },
+        academicByModule: academicByModule.rows,
+        pendingActions
       }
     });
   }
@@ -358,13 +448,24 @@ async function dashboardMine(req, res) {
   }
 
   if (role === 'staff') {
-    const stats = await req.db.query(
-      `SELECT
-         (SELECT COUNT(*) FROM onec_notices WHERE posted_by = $1 AND created_at >= CURRENT_DATE - INTERVAL '7 days') AS notices_posted,
-         (SELECT COUNT(*) FROM onec_messages WHERE sender_id = $1 AND created_at >= CURRENT_DATE - INTERVAL '7 days') AS messages_sent`,
-      [req.user.userId]
-    );
-    return res.json({ data: { scope: 'staff', stats: stats.rows[0] } });
+    const [stats, ownLeave] = await Promise.all([
+      req.db.query(
+        `SELECT
+           (SELECT COUNT(*) FROM onec_notices WHERE posted_by = $1 AND created_at >= CURRENT_DATE - INTERVAL '7 days') AS notices_posted,
+           (SELECT COUNT(*) FROM onec_messages WHERE sender_id = $1 AND created_at >= CURRENT_DATE - INTERVAL '7 days') AS messages_sent`,
+        [req.user.userId]
+      ),
+      req.db.query(
+        `SELECT id, leave_type, start_date FROM onec_leave_requests WHERE user_id = $1 AND status = 'pending' ORDER BY created_at DESC LIMIT 3`,
+        [req.user.userId]
+      )
+    ]);
+    const pendingActions = ownLeave.rows.map((l) => ({
+      type: 'leave',
+      title: `Leave request — ${l.leave_type}`,
+      subtitle: `Starting ${l.start_date} · Awaiting approval`
+    }));
+    return res.json({ data: { scope: 'staff', stats: stats.rows[0], pendingActions } });
   }
 
   res.json({ data: { scope: role || 'unknown', stats: null } });

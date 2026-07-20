@@ -1,0 +1,16 @@
+const { getMyCohorts } = require('./myCohorts');
+
+// Whether the caller may view/post in this cohort's class channel.
+// admin/staff already have tenant-wide messaging reach (messages.view/.send
+// are granted to every role), so they may access any cohort's channel;
+// everyone else must actually belong to it — own class for a learner,
+// advised/co-taught for an instructor (see getMyCohorts).
+async function canAccessCohort(req, cohortId) {
+  const role = req.user?.role;
+  if (role === 'admin' || role === 'staff') return true;
+
+  const mine = await getMyCohorts(req);
+  return mine.some((c) => c.id === Number(cohortId));
+}
+
+module.exports = { canAccessCohort };

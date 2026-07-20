@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useConfig } from '../contexts/ConfigContext';
 import { useUnreadCount } from '../features/messages/hooks/useMessages';
+import { useActivities } from '../features/activities/hooks/useActivities';
 
 const ICONS = {
   home: (
@@ -12,6 +13,9 @@ const ICONS = {
   ),
   classes: (
     <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h16v12H4z M4 9h16 M9 5v12" />
+  ),
+  activities: (
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h4l2-7 4 14 2-7h6" />
   ),
   more: (
     <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -34,15 +38,24 @@ const tabClass = ({ isActive }) =>
     isActive ? 'text-accent' : 'text-ink-500'
   }`;
 
+// Learner/instructor/staff get the redesigned Home/Class/Activities/More/
+// Settings shell (see features/home, features/classChannel,
+// features/activities) — admin and guardian keep the original Home/
+// Students/Classes/More/Settings bar untouched, since neither role was
+// part of that redesign (see Sidebar.jsx for the desktop equivalent of
+// this same split).
+const REDESIGNED_ROLES = ['learner', 'instructor', 'staff'];
+
 // Mobile-only primary nav (see Sidebar.jsx for the desktop equivalent) —
 // fixed at the bottom of the viewport rather than a hamburger + slide-in
-// drawer, matching the redesign mock's native-app-style tab bar. Same five
-// destinations as the sidebar: Home, Students, Classes, More, Settings.
+// drawer, matching the redesign mock's native-app-style tab bar.
 export function BottomTabBar() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const { hasModule } = useConfig();
   const messagingEnabled = hasModule('messaging') && can('messages.view');
   const { data: unreadCount } = useUnreadCount({ enabled: messagingEnabled });
+  const useNewShell = REDESIGNED_ROLES.includes(user?.role);
+  const { data: activity } = useActivities({ enabled: useNewShell });
 
   return (
     <nav
@@ -53,18 +66,42 @@ export function BottomTabBar() {
         <TabIcon name="home" />
         Home
       </NavLink>
-      {can('learners.view') && (
-        <NavLink to="/app/learners" className={tabClass}>
-          <TabIcon name="students" />
-          Students
-        </NavLink>
+
+      {useNewShell ? (
+        <>
+          <NavLink to="/app/class" className={tabClass}>
+            <TabIcon name="classes" />
+            Class
+          </NavLink>
+          <NavLink to="/app/activities" className={tabClass}>
+            <span className="relative">
+              <TabIcon name="activities" />
+              {activity?.recentCount > 0 && (
+                <span className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-accent px-0.5 text-[8.5px] font-bold text-accent-ink">
+                  {activity.recentCount > 9 ? '9+' : activity.recentCount}
+                </span>
+              )}
+            </span>
+            Activities
+          </NavLink>
+        </>
+      ) : (
+        <>
+          {can('learners.view') && (
+            <NavLink to="/app/learners" className={tabClass}>
+              <TabIcon name="students" />
+              Students
+            </NavLink>
+          )}
+          {can('cohorts.view') && (
+            <NavLink to="/app/cohorts" className={tabClass}>
+              <TabIcon name="classes" />
+              Classes
+            </NavLink>
+          )}
+        </>
       )}
-      {can('cohorts.view') && (
-        <NavLink to="/app/cohorts" className={tabClass}>
-          <TabIcon name="classes" />
-          Classes
-        </NavLink>
-      )}
+
       <NavLink to="/app/more" className={tabClass}>
         <span className="relative">
           <TabIcon name="more" />

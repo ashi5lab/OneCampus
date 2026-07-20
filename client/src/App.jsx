@@ -47,6 +47,8 @@ import { DisciplinePage } from './features/discipline/components/DisciplinePage'
 import { PtmPage } from './features/ptm/components/PtmPage';
 import { AlumniPage } from './features/alumni/components/AlumniPage';
 import { VisitorLogPage } from './features/visitors/components/VisitorLogPage';
+import { ClassPage } from './features/classChannel/components/ClassPage';
+import { ActivitiesPage } from './features/activities/components/ActivitiesPage';
 
 export default function App() {
   return (
@@ -84,6 +86,14 @@ export default function App() {
             admin reset section hides itself without users.manage_passwords). */}
         <Route path="profile" element={<ProfilePage />} />
         <Route path="more" element={<MorePage />} />
+        {/* Learner/instructor/staff redesign — Class/Activities are new,
+            fixed nav destinations (see BottomTabBar/Sidebar's
+            REDESIGNED_ROLES), not permission-gated like the roster routes
+            above: access is cohort-membership-scoped inside the endpoints
+            themselves (see server/lib/cohortAccess.js). */}
+        <Route path="class" element={<ClassPage />} />
+        <Route path="class/:cohortId" element={<ClassPage />} />
+        <Route path="activities" element={<ActivitiesPage />} />
         <Route
           path="manage-dashboard-apps"
           element={

@@ -578,3 +578,30 @@ CREATE TABLE onec_visitor_logs (
     logged_by INT REFERENCES onec_users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Class channel: one Teams-style chat per cohort (see
+-- server/modules/classChannel), backing the "Class" tab's Chat view for
+-- learners/instructors/staff.
+CREATE TABLE onec_class_posts (
+    id SERIAL PRIMARY KEY,
+    cohort_id INT NOT NULL REFERENCES onec_cohorts(id) ON DELETE CASCADE,
+    author_id INT NOT NULL REFERENCES onec_users(id) ON DELETE CASCADE,
+    body TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE onec_class_post_replies (
+    id SERIAL PRIMARY KEY,
+    post_id INT NOT NULL REFERENCES onec_class_posts(id) ON DELETE CASCADE,
+    author_id INT NOT NULL REFERENCES onec_users(id) ON DELETE CASCADE,
+    body TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_class_posts_cohort_created ON onec_class_posts(cohort_id, created_at);
+CREATE INDEX idx_class_post_replies_post ON onec_class_post_replies(post_id);
+
+-- Per-user Home insight-card visibility (see server/lib/homeCardPrefs.js) —
+-- null means "show every card" (the default), never written to until a
+-- learner/instructor/staff user actually customizes it in Settings.
+ALTER TABLE onec_users ADD COLUMN home_card_prefs JSONB;

@@ -10,6 +10,8 @@ router.get('/me', controller.getMe);
 router.put('/password', controller.changeOwnPassword);
 router.get('/notification-preferences', controller.getNotificationPreferences);
 router.put('/notification-preferences', controller.updateNotificationPreferences);
+router.get('/home-card-prefs', controller.getHomeCardPrefs);
+router.put('/home-card-prefs', controller.updateHomeCardPrefs);
 
 // Admin-side password reset — the only /profile routes that touch a user
 // other than the caller, hence the only permission-gated ones here.

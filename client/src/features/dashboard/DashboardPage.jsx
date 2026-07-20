@@ -7,6 +7,13 @@ import { StatCard } from '../../components/StatCard';
 import { ModuleBadge } from '../../components/ModuleBadge';
 import { HorizontalBarChart } from '../../components/charts/HorizontalBarChart';
 import { useDashboardReport } from '../reports/hooks/useReports';
+import { HomeInsightsPage } from '../home/components/HomeInsightsPage';
+
+// Learner/instructor/staff get the redesigned personal-insights Home (see
+// HomeInsightsPage) instead of this file's card-grid/reports-toggle view —
+// admin and guardian are untouched, since neither role was part of that
+// redesign.
+const REDESIGNED_ROLES = ['learner', 'instructor', 'staff'];
 
 const DASHBOARD_VIEW_KEY = 'onecampus.dashboardView';
 const STATUS_LABEL = { present: 'Present', absent: 'Absent', late: 'Late', excused: 'Excused' };
@@ -15,6 +22,9 @@ const STATUS_COLOR = { present: 'var(--success)', absent: 'var(--danger)', late:
 export function DashboardPage() {
   const { config } = useConfig();
   const { user } = useAuth();
+
+  if (REDESIGNED_ROLES.includes(user?.role)) return <HomeInsightsPage />;
+
   // Default is the "Your Modules" card grid, matching the redesign mock —
   // the detailed per-role reports view (attendance today, teacher/student
   // activity, etc.) is still fully there, just reachable via the toggle
