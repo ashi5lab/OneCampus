@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   useClassPosts,
@@ -33,10 +33,33 @@ export function ClassChatTab({ cohortId }) {
 
   const [replyingTo, setReplyingTo] = useState(null);
   const [historyTarget, setHistoryTarget] = useState(null); // { kind, id }
+  const scrollRef = useRef(null);
+  // The cohort we've already done the initial bottom-scroll for. Can't tell
+  // "first load" apart from "later update" just by watching cohortId change
+  // (it doesn't change on a plain page load), so this is tracked directly —
+  // null until a cohort's posts have loaded once.
+  const initializedFor = useRef(null);
 
   const posts = result?.data || [];
   const canModerate = result?.canModerate || false;
   const pinnedPost = posts.find((p) => p.pinned_at);
+
+  // Order never changes (oldest first, same as the API) — this just moves
+  // the *view* to the latest message by default, WhatsApp/Teams-style, so
+  // you land on the newest message instead of the oldest. If you've
+  // scrolled up to read history, a message from someone else won't yank you
+  // back down; the first load of a class (or switching to a different one)
+  // always does.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || isLoading) return;
+    const isFirstLoad = initializedFor.current !== cohortId;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+    if (isFirstLoad || nearBottom) {
+      el.scrollTop = el.scrollHeight;
+    }
+    initializedFor.current = cohortId;
+  }, [cohortId, posts.length, isLoading]);
 
   async function handleNewPost({ html, file }) {
     await createPost.mutateAsync({ body: html, file });
@@ -63,7 +86,7 @@ export function ClassChatTab({ cohortId }) {
         </button>
       )}
 
-      <div className="max-h-[520px] overflow-y-auto p-3">
+      <div ref={scrollRef} className="max-h-[520px] overflow-y-auto p-3">
         {isLoading && <div className="py-6 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="py-6 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {posts.length === 0 && !isLoading && (

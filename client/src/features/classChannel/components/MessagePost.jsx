@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Avatar } from '../../../components/Avatar';
 import { MessageComposer } from './MessageComposer';
+import { AttachmentPreviewModal } from './AttachmentPreviewModal';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😠'];
 const STAFF_ROLES = ['instructor', 'staff', 'admin'];
@@ -17,29 +18,43 @@ function formatWhen(iso) {
   return `${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, ${time}`;
 }
 
+// Opens the in-app preview modal instead of linking out — most file types
+// (image/pdf/office docs) can be viewed without ever leaving the chat; only
+// the "none" preview kind falls back to a download link, inside the modal.
 function AttachmentCard({ url, name, size, type }) {
+  const [previewing, setPreviewing] = useState(false);
+
   if (type === 'image') {
     return (
-      <a href={url} target="_blank" rel="noreferrer" className="mt-2 block w-max">
-        <img src={url} alt={name} className="max-h-40 rounded-lg border border-border object-cover" />
-      </a>
+      <>
+        <button type="button" onClick={() => setPreviewing(true)} className="mt-2 block w-max">
+          <img src={url} alt={name} className="max-h-40 rounded-lg border border-border object-cover" />
+        </button>
+        {previewing && (
+          <AttachmentPreviewModal attachment={{ url, name, size, type }} onClose={() => setPreviewing(false)} />
+        )}
+      </>
     );
   }
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="mt-2 flex max-w-[220px] items-center gap-2 rounded-lg border border-border bg-surface-muted px-2.5 py-2 hover:border-accent"
-    >
-      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-danger/10 text-[9px] font-extrabold uppercase text-danger">
-        {type}
-      </span>
-      <span className="min-w-0">
-        <span className="block truncate text-[11.5px] font-semibold text-ink-900">{name}</span>
-        <span className="block text-[10px] text-ink-500">{Math.round(size / 1024)} KB</span>
-      </span>
-    </a>
+    <>
+      <button
+        type="button"
+        onClick={() => setPreviewing(true)}
+        className="mt-2 flex max-w-[220px] items-center gap-2 rounded-lg border border-border bg-surface-muted px-2.5 py-2 text-left hover:border-accent"
+      >
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-danger/10 text-[9px] font-extrabold uppercase text-danger">
+          {type}
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-[11.5px] font-semibold text-ink-900">{name}</span>
+          <span className="block text-[10px] text-ink-500">{Math.round(size / 1024)} KB</span>
+        </span>
+      </button>
+      {previewing && (
+        <AttachmentPreviewModal attachment={{ url, name, size, type }} onClose={() => setPreviewing(false)} />
+      )}
+    </>
   );
 }
 
