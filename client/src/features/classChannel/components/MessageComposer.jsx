@@ -196,9 +196,17 @@ export function MessageComposer({
         return;
       }
     }
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Enter always inserts a line break here — only the send button submits
+    // (chat-in-a-textarea muscle memory expects Enter to send, but a rich
+    // composer with multi-line messages reads better the other way, and
+    // this was an explicit ask). insertLineBreak (not the browser's default
+    // paragraph-splitting behavior) so it produces a plain <br>, which is
+    // already in the sanitizer's allow-list — a <div> would just get
+    // stripped, silently merging the lines back together.
+    if (e.key === 'Enter') {
       e.preventDefault();
-      handleSubmit();
+      document.execCommand('insertLineBreak');
+      syncEmpty();
     }
   }
 
@@ -302,8 +310,7 @@ export function MessageComposer({
               className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-ink-500 hover:bg-surface-muted"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" d="M21 15V6a2 2 0 00-2-2H8L2 12l6 8h11a2 2 0 002-2v-3" />
-                <path strokeLinecap="round" d="M7 8l4 4-4 4" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </button>
           </>
