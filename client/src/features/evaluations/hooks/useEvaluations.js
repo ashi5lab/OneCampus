@@ -41,11 +41,19 @@ export function useScores(scheduleId) {
   });
 }
 
+// Also invalidates ['learners'] (prefix match, catches
+// ['learners', id, 'profile']) — a learner's Academics tab (scores/report
+// cards) embeds scores straight from onec_scores via its own profile
+// endpoint, not from useScores() itself, so without this a recorded score
+// only shows up there after navigating away and back.
 export function useRecordScore(scheduleId) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload) => evaluationsApi.recordScore(scheduleId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['evaluations', 'schedules', scheduleId, 'scores'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['evaluations', 'schedules', scheduleId, 'scores'] });
+      queryClient.invalidateQueries({ queryKey: ['learners'] });
+    }
   });
 }
 
