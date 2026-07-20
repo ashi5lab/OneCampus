@@ -3,8 +3,7 @@ import { useActivities } from '../hooks/useActivities';
 const TYPE_ICON_BG = {
   notice: { bg: '#FDF0D5', fg: '#92400E' },
   message: { bg: '#E0F5F5', fg: '#0F766E' },
-  class_post: { bg: '#E0F5F5', fg: '#0F766E' },
-  class_reply: { bg: '#E0F5F5', fg: '#0F766E' },
+  mention: { bg: '#EAE9FF', fg: '#4F46E5' },
   assignment: { bg: '#FBE7F6', fg: '#A21CAF' },
   exam: { bg: '#FCE7E8', fg: '#B91C1C' },
   attendance: { bg: '#E0EEFB', fg: '#1D4ED8' },
@@ -15,8 +14,6 @@ const TYPE_ICON_BG = {
 const TYPE_ICON_PATH = {
   notice: 'M4 4h16v12H4z M4 8h16 M9 4v4 M8 15h8',
   message: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
-  class_post: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
-  class_reply: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
   assignment: 'M9 4h9a1 1 0 011 1v14a1 1 0 01-1 1H6a1 1 0 01-1-1V8l4-4z M9 4v4H5 M8 13h8M8 17h5',
   exam: 'M9 11l2 2 4-4 M12 12m-9 0a9 9 0 1018 0a9 9 0 10-18 0',
   attendance: 'M5 13l4 4L19 7',
@@ -27,10 +24,14 @@ const TYPE_ICON_PATH = {
 function TypeIcon({ type }) {
   const { bg, fg } = TYPE_ICON_BG[type] || { bg: '#F1F1F6', fg: '#6B6B78' };
   return (
-    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px]" style={{ background: bg, color: fg }}>
-      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d={TYPE_ICON_PATH[type] || 'M12 8v4l3 3'} />
-      </svg>
+    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] text-[13px] font-bold" style={{ background: bg, color: fg }}>
+      {type === 'mention' ? (
+        '@'
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d={TYPE_ICON_PATH[type] || 'M12 8v4l3 3'} />
+        </svg>
+      )}
     </div>
   );
 }

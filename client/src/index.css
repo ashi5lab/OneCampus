@@ -40,4 +40,14 @@
   .fmt-toolbar-btn {
     @apply flex h-6 w-6 items-center justify-center rounded text-[12px] font-bold text-ink-700 hover:bg-surface-muted;
   }
+
+  /* The Class chat composer's contentEditable box (see MessageComposer.jsx)
+     — a real WYSIWYG box, not a plain textarea, so formatting shows live
+     as you type instead of as raw markup. contentEditable has no native
+     `placeholder`; :empty:before is the standard substitute. */
+  .rich-editor:empty:before {
+    content: attr(data-placeholder);
+    color: var(--ink-500);
+    pointer-events: none;
+  }
 }
