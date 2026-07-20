@@ -33,23 +33,13 @@ export function HomeInsightsPage() {
   // row (matching the approved mock) — everything else stacks full-width.
   // Instructor/staff don't pair theirs, so they just fall through the
   // normal full-width loop below.
-  const showPairedRow = role === 'learner' && (isCardVisible(prefs, 'attendance') || isCardVisible(prefs, 'academic'));
-  const remainingKeys = cards.map((c) => c.key).filter((key) => {
-    if (role === 'learner' && (key === 'attendance' || key === 'academic')) return false;
-    return isCardVisible(prefs, key);
-  });
+  const visibleKeys = cards.map((c) => c.key).filter((key) => isCardVisible(prefs, key));
 
   return (
     <div>
       <Greeting />
-      <div className="space-y-3.5">
-        {showPairedRow && (
-          <div className="grid grid-cols-2 gap-3.5">
-            {isCardVisible(prefs, 'attendance') && <AttendanceRingCard />}
-            {isCardVisible(prefs, 'academic') && <AcademicCard />}
-          </div>
-        )}
-        {remainingKeys.map((key) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        {visibleKeys.map((key) => (
           <HomeCard key={key} cardKey={key} role={role} />
         ))}
       </div>
