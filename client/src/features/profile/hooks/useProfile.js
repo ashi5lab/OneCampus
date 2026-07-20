@@ -25,6 +25,20 @@ export function useUpdateNotificationPreferences() {
   });
 }
 
+const HOME_CARD_PREFS_KEY = ['profile', 'home-card-prefs'];
+
+export function useHomeCardPrefs({ enabled = true } = {}) {
+  return useQuery({ queryKey: HOME_CARD_PREFS_KEY, queryFn: profileApi.getHomeCardPrefs, enabled });
+}
+
+export function useUpdateHomeCardPrefs() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: profileApi.updateHomeCardPrefs,
+    onSuccess: (data) => queryClient.setQueryData(HOME_CARD_PREFS_KEY, data)
+  });
+}
+
 // Admin-side (users.manage_passwords) — the query only runs when enabled,
 // so non-admin profile pages never fire a request that would 403.
 export function useAllUsers({ enabled } = { enabled: true }) {

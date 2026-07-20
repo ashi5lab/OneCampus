@@ -6,6 +6,7 @@ const { logAudit } = require('../../lib/audit');
 const { listUsersWithNames } = require('../../lib/userDirectory');
 const { revokeAllUserTokens } = require('../../lib/refreshTokens');
 const { clearAuthCookies } = require('../../lib/authCookies');
+const { HOME_CARD_KEYS } = require('../../lib/homeCardPrefs');
 
 // heic/heif: iPhones save camera photos in this format by default. Some
 // browser/OS combinations report it as "image/heic", others as
@@ -157,6 +158,43 @@ async function updateNotificationPreferences(req, res) {
   }
 }
 
+// Which Home insight cards this caller has chosen to show/hide — see
+// migration 033's onec_users.home_card_prefs and the new Home tab. Missing
+// keys (including the whole row being null, the default) mean "show this
+// card" — the frontend treats absence as true, so a brand new card added
+// later shows up for everyone without needing a backfill.
+async function getHomeCardPrefs(req, res) {
+  try {
+    const result = await req.db.query('SELECT home_card_prefs FROM onec_users WHERE id = $1', [req.user.userId]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: result.rows[0].home_card_prefs || {} });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+const homeCardPrefsSchema = z.object(Object.fromEntries(HOME_CARD_KEYS.map((key) => [key, z.boolean()]))).partial();
+
+// Merge-updates rather than replacing — a client only ever sends the one
+// card the user just toggled, not the whole set.
+async function updateHomeCardPrefs(req, res) {
+  try {
+    const parsed = homeCardPrefsSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+
+    const existing = await req.db.query('SELECT home_card_prefs FROM onec_users WHERE id = $1', [req.user.userId]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    const merged = { ...(existing.rows[0].home_card_prefs || {}), ...parsed.data };
+
+    await req.db.query('UPDATE onec_users SET home_card_prefs = $1 WHERE id = $2', [JSON.stringify(merged), req.user.userId]);
+    res.json({ data: merged });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 const changePasswordSchema = z.object({
   current_password: z.string().min(1, 'Current password is required'),
   new_password: z.string().min(8, 'New password must be at least 8 characters')
@@ -280,6 +318,8 @@ module.exports = {
   changeOwnPassword,
   getNotificationPreferences,
   updateNotificationPreferences,
+  getHomeCardPrefs,
+  updateHomeCardPrefs,
   listUsers,
   adminChangePassword,
   forceLogoutUser

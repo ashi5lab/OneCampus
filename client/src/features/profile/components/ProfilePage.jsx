@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 import { ProfilePictureUploader } from './ProfilePictureUploader';
+import { getHomeCardsForRole, isCardVisible } from '../../../lib/homeCardKeys';
 import {
   useMyProfile,
   useChangePassword,
@@ -12,11 +13,19 @@ import {
   useForceLogoutUser,
   useNotificationPreferences,
   useUpdateNotificationPreferences,
+  useHomeCardPrefs,
+  useUpdateHomeCardPrefs,
   MY_PROFILE_KEY
 } from '../hooks/useProfile';
 
+// Same role split as BottomTabBar/Sidebar's REDESIGNED_ROLES — only
+// learner/instructor/staff have a Home tab with configurable cards to
+// begin with, so this tab is meaningless (and hidden) for anyone else.
+const HOME_CARDS_ROLES = ['learner', 'instructor', 'staff'];
+
 const TABS = [
   { key: 'notifications', label: 'Notification Preferences' },
+  { key: 'home-cards', label: 'Home Screen', roleGated: true },
   { key: 'password', label: 'Change Password' },
   { key: 'display', label: 'Display' },
   { key: 'admin', label: 'Admin', adminOnly: true }
@@ -34,6 +43,7 @@ const TABS = [
 // tab-strip layout below it.
 const MOBILE_ROWS = [
   { key: 'notifications', label: 'Notification Preferences' },
+  { key: 'home-cards', label: 'Home Screen', roleGated: true },
   { key: 'password', label: 'Change Password' },
   { key: 'display', label: 'Display' },
   { key: 'dashboard-apps', label: 'Manage Dashboard Apps', adminOnly: true, to: '/app/manage-dashboard-apps' },
@@ -41,9 +51,10 @@ const MOBILE_ROWS = [
 ];
 
 export function ProfilePage() {
-  const { can, profile, logout } = useAuth();
+  const { can, user, profile, logout } = useAuth();
   const { data: me, isLoading, error } = useMyProfile();
   const canManagePasswords = can('users.manage_passwords');
+  const showHomeCardsTab = HOME_CARDS_ROLES.includes(user?.role);
   const [tab, setTab] = useState('notifications');
   const [mobileSection, setMobileSection] = useState(null);
 
@@ -58,9 +69,9 @@ export function ProfilePage() {
   if (isLoading) return <div className="p-8 text-center text-sm text-ink-500">Loading…</div>;
   if (error) return <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>;
 
-  const visibleTabs = TABS.filter((t) => !t.adminOnly || canManagePasswords);
+  const visibleTabs = TABS.filter((t) => (!t.adminOnly || canManagePasswords) && (!t.roleGated || showHomeCardsTab));
   const activeTab = visibleTabs.find((t) => t.key === tab) ? tab : 'notifications';
-  const visibleMobileRows = MOBILE_ROWS.filter((r) => !r.adminOnly || canManagePasswords);
+  const visibleMobileRows = MOBILE_ROWS.filter((r) => (!r.adminOnly || canManagePasswords) && (!r.roleGated || showHomeCardsTab));
   const activeMobileRow = MOBILE_ROWS.find((r) => r.key === mobileSection);
 
   return (
@@ -147,6 +158,7 @@ export function ProfilePage() {
               {activeMobileRow.label}
             </button>
             {mobileSection === 'notifications' && <NotificationPreferencesCard />}
+            {mobileSection === 'home-cards' && showHomeCardsTab && <HomeCardsCard />}
             {mobileSection === 'password' && <ChangePasswordCard />}
             {mobileSection === 'display' && <DisplayCard />}
             {mobileSection === 'admin-tools' && canManagePasswords && (
@@ -178,6 +190,7 @@ export function ProfilePage() {
 
         <div className="min-w-0 flex-1">
           {activeTab === 'notifications' && <NotificationPreferencesCard />}
+          {activeTab === 'home-cards' && showHomeCardsTab && <HomeCardsCard />}
           {activeTab === 'password' && <ChangePasswordCard />}
           {activeTab === 'display' && <DisplayCard />}
           {activeTab === 'admin' && canManagePasswords && (
@@ -296,6 +309,57 @@ function NotificationPreferencesCard() {
           </span>
         </label>
       )}
+
+      {updatePrefs.error && <div className="mt-3 text-xs font-semibold text-danger">{updatePrefs.error.message}</div>}
+    </div>
+  );
+}
+
+// Lets a learner/instructor/staff user hide any of the Home tab's insight
+// cards — see features/home/components/HomeInsightsPage, which reads these
+// same prefs. Missing/null means "show it" (see server/lib/homeCardPrefs.js),
+// so a freshly-added card in the future shows up for everyone by default.
+function HomeCardsCard() {
+  const { user } = useAuth();
+  const { data: prefsRaw, isLoading } = useHomeCardPrefs();
+  const updatePrefs = useUpdateHomeCardPrefs();
+  const cards = getHomeCardsForRole(user?.role);
+  const prefs = prefsRaw || {};
+
+  if (isLoading) return null;
+
+  return (
+    <div className="rounded border border-border bg-surface p-5">
+      <div className="mb-1 text-[15px] font-bold text-ink-900">Home Screen</div>
+      <div className="mb-3 text-[12px] text-ink-500">Choose what shows on your Home tab.</div>
+
+      <div className="divide-y divide-surface-muted">
+        {cards.map((card) => {
+          const on = isCardVisible(prefs, card.key);
+          return (
+            <div key={card.key} className="flex items-center justify-between gap-3 py-2.5">
+              <div>
+                <div className="text-[13px] font-semibold text-ink-900">{card.label}</div>
+                <div className="text-[11.5px] text-ink-500">{card.description}</div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={on}
+                disabled={updatePrefs.isPending}
+                onClick={() => updatePrefs.mutate({ [card.key]: !on })}
+                className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${on ? 'bg-accent' : 'bg-surface-muted'}`}
+              >
+                <span
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${
+                    on ? 'translate-x-[18px]' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       {updatePrefs.error && <div className="mt-3 text-xs font-semibold text-danger">{updatePrefs.error.message}</div>}
     </div>
