@@ -7,6 +7,12 @@ function withQuery(path, params = {}) {
 
 export const learnersApi = {
   list: (filters) => apiClient.get(withQuery('/learners', filters)).then((res) => res.data),
+  // Unlike list() above, doesn't unwrap to just the rows array — keeps
+  // `meta` ({total, page, pageSize}) too, since the roster page's
+  // server-side pagination needs the total count to render page controls.
+  // Only meaningful when `filters` includes page/pageSize (see
+  // server/lib/pagination.js) — otherwise the server omits `meta` entirely.
+  listPage: (filters) => apiClient.get(withQuery('/learners', filters)),
   create: (payload) => apiClient.post('/learners', payload).then((res) => res.data),
   update: (id, payload) => apiClient.put(`/learners/${id}`, payload).then((res) => res.data),
   remove: (id) => apiClient.delete(`/learners/${id}`).then((res) => res.data),

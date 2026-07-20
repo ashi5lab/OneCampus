@@ -4,7 +4,7 @@ import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Avatar } from '../../../components/Avatar';
 import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
-import { useStaff, useCreateStaff, useUpdateStaff, useDeleteStaff, useSetStaffDesignation } from '../hooks/useStaff';
+import { useStaffPage, useCreateStaff, useUpdateStaff, useDeleteStaff, useSetStaffDesignation } from '../hooks/useStaff';
 import { StaffFormModal } from './StaffFormModal';
 import { DesignationPicker } from '../../../components/DesignationPicker';
 import { idCardsApi } from '../../idCards/services/idCardsApi';
@@ -20,6 +20,8 @@ export function StaffPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [gender, setGender] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     const timeout = setTimeout(() => setSearch(searchInput), 300);
@@ -27,7 +29,15 @@ export function StaffPage() {
   }, [searchInput]);
 
   const filters = { search: search || undefined, gender: gender || undefined };
-  const { data: staff, isLoading, error } = useStaff({ filters });
+  // Back to page 1 whenever a filter changes — otherwise a filtered-down
+  // result set can leave the view stuck on a now out-of-range page.
+  useEffect(() => {
+    setPage(1);
+  }, [search, gender]);
+
+  const { data: result, isLoading, error } = useStaffPage({ page, pageSize: PAGE_SIZE, filters });
+  const staff = result?.data;
+  const meta = result?.meta;
   const createStaff = useCreateStaff();
   const updateStaff = useUpdateStaff();
   const deleteStaff = useDeleteStaff();
@@ -111,7 +121,7 @@ export function StaffPage() {
       )}
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <StatCard label="Total Staff" value={isLoading ? '—' : staff.length} />
+        <StatCard label="Total Staff" value={isLoading ? '—' : meta?.total ?? 0} />
       </div>
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
@@ -153,7 +163,13 @@ export function StaffPage() {
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
         {staff && (
-          <DataTable columns={columns} rows={staff} rowKey={(row) => row.id} emptyMessage="No matching staff members." />
+          <DataTable
+            columns={columns}
+            rows={staff}
+            rowKey={(row) => row.id}
+            emptyMessage="No matching staff members."
+            serverPagination={{ page, pageSize: PAGE_SIZE, total: meta?.total ?? 0, onPageChange: setPage }}
+          />
         )}
       </div>
 

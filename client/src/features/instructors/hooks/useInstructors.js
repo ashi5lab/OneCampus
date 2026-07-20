@@ -8,6 +8,15 @@ export function useInstructors({ enabled = true, filters = {} } = {}) {
   return useQuery({ queryKey: ['instructors', filters], queryFn: () => instructorsApi.list(filters), enabled });
 }
 
+// Server-side-paginated variant for the roster page — see
+// useLearnersPage's comment for why this exists alongside useInstructors.
+export function useInstructorsPage({ page = 1, pageSize = 10, filters = {} } = {}) {
+  return useQuery({
+    queryKey: ['instructors', 'page', page, pageSize, filters],
+    queryFn: () => instructorsApi.listPage({ ...filters, page, pageSize })
+  });
+}
+
 export function useCreateInstructor() {
   const queryClient = useQueryClient();
   return useMutation({

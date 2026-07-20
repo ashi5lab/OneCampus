@@ -9,7 +9,7 @@ import { SearchSelect } from '../../../components/SearchSelect';
 import { Avatar } from '../../../components/Avatar';
 import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
-import { useLearners, useCreateLearner, useUpdateLearner, useDeleteLearner, useSetClassHead, useSetSchoolHead } from '../hooks/useLearners';
+import { useLearnersPage, useCreateLearner, useUpdateLearner, useDeleteLearner, useSetClassHead, useSetSchoolHead } from '../hooks/useLearners';
 import { LearnerFormModal } from './LearnerFormModal';
 
 const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive', alumni: 'pending' };
@@ -29,6 +29,8 @@ export function LearnersPage() {
   const [cohortId, setCohortId] = useState('');
   const [gender, setGender] = useState('');
   const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   // Debounce the search box so every keystroke doesn't fire a request.
   useEffect(() => {
@@ -37,7 +39,15 @@ export function LearnersPage() {
   }, [searchInput]);
 
   const filters = { search: search || undefined, cohort_id: cohortId || undefined, gender: gender || undefined, status: status || undefined };
-  const { data: learners, isLoading, error } = useLearners({ filters });
+  // Back to page 1 whenever a filter changes — otherwise a filtered-down
+  // result set can leave the view stuck on a now out-of-range page.
+  useEffect(() => {
+    setPage(1);
+  }, [search, cohortId, gender, status]);
+
+  const { data: result, isLoading, error } = useLearnersPage({ page, pageSize: PAGE_SIZE, filters });
+  const learners = result?.data;
+  const meta = result?.meta;
   const createLearner = useCreateLearner();
   const updateLearner = useUpdateLearner();
   const deleteLearner = useDeleteLearner();
@@ -142,7 +152,7 @@ export function LearnersPage() {
       </div>
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <StatCard label={`Total ${t('learners')}`} value={isLoading ? '—' : learners.length} />
+        <StatCard label={`Total ${t('learners')}`} value={isLoading ? '—' : meta?.total ?? 0} />
       </div>
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
@@ -207,7 +217,14 @@ export function LearnersPage() {
           </div>
         )}
         {learners && (
-          <DataTable columns={columns} rows={learners} rowKey={(row) => row.id} emptyMessage="No matching learners." mobileCompact />
+          <DataTable
+            columns={columns}
+            rows={learners}
+            rowKey={(row) => row.id}
+            emptyMessage="No matching learners."
+            mobileCompact
+            serverPagination={{ page, pageSize: PAGE_SIZE, total: meta?.total ?? 0, onPageChange: setPage }}
+          />
         )}
       </div>
 
