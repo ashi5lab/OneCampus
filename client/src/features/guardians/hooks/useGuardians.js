@@ -5,6 +5,15 @@ export function useGuardians() {
   return useQuery({ queryKey: ['guardians'], queryFn: guardiansApi.list });
 }
 
+// Server-side-paginated variant for the roster page — see
+// useLearnersPage's comment for why this exists alongside useGuardians.
+export function useGuardiansPage({ page = 1, pageSize = 10 } = {}) {
+  return useQuery({
+    queryKey: ['guardians', 'page', page, pageSize],
+    queryFn: () => guardiansApi.listPage({ page, pageSize })
+  });
+}
+
 export function useCreateGuardian() {
   const queryClient = useQueryClient();
   return useMutation({

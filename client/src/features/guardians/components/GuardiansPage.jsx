@@ -6,7 +6,7 @@ import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { Avatar } from '../../../components/Avatar';
 import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
-import { useGuardians, useCreateGuardian, useUpdateGuardian, useDeleteGuardian } from '../hooks/useGuardians';
+import { useGuardiansPage, useCreateGuardian, useUpdateGuardian, useDeleteGuardian } from '../hooks/useGuardians';
 import { useGuardianLinks } from '../hooks/useGuardianLinks';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { GuardianFormModal } from './GuardianFormModal';
@@ -15,11 +15,15 @@ import { GuardianLinksModal } from './GuardianLinksModal';
 export function GuardiansPage() {
   const { t } = useConfig();
   const { can } = useAuth();
-  const { data: guardians, isLoading, error } = useGuardians();
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
+  const { data: result, isLoading, error } = useGuardiansPage({ page, pageSize: PAGE_SIZE });
+  const guardians = result?.data;
+  const meta = result?.meta;
   const createGuardian = useCreateGuardian();
   const updateGuardian = useUpdateGuardian();
   const deleteGuardian = useDeleteGuardian();
-  
+
   const [showForm, setShowForm] = useState(false);
   const [newCredentials, setNewCredentials] = useState(null);
   const [editingGuardian, setEditingGuardian] = useState(null);
@@ -121,7 +125,7 @@ export function GuardiansPage() {
       </div>
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <StatCard label="Total Guardians" value={isLoading ? '—' : guardians.length} />
+        <StatCard label="Total Guardians" value={isLoading ? '—' : meta?.total ?? 0} />
       </div>
 
       <div className="overflow-hidden rounded border border-border bg-surface">
@@ -129,7 +133,14 @@ export function GuardiansPage() {
         {error && (
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
-        {guardians && <DataTable columns={columns} rows={guardians} rowKey={(row) => row.id} />}
+        {guardians && (
+          <DataTable
+            columns={columns}
+            rows={guardians}
+            rowKey={(row) => row.id}
+            serverPagination={{ page, pageSize: PAGE_SIZE, total: meta?.total ?? 0, onPageChange: setPage }}
+          />
+        )}
       </div>
 
       {showForm && (

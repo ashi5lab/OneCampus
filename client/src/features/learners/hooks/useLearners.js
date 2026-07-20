@@ -10,6 +10,18 @@ export function useLearners({ enabled = true, filters = {} } = {}) {
   return useQuery({ queryKey: ['learners', filters], queryFn: () => learnersApi.list(filters), enabled });
 }
 
+// Server-side-paginated variant for the roster page — only fetches the
+// current page's rows instead of the whole tenant's student list (see
+// DataTable's serverPagination prop). Keep useLearners() above for every
+// other caller (search pickers, link modals) that genuinely needs the
+// full list to search/select from.
+export function useLearnersPage({ page = 1, pageSize = 10, filters = {} } = {}) {
+  return useQuery({
+    queryKey: ['learners', 'page', page, pageSize, filters],
+    queryFn: () => learnersApi.listPage({ ...filters, page, pageSize })
+  });
+}
+
 export function useCreateLearner() {
   const queryClient = useQueryClient();
   return useMutation({

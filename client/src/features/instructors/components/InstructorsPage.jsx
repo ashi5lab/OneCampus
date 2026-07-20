@@ -6,7 +6,7 @@ import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Avatar } from '../../../components/Avatar';
 import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
-import { useInstructors, useCreateInstructor, useUpdateInstructor, useDeleteInstructor, useSetInstructorDesignation } from '../hooks/useInstructors';
+import { useInstructors, useInstructorsPage, useCreateInstructor, useUpdateInstructor, useDeleteInstructor, useSetInstructorDesignation } from '../hooks/useInstructors';
 import { useModules } from '../../modules/hooks/useModules';
 import { useInstructorModules } from '../hooks/useInstructorModules';
 import { InstructorFormModal } from './InstructorFormModal';
@@ -147,6 +147,8 @@ function TeachersTab() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [gender, setGender] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     const timeout = setTimeout(() => setSearch(searchInput), 300);
@@ -154,7 +156,15 @@ function TeachersTab() {
   }, [searchInput]);
 
   const filters = { search: search || undefined, gender: gender || undefined };
-  const { data: instructors, isLoading, error } = useInstructors({ filters });
+  // Back to page 1 whenever a filter changes — otherwise a filtered-down
+  // result set can leave the view stuck on a now out-of-range page.
+  useEffect(() => {
+    setPage(1);
+  }, [search, gender]);
+
+  const { data: result, isLoading, error } = useInstructorsPage({ page, pageSize: PAGE_SIZE, filters });
+  const instructors = result?.data;
+  const meta = result?.meta;
   const createInstructor = useCreateInstructor();
   const updateInstructor = useUpdateInstructor();
   const deleteInstructor = useDeleteInstructor();
@@ -240,7 +250,7 @@ function TeachersTab() {
       </div>
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <StatCard label={`Total ${t('instructors')}`} value={isLoading ? '—' : instructors.length} />
+        <StatCard label={`Total ${t('instructors')}`} value={isLoading ? '—' : meta?.total ?? 0} />
       </div>
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
@@ -282,7 +292,14 @@ function TeachersTab() {
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
         {instructors && (
-          <DataTable columns={columns} rows={instructors} rowKey={(row) => row.id} emptyMessage="No matching instructors." mobileCompact />
+          <DataTable
+            columns={columns}
+            rows={instructors}
+            rowKey={(row) => row.id}
+            emptyMessage="No matching instructors."
+            mobileCompact
+            serverPagination={{ page, pageSize: PAGE_SIZE, total: meta?.total ?? 0, onPageChange: setPage }}
+          />
         )}
       </div>
 

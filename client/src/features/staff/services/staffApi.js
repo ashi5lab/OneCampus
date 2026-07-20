@@ -7,6 +7,9 @@ function withQuery(path, params = {}) {
 
 export const staffApi = {
   list: (filters) => apiClient.get(withQuery('/staff', filters)).then((res) => res.data),
+  // See learnersApi.listPage's comment — keeps `meta` for the roster
+  // page's server-side pagination.
+  listPage: (filters) => apiClient.get(withQuery('/staff', filters)),
   create: (payload) => apiClient.post('/staff', payload).then((res) => res.data),
   update: (id, payload) => apiClient.put(`/staff/${id}`, payload).then((res) => res.data),
   remove: (id) => apiClient.delete(`/staff/${id}`).then((res) => res.data),

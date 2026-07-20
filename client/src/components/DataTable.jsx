@@ -11,19 +11,37 @@ import { useState } from 'react';
 // needing to say so explicitly. A column with no header (the common
 // convention for an actions column, `header: ''`) renders without a label
 // row too, rather than a blank uppercase chip next to it.
-export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records found.', pageSize = 10, mobileCompact = false }) {
-  const [currentPage, setCurrentPage] = useState(1);
+//
+// `serverPagination` (optional) switches from the default client-side
+// slicing (fetch everything, page through it in memory — fine for small,
+// bounded lists like a single day's attendance or a cohort roster) to
+// server-side paging: pass { page, pageSize, total, onPageChange } and
+// `rows` is treated as already being just the current page's rows (the
+// caller's fetch is responsible for actually requesting that page — see
+// e.g. useLearnersPage). This is what large/growing rosters (Students,
+// Teachers, Staff, Guardians) use so a page load only pulls the ~10 rows
+// it's about to show instead of the entire table every time.
+export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records found.', pageSize = 10, mobileCompact = false, serverPagination = null }) {
+  const [internalPage, setInternalPage] = useState(1);
 
-  if (rows.length === 0) {
+  const isEmpty = serverPagination ? serverPagination.total === 0 : rows.length === 0;
+  if (isEmpty) {
     return <div className="p-10 text-center text-[13.5px] text-ink-500">{emptyMessage}</div>;
   }
 
-  const totalPages = Math.ceil(rows.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedRows = rows.slice(startIndex, startIndex + pageSize);
+  const currentPage = serverPagination ? serverPagination.page : internalPage;
+  const effectivePageSize = serverPagination ? serverPagination.pageSize : pageSize;
+  const totalCount = serverPagination ? serverPagination.total : rows.length;
+  const totalPages = Math.ceil(totalCount / effectivePageSize);
+  const startIndex = (currentPage - 1) * effectivePageSize;
+  const paginatedRows = serverPagination ? rows : rows.slice(startIndex, startIndex + effectivePageSize);
 
-  const handlePrev = () => setCurrentPage((p) => Math.max(1, p - 1));
-  const handleNext = () => setCurrentPage((p) => Math.min(totalPages, p + 1));
+  const handlePrev = () =>
+    serverPagination ? serverPagination.onPageChange(Math.max(1, currentPage - 1)) : setInternalPage((p) => Math.max(1, p - 1));
+  const handleNext = () =>
+    serverPagination
+      ? serverPagination.onPageChange(Math.min(totalPages, currentPage + 1))
+      : setInternalPage((p) => Math.min(totalPages, p + 1));
 
   const [primaryColumn, ...restColumns] = columns;
 
@@ -106,7 +124,7 @@ export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records fo
       {/* Pagination Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-surface-muted bg-surface px-5 py-3.5">
         <div className="text-[12px] text-ink-500">
-          Showing <span className="font-semibold text-ink-700">{Math.min(startIndex + 1, rows.length)}</span>–<span className="font-semibold text-ink-700">{Math.min(startIndex + pageSize, rows.length)}</span> of <span className="font-semibold text-ink-700">{rows.length}</span>
+          Showing <span className="font-semibold text-ink-700">{Math.min(startIndex + 1, totalCount)}</span>–<span className="font-semibold text-ink-700">{Math.min(startIndex + effectivePageSize, totalCount)}</span> of <span className="font-semibold text-ink-700">{totalCount}</span>
         </div>
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
