@@ -13,5 +13,6 @@ export const bulkUploadApi = {
 
   downloadTemplate: (entityType, format, fileLabel) =>
     downloadFile(`/bulk-upload/template/${entityType}?format=${format}`, `${fileLabel}_template.${format}`),
-  downloadFailures: (jobId) => downloadFile(`/bulk-upload/jobs/${jobId}/failures.xlsx`, `bulk_upload_${jobId}_failures.xlsx`)
+  downloadFailures: (jobId) => downloadFile(`/bulk-upload/jobs/${jobId}/failures.xlsx`, `bulk_upload_${jobId}_failures.xlsx`),
+  downloadCredentials: (jobId) => downloadFile(`/bulk-upload/jobs/${jobId}/credentials.xlsx`, `bulk_upload_${jobId}_credentials.xlsx`)
 };

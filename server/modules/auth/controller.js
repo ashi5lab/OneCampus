@@ -71,6 +71,11 @@ async function login(req, res) {
       data: {
         token,
         csrfToken,
+        // The login page no longer collects a tenant domain — it's resolved
+        // from the username's prefix (see tenantResolver.js). The frontend
+        // caches this so every request after login (including token
+        // refresh on the next page load) keeps sending the right one.
+        domain: req.tenantConfig.domain,
         user: { id: user.id, username: user.username, role: user.role }
       }
     });

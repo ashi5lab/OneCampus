@@ -42,7 +42,9 @@ export function UploadPanel({ entityType, label, fileLabel }) {
     <div className="mb-6 rounded border border-border bg-surface p-5">
       <div className="mb-1 text-sm font-bold text-ink-900">Bulk upload {label}</div>
       <div className="mb-4 text-[12.5px] text-ink-500">
-        Download the template, fill it in, and upload it below. Excel (.xlsx) and CSV are both accepted.
+        Download the template, fill it in, and upload it below. Excel (.xlsx) and CSV are both accepted. A username
+        and password are generated automatically for everyone — download them from the "Logins" column below once
+        processing finishes.
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">

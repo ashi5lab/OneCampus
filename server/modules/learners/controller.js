@@ -5,14 +5,15 @@ const { parsePagination } = require('../../lib/pagination');
 const { hasPermission } = require('../../lib/permissions');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
 const { getCallerDesignation } = require('../../lib/designation');
+const { generateUniqueUsername, generatePassword, placeholderEmail } = require('../../lib/credentials');
 
 const classHeadSchema = z.object({ is_class_head: z.boolean() });
 const schoolHeadSchema = z.object({ is_school_head: z.boolean() });
 
 const learnerCreateSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  email: z.string().email("A valid email is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  // No username/password here anymore — both are auto-generated (see
+  // create() below) from first_name + registry_no, same as bulk upload.
+  email: z.string().email("A valid email is required").optional().or(z.literal('')),
   registry_no: z.string().min(1, "Registry number is required"),
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
@@ -99,20 +100,28 @@ async function getById(req, res) {
 
 // Creates the onec_users row and the onec_learners row together, in one
 // transaction, so the frontend never needs a pre-existing user id — this
-// was previously the only way to create a learner.
+// was previously the only way to create a learner. Username and password
+// are generated here rather than typed in (see server/lib/credentials.js)
+// — the response includes both since this is the only moment the plaintext
+// password ever exists; the frontend shows it once so it can be handed to
+// the student.
 async function create(req, res) {
   try {
     const parsed = learnerCreateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { username, email, password, registry_no, first_name, last_name, cohort_id, status, meta } = parsed.data;
+    const { email, registry_no, first_name, last_name, cohort_id, status, meta } = parsed.data;
+
+    const username = await generateUniqueUsername(req.db, req.tenantConfig.prefix, first_name, registry_no);
+    const password = generatePassword();
     const password_hash = await bcrypt.hash(password, 10);
+    const finalEmail = email || placeholderEmail(username, req.tenantConfig.domain);
 
     await req.db.query('BEGIN');
     try {
       const userResult = await req.db.query(
         `INSERT INTO onec_users (username, email, password_hash, role) VALUES ($1, $2, $3, 'learner') RETURNING id`,
-        [username, email, password_hash]
+        [username, finalEmail, password_hash]
       );
       const user_id = userResult.rows[0].id;
 
@@ -123,7 +132,7 @@ async function create(req, res) {
       );
 
       await req.db.query('COMMIT');
-      res.status(201).json({ data: learnerResult.rows[0] });
+      res.status(201).json({ data: { ...learnerResult.rows[0], username, password } });
     } catch (err) {
       await req.db.query('ROLLBACK');
       throw err;

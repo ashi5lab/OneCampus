@@ -6,6 +6,7 @@ const { JWT_SECRET, TENANT_BASE_DOMAIN, SUPER_ADMIN_TOKEN_TTL } = require('../..
 const { defaultConfigForOrgType, schemaNameForDomain } = require('../../lib/moduleDefaults');
 const { provisionSchema } = require('../../scripts/provisionTenant');
 const { logPlatformAudit } = require('../../lib/platformAudit');
+const { withTenantPrefix } = require('../../lib/credentials');
 
 const SCHEMA_NAME_RE = /^[a-zA-Z0-9_]+$/;
 
@@ -17,6 +18,15 @@ const registerSchema = z.object({
     .min(2, 'Subdomain must be at least 2 characters')
     .max(63, 'Subdomain is too long')
     .regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers, and hyphens only'),
+  // Every username at this tenant is prefixed with this (e.g. "qs" ->
+  // "qs_adam2345") — it's what the login page resolves the tenant from
+  // now that there's no typed-in domain field. Short on purpose, since
+  // it prefixes every single username.
+  prefix: z
+    .string()
+    .min(2, 'Prefix must be at least 2 characters')
+    .max(6, 'Prefix must be at most 6 characters')
+    .regex(/^[a-z0-9]+$/, 'Use lowercase letters and numbers only'),
   contact_name: z.string().min(1, 'Contact name is required'),
   contact_phone: z.string().min(7, 'A valid phone number is required'),
   contact_email: z.string().email('A valid email is required'),
@@ -34,7 +44,7 @@ async function register(req, res) {
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { org_name, org_type, slug, contact_name, contact_phone, contact_email, admin_username, admin_password } =
+    const { org_name, org_type, slug, prefix, contact_name, contact_phone, contact_email, admin_username, admin_password } =
       parsed.data;
 
     const domain = `${slug}.${TENANT_BASE_DOMAIN}`;
@@ -44,16 +54,20 @@ async function register(req, res) {
 
     const result = await db.query(
       `INSERT INTO public.onec_tenants
-         (domain, schema_name, org_name, org_type, config, status, contact_name, contact_email, contact_phone, admin_username, admin_password_hash)
-       VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, $9, $10)
-       RETURNING id, domain, org_name, org_type, status, created_at`,
-      [domain, schemaName, org_name, org_type, config, contact_name, contact_email, contact_phone, admin_username, admin_password_hash]
+         (domain, schema_name, org_name, org_type, config, status, prefix, contact_name, contact_email, contact_phone, admin_username, admin_password_hash)
+       VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, $9, $10, $11)
+       RETURNING id, domain, org_name, org_type, status, prefix, admin_username, created_at`,
+      [domain, schemaName, org_name, org_type, config, prefix, contact_name, contact_email, contact_phone, admin_username, admin_password_hash]
     );
 
     res.status(201).json({ data: result.rows[0] });
   } catch (err) {
     console.error('Tenant registration error:', err);
-    if (err.code === '23505') return res.status(400).json({ error: 'That subdomain is already taken' });
+    if (err.code === '23505') {
+      const detail = err.detail || '';
+      if (/prefix/.test(detail)) return res.status(400).json({ error: 'That tenant prefix is already taken' });
+      return res.status(400).json({ error: 'That subdomain is already taken' });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -119,7 +133,7 @@ async function listTenants(req, res) {
   try {
     const { status } = req.query;
     const params = [];
-    let query = `SELECT id, domain, org_name, org_type, status, is_active, contact_name, contact_email,
+    let query = `SELECT id, domain, org_name, org_type, status, is_active, prefix, contact_name, contact_email,
                         contact_phone, admin_username, decline_reason, created_at, reviewed_at, provisioned_at
                  FROM public.onec_tenants`;
     if (status) {
@@ -165,17 +179,25 @@ async function approveTenant(req, res) {
 
     // provisionSchema pins the connection's search_path to the new schema,
     // so this unqualified insert lands in the tenant's onec_users table.
+    // The admin username submitted at registration is just the local part
+    // (e.g. "principal") — prefixed here with the tenant's prefix so it's
+    // resolvable at login the same way every other username is.
+    const adminUsername = withTenantPrefix(tenant.prefix, tenant.admin_username);
     await client.query(
       `INSERT INTO onec_users (username, email, password_hash, role) VALUES ($1, $2, $3, 'admin')`,
-      [tenant.admin_username, tenant.contact_email, tenant.admin_password_hash]
+      [adminUsername, tenant.contact_email, tenant.admin_password_hash]
     );
 
+    // Also updates the stored admin_username to the final prefixed value
+    // (was just the local part until now), so the dashboard shows the
+    // actual login username instead of the pre-prefix one submitted at
+    // registration.
     const updated = await client.query(
       `UPDATE public.onec_tenants
-         SET status = 'approved', reviewed_at = CURRENT_TIMESTAMP, provisioned_at = CURRENT_TIMESTAMP
+         SET status = 'approved', reviewed_at = CURRENT_TIMESTAMP, provisioned_at = CURRENT_TIMESTAMP, admin_username = $2
        WHERE id = $1
-       RETURNING id, domain, org_name, org_type, status`,
-      [id]
+       RETURNING id, domain, org_name, org_type, status, admin_username`,
+      [id, adminUsername]
     );
 
     await client.query('COMMIT');

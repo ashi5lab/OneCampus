@@ -11,6 +11,10 @@ function getConfig(req, res) {
     data: {
       org_name: tenant.org_name,
       org_type: tenant.org_type,
+      // The prefix every username at this tenant starts with (e.g. "qs" ->
+      // "qs_adam2345") — shown read-only in Settings so an admin can tell
+      // people what to expect their username to look like.
+      prefix: tenant.prefix,
       active_modules: tenant.config?.active_modules || [],
       branding: tenant.config?.branding || {},
       vocabulary_override: tenant.config?.vocabulary_override || {},

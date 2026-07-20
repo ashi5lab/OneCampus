@@ -33,7 +33,8 @@ function buildTemplateWorkbook(entityType) {
   }
   instructions.push(
     [''],
-    ['Login Email / Login Username / Login Password are optional, but if you fill in any one of them, you must fill in all three — that creates a portal login for this person. Leave all three blank to import just the roster record with no login (you can add a login for them later from their profile).']
+    ['A portal login (username + password) is created automatically for every row — you don\'t fill those in here. Download the results file after processing to get everyone\'s generated username and password.'],
+    ['Email is optional — leave it blank and a placeholder is generated instead.']
   );
   const instructionsSheet = XLSX.utils.aoa_to_sheet(instructions);
   instructionsSheet['!cols'] = [{ wch: 100 }];
@@ -71,4 +72,32 @@ function failuresAsXlsxBuffer(entityType, errors) {
   return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 }
 
-module.exports = { templateAsXlsxBuffer, templateAsCsvBuffer, failuresAsXlsxBuffer };
+// Builds the downloadable "here's everyone's login" workbook — one row per
+// successfully-created person, generated username + password included.
+// `credentials` is the onec_bulk_upload_jobs.credentials jsonb array (see
+// server/lib/bulkUploadProcessor.js): [{ username, first_name, last_name,
+// class_name | staff_id, password }]. This is the only place the plaintext
+// passwords exist after processing — not stored anywhere else, so this
+// download is the admin's one chance to retrieve them.
+function credentialsAsXlsxBuffer(entityType, credentials) {
+  const identifierHeader = entityType === 'learner' ? 'Class' : 'Staff / Employee ID';
+  const identifierKey = entityType === 'learner' ? 'class_name' : 'staff_id';
+  const headers = ['Username', 'First Name', 'Last Name', identifierHeader, 'Password'];
+
+  const rows = credentials.map((c) => ({
+    Username: c.username,
+    'First Name': c.first_name,
+    'Last Name': c.last_name,
+    [identifierHeader]: c[identifierKey] || '',
+    Password: c.password
+  }));
+
+  const sheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+  sheet['!cols'] = headers.map((h) => ({ wch: Math.max(16, h.length + 2) }));
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, sheet, 'Credentials');
+  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+}
+
+module.exports = { templateAsXlsxBuffer, templateAsCsvBuffer, failuresAsXlsxBuffer, credentialsAsXlsxBuffer };

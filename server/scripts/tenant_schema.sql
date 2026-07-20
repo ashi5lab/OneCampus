@@ -556,6 +556,10 @@ CREATE TABLE onec_bulk_upload_jobs (
     success_count INT NOT NULL DEFAULT 0,
     failure_count INT NOT NULL DEFAULT 0,
     errors JSONB NOT NULL DEFAULT '[]',
+    -- Generated username/password per successfully-created row (see
+    -- server/lib/credentials.js) — downloaded once via GET
+    -- /bulk-upload/jobs/:id/credentials.xlsx, same purpose as `errors`.
+    credentials JSONB NOT NULL DEFAULT '[]',
     created_by INT REFERENCES onec_users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP

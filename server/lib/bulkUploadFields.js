@@ -7,17 +7,13 @@
 // `required` drives the validation error a blank cell produces; everything
 // else is optional per the user's ask ("class info is mandatory, mobile
 // number also... other information which are not mandatory can be kept as
-// optional"). Login credentials (email/username/password) are a special
-// case: none of the three is individually required, but if any one of them
-// is filled in, all three must be (see server/lib/bulkUploadProcessor.js) —
-// a person record can exist with no portal login at all (onec_learners./
-// onec_instructors./onec_staff./onec_guardians.user_id are all nullable),
-// which is the common case for a first bulk roster import.
-const PERSON_LOGIN_COLUMNS = [
-  { key: 'email', header: 'Login Email', aliases: ['email', 'loginemail'] },
-  { key: 'username', header: 'Login Username', aliases: ['username', 'loginusername'] },
-  { key: 'password', header: 'Login Password', aliases: ['password', 'loginpassword'] }
-];
+// optional"). Every row now gets a portal login automatically — username
+// and password are generated (see server/lib/credentials.js), not typed
+// in, so there's nothing to fill in here beyond an optional email address;
+// download the job's results workbook afterward for the generated
+// username/password (see server/modules/bulkUpload/controller.js's
+// downloadCredentials).
+const PERSON_LOGIN_COLUMNS = [{ key: 'email', header: 'Email', aliases: ['email'] }];
 
 const LEARNER_COLUMNS = [
   { key: 'first_name', header: 'First Name *', required: true, aliases: ['firstname'] },
@@ -82,9 +78,7 @@ const SAMPLE_ROWS = {
     Gender: 'male',
     'Date of Birth': '2015-06-12',
     Address: '',
-    'Login Email': '',
-    'Login Username': '',
-    'Login Password': '',
+    Email: '',
     'Guardian First Name': 'Maria',
     'Guardian Last Name': 'Fernandes',
     'Guardian Mobile Number': '',
@@ -97,9 +91,7 @@ const SAMPLE_ROWS = {
     'Mobile Number *': '9876500000',
     'Staff / Employee ID': '',
     Gender: 'male',
-    'Login Email': '',
-    'Login Username': '',
-    'Login Password': ''
+    Email: ''
   },
   staff: {
     'First Name *': 'Priya',
@@ -107,9 +99,7 @@ const SAMPLE_ROWS = {
     'Mobile Number *': '9876511111',
     'Staff / Employee ID': '',
     Gender: 'female',
-    'Login Email': '',
-    'Login Username': '',
-    'Login Password': ''
+    Email: ''
   }
 };
 

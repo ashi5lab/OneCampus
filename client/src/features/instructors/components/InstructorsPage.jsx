@@ -5,6 +5,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Avatar } from '../../../components/Avatar';
+import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
 import { useInstructors, useCreateInstructor, useUpdateInstructor, useDeleteInstructor, useSetInstructorDesignation } from '../hooks/useInstructors';
 import { useModules } from '../../modules/hooks/useModules';
 import { useInstructorModules } from '../hooks/useInstructorModules';
@@ -161,6 +162,7 @@ function TeachersTab() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState(null);
+  const [newCredentials, setNewCredentials] = useState(null);
 
   const columns = [
     {
@@ -290,8 +292,21 @@ function TeachersTab() {
           submitting={createInstructor.isPending}
           submitError={createInstructor.error?.message}
           onSubmit={(values) =>
-            createInstructor.mutate(values, { onSuccess: () => setShowForm(false) })
+            createInstructor.mutate(values, {
+              onSuccess: (created) => {
+                setShowForm(false);
+                setNewCredentials({ username: created.username, password: created.password });
+              }
+            })
           }
+        />
+      )}
+
+      {newCredentials && (
+        <GeneratedCredentialsModal
+          username={newCredentials.username}
+          password={newCredentials.password}
+          onClose={() => setNewCredentials(null)}
         />
       )}
 
