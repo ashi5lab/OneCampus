@@ -13,4 +13,15 @@ async function canAccessCohort(req, cohortId) {
   return mine.some((c) => c.id === Number(cohortId));
 }
 
-module.exports = { canAccessCohort };
+// Moderation powers within a class channel — pinning, deleting someone
+// else's message, and viewing edit history — are anyone who isn't a
+// learner, scoped to a class they actually belong to. A learner can only
+// ever moderate their own messages (enforced separately by an author check
+// at the call site), never anyone else's.
+async function canModerateCohort(req, cohortId) {
+  const role = req.user?.role;
+  if (role === 'learner') return false;
+  return canAccessCohort(req, cohortId);
+}
+
+module.exports = { canAccessCohort, canModerateCohort };
