@@ -40,13 +40,13 @@ module.exports = {
   // server/modules/platform) — a longer-lived single token is an
   // intentional simplification until that admin surface is built out.
   SUPER_ADMIN_TOKEN_TTL: process.env.SUPER_ADMIN_TOKEN_TTL || '12h',
-  // Profile picture uploads (server/lib/cloudinary.js). No dev fallback —
+  // File uploads to Cloudflare R2 (server/lib/storage.js). No dev fallback —
   // unset means uploads are simply disabled (503), not a broken default.
-  // This Cloudinary account is shared across multiple unrelated apps, so
-  // every upload here is namespaced under an "onecampus/" folder — see
-  // lib/cloudinary.js.
-  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
-  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
-  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  // We use these for profile pictures, class chat attachments, and voicemails.
+  R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+  R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+  R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+  R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
+  R2_PUBLIC_URL: process.env.R2_PUBLIC_URL,
   isProd,
 };

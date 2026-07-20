@@ -96,6 +96,7 @@ const ptmRoutes = require('./modules/ptm/routes');
 const visitorsRoutes = require('./modules/visitors/routes');
 const classChannelRoutes = require('./modules/classChannel/routes');
 const activityRoutes = require('./modules/activity/routes');
+const storageRoutes = require('./modules/storage/routes');
 
 app.use('/api/v1/tenant', tenantRoutes);
 app.use('/api/v1/auth', authRoutes);
@@ -134,6 +135,7 @@ app.use('/api/v1/ptm', ptmRoutes);
 app.use('/api/v1/visitors', visitorsRoutes);
 app.use('/api/v1/class-channel', classChannelRoutes);
 app.use('/api/v1/activities', activityRoutes);
+app.use('/api/v1/storage', storageRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

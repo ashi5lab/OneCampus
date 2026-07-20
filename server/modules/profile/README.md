@@ -18,7 +18,9 @@
 - `broadcast_opt_out` (on `onec_users`, default `false`) gates `server/modules/broadcast`'s SMS and voicemail sends — `resolveRecipients` filters it out at the query level, so an opted-out user is silently excluded the same way a user with no phone on file already was (counted in the broadcast's aggregate numbers, no per-recipient error). It does **not** gate the `whatsapp`/`whatsapp_absentee` channels — the general `whatsapp` broadcast is still test-phase (single test recipient regardless of audience, see `server/modules/broadcast/README.md`) and `whatsapp_absentee` already has its own dedicated opt-in.
 - `whatsapp_opt_in` is the same `onec_guardians` column the Guardians roster page (`guardians.manage`) has always been able to edit — this just adds a second, self-serve path to the same column so a guardian doesn't need to ask staff to flip it. Both paths write the same column; there's no conflict or precedence to resolve.
 
-**Business Rules**:
-- `server/lib/cloudinary.js` wraps the Cloudinary Node SDK. **This Cloudinary account/cloud is shared across multiple unrelated apps** (per the user) — every upload goes under `onecampus/<tenant_schema>/profile-pictures/user-<userId>`, so assets from this app are always identifiable and can't collide with another project's.
-- Configured via `CLOUDINARY_CLOUD_NAME`/`CLOUDINARY_API_KEY`/`CLOUDINARY_API_SECRET` env vars (see `server/config/env.js`) — **never commit real values**, set them directly in the deployment platform (Railway dashboard for prod, `server/.env` — gitignored — for local dev). `lib/cloudinary.js`'s `isConfigured` is `false` (and uploads 503) if any are missing, rather than crashing at startup.
+## Architecture
+
+- Uses `server/lib/storage.js` to handle uploads to a Cloudflare R2 bucket (`justcampus`).
+- Configured via `R2_ACCOUNT_ID`/`R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`/`R2_BUCKET_NAME`/`R2_PUBLIC_URL` env vars (see `server/config/env.js`) — **never commit real values**, set them directly in the deployment platform (Railway dashboard for prod, `server/.env` — gitignored — for local dev). `lib/storage.js`'s `isConfigured` is `false` (and uploads 503) if any are missing, rather than crashing at startup.
+- The `R2_PUBLIC_URL` or app base URL is used to serve files via the `/api/v1/storage/*` proxy route.
 - The resulting `profile_picture_url` is surfaced through `learners`/`instructors`' `getProfile` endpoints (and guardians, via the learner profile's guardian list) — see those modules.
