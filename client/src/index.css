@@ -34,4 +34,10 @@
   .input {
     @apply w-full rounded border border-border px-3 py-2 text-base text-ink-900;
   }
+
+  /* Class chat composer's formatting toolbar buttons (Bold/Italic/
+     Underline/font-size stepper) — small, square, quiet until hovered. */
+  .fmt-toolbar-btn {
+    @apply flex h-6 w-6 items-center justify-center rounded text-[12px] font-bold text-ink-700 hover:bg-surface-muted;
+  }
 }

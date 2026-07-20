@@ -1,5 +1,6 @@
 const { getMyCohorts } = require('../../lib/myCohorts');
 const { getOwnLearnerId } = require('../../lib/ownLearner');
+const { stripHtml } = require('../../lib/richText');
 
 const AUDIENCE_BY_ROLE = { instructor: 'instructors', learner: 'learners', guardian: 'guardians' };
 
@@ -54,22 +55,25 @@ async function listActivities(req, res) {
     );
 
     if (cohortIds.length > 0) {
+      // body is sanitized HTML (see lib/richText.js) — fetched whole here and
+      // reduced to a plain-text preview below, not truncated in SQL, so
+      // stripHtml never cuts a tag in half.
       queries.push(
         req.db.query(
-          `SELECT 'class_post' AS type, p.id, LEFT(p.body, 140) AS title, c.name AS subtitle, p.created_at AS ts, u.username AS actor
+          `SELECT 'class_post' AS type, p.id, p.body AS title, c.name AS subtitle, p.created_at AS ts, u.username AS actor
            FROM onec_class_posts p JOIN onec_users u ON p.author_id = u.id JOIN onec_cohorts c ON p.cohort_id = c.id
-           WHERE p.cohort_id = ANY($1) ORDER BY p.created_at DESC LIMIT 15`,
+           WHERE p.cohort_id = ANY($1) AND p.deleted_at IS NULL ORDER BY p.created_at DESC LIMIT 15`,
           [cohortIds]
         )
       );
       queries.push(
         req.db.query(
-          `SELECT 'class_reply' AS type, r.id, LEFT(r.body, 140) AS title, c.name AS subtitle, r.created_at AS ts, u.username AS actor
+          `SELECT 'class_reply' AS type, r.id, r.body AS title, c.name AS subtitle, r.created_at AS ts, u.username AS actor
            FROM onec_class_post_replies r
            JOIN onec_class_posts p ON r.post_id = p.id
            JOIN onec_cohorts c ON p.cohort_id = c.id
            JOIN onec_users u ON r.author_id = u.id
-           WHERE p.cohort_id = ANY($1) ORDER BY r.created_at DESC LIMIT 15`,
+           WHERE p.cohort_id = ANY($1) AND r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 15`,
           [cohortIds]
         )
       );
@@ -114,6 +118,13 @@ async function listActivities(req, res) {
 
     const results = await Promise.all(queries);
     const items = results.flatMap((r) => r.rows);
+    // class_post/class_reply titles came through as raw sanitized-HTML
+    // bodies (see the queries above) — reduce to a plain-text preview here.
+    items.forEach((item) => {
+      if (item.type === 'class_post' || item.type === 'class_reply') {
+        item.title = stripHtml(item.title).slice(0, 140);
+      }
+    });
     items.sort((a, b) => new Date(b.ts) - new Date(a.ts));
 
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;

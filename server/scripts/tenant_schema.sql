@@ -582,11 +582,26 @@ CREATE TABLE onec_visitor_logs (
 -- Class channel: one Teams-style chat per cohort (see
 -- server/modules/classChannel), backing the "Class" tab's Chat view for
 -- learners/instructors/staff.
+-- Message body is sanitized HTML (bold/italic/underline/color/font-size/
+-- @mention spans — see server/lib/richText.js), never raw user HTML.
+-- deleted_at/deleted_by is a soft-delete flag, never a real DELETE — a
+-- moderator "removing" a message just hides it (see canModerateCohort in
+-- server/lib/cohortAccess.js); the row and its edit history stay for later
+-- audit/log tooling. Only one post per cohort has pinned_at set at a time.
 CREATE TABLE onec_class_posts (
     id SERIAL PRIMARY KEY,
     cohort_id INT NOT NULL REFERENCES onec_cohorts(id) ON DELETE CASCADE,
     author_id INT NOT NULL REFERENCES onec_users(id) ON DELETE CASCADE,
     body TEXT NOT NULL,
+    is_edited BOOLEAN NOT NULL DEFAULT false,
+    deleted_at TIMESTAMP,
+    deleted_by INT REFERENCES onec_users(id),
+    pinned_at TIMESTAMP,
+    pinned_by INT REFERENCES onec_users(id),
+    attachment_url TEXT,
+    attachment_name TEXT,
+    attachment_size INT,
+    attachment_type VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -595,11 +610,44 @@ CREATE TABLE onec_class_post_replies (
     post_id INT NOT NULL REFERENCES onec_class_posts(id) ON DELETE CASCADE,
     author_id INT NOT NULL REFERENCES onec_users(id) ON DELETE CASCADE,
     body TEXT NOT NULL,
+    is_edited BOOLEAN NOT NULL DEFAULT false,
+    deleted_at TIMESTAMP,
+    deleted_by INT REFERENCES onec_users(id),
+    attachment_url TEXT,
+    attachment_name TEXT,
+    attachment_size INT,
+    attachment_type VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_class_posts_cohort_created ON onec_class_posts(cohort_id, created_at);
 CREATE INDEX idx_class_post_replies_post ON onec_class_post_replies(post_id);
+
+-- One row per prior version of an edited message — the moderation-log
+-- trail for "what did this used to say" (see the edit-history endpoints,
+-- moderator-only).
+CREATE TABLE onec_class_message_edits (
+    id SERIAL PRIMARY KEY,
+    message_type VARCHAR(10) NOT NULL, -- 'post' | 'reply'
+    message_id INT NOT NULL,
+    previous_body TEXT NOT NULL,
+    edited_by INT REFERENCES onec_users(id),
+    edited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_class_message_edits_lookup ON onec_class_message_edits(message_type, message_id);
+
+-- One reaction per user per message — re-reacting with a different emoji
+-- replaces it, matching Teams/Slack.
+CREATE TABLE onec_class_message_reactions (
+    id SERIAL PRIMARY KEY,
+    message_type VARCHAR(10) NOT NULL, -- 'post' | 'reply'
+    message_id INT NOT NULL,
+    user_id INT NOT NULL REFERENCES onec_users(id) ON DELETE CASCADE,
+    emoji VARCHAR(8) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(message_type, message_id, user_id)
+);
+CREATE INDEX idx_class_message_reactions_lookup ON onec_class_message_reactions(message_type, message_id);
 
 -- Per-user Home insight-card visibility (see server/lib/homeCardPrefs.js) —
 -- null means "show every card" (the default), never written to until a
