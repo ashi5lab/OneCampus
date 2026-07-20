@@ -10,8 +10,7 @@ import { getHomeCardsForRole, isCardVisible } from '../../../lib/homeCardKeys';
 const ACTIVITY_DOT_COLOR = {
   notice: 'var(--accent)',
   message: '#1D4ED8',
-  class_post: '#0F766E',
-  class_reply: '#0F766E',
+  mention: 'var(--accent)',
   assignment: '#A21CAF',
   exam: '#B91C1C',
   attendance: '#1D4ED8',

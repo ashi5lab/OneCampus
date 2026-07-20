@@ -55,26 +55,34 @@ async function listActivities(req, res) {
     );
 
     if (cohortIds.length > 0) {
-      // body is sanitized HTML (see lib/richText.js) — fetched whole here and
-      // reduced to a plain-text preview below, not truncated in SQL, so
-      // stripHtml never cuts a tag in half.
+      // Not every class-chat message — only ones that actually @mention this
+      // caller (this feed is a notification center, not a chat mirror; the
+      // full conversation already lives in the Class tab itself). A mention
+      // is a `<span class="mention" data-user-id="ID">` in the sanitized
+      // body (see lib/richText.js) — matching the literal attribute string
+      // (including both quotes) keeps id 12 from matching a mention of id
+      // 123. body is fetched whole and reduced to a plain-text preview below
+      // so stripHtml never cuts a tag in half.
+      const mentionPattern = `%data-user-id="${userId}"%`;
       queries.push(
         req.db.query(
-          `SELECT 'class_post' AS type, p.id, p.body AS title, c.name AS subtitle, p.created_at AS ts, u.username AS actor
+          `SELECT 'mention' AS type, p.id, p.body AS title, c.name AS subtitle, p.created_at AS ts, u.username AS actor
            FROM onec_class_posts p JOIN onec_users u ON p.author_id = u.id JOIN onec_cohorts c ON p.cohort_id = c.id
-           WHERE p.cohort_id = ANY($1) AND p.deleted_at IS NULL ORDER BY p.created_at DESC LIMIT 15`,
-          [cohortIds]
+           WHERE p.cohort_id = ANY($1) AND p.deleted_at IS NULL AND p.body LIKE $2
+           ORDER BY p.created_at DESC LIMIT 15`,
+          [cohortIds, mentionPattern]
         )
       );
       queries.push(
         req.db.query(
-          `SELECT 'class_reply' AS type, r.id, r.body AS title, c.name AS subtitle, r.created_at AS ts, u.username AS actor
+          `SELECT 'mention' AS type, r.id, r.body AS title, c.name AS subtitle, r.created_at AS ts, u.username AS actor
            FROM onec_class_post_replies r
            JOIN onec_class_posts p ON r.post_id = p.id
            JOIN onec_cohorts c ON p.cohort_id = c.id
            JOIN onec_users u ON r.author_id = u.id
-           WHERE p.cohort_id = ANY($1) AND r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 15`,
-          [cohortIds]
+           WHERE p.cohort_id = ANY($1) AND r.deleted_at IS NULL AND r.body LIKE $2
+           ORDER BY r.created_at DESC LIMIT 15`,
+          [cohortIds, mentionPattern]
         )
       );
       queries.push(
@@ -118,11 +126,12 @@ async function listActivities(req, res) {
 
     const results = await Promise.all(queries);
     const items = results.flatMap((r) => r.rows);
-    // class_post/class_reply titles came through as raw sanitized-HTML
-    // bodies (see the queries above) — reduce to a plain-text preview here.
+    // mention titles came through as raw sanitized-HTML bodies (see the
+    // queries above) — reduce to a plain-text preview, prefixed so it's
+    // clear at a glance why this landed in the feed.
     items.forEach((item) => {
-      if (item.type === 'class_post' || item.type === 'class_reply') {
-        item.title = stripHtml(item.title).slice(0, 140);
+      if (item.type === 'mention') {
+        item.title = `You were mentioned: ${stripHtml(item.title).slice(0, 120)}`;
       }
     });
     items.sort((a, b) => new Date(b.ts) - new Date(a.ts));

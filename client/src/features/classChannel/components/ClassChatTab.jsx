@@ -13,7 +13,6 @@ import {
   usePinPost,
   useUnpinPost
 } from '../hooks/useClassChannel';
-import { markupToHtml } from '../../../lib/richTextMarkup';
 import { MessageComposer } from './MessageComposer';
 import { MessagePost } from './MessagePost';
 import { EditHistoryModal } from './EditHistoryModal';
@@ -39,12 +38,12 @@ export function ClassChatTab({ cohortId }) {
   const canModerate = result?.canModerate || false;
   const pinnedPost = posts.find((p) => p.pinned_at);
 
-  async function handleNewPost({ text, file }) {
-    await createPost.mutateAsync({ body: markupToHtml(text), file });
+  async function handleNewPost({ html, file }) {
+    await createPost.mutateAsync({ body: html, file });
   }
 
-  async function handleReply(postId, { text, file }) {
-    await createReply.mutateAsync({ postId, body: markupToHtml(text), file });
+  async function handleReply(postId, { html, file }) {
+    await createReply.mutateAsync({ postId, body: html, file });
     setReplyingTo(null);
   }
 
@@ -82,7 +81,7 @@ export function ClassChatTab({ cohortId }) {
                 members={members || []}
                 isPinned={!!post.pinned_at}
                 onReply={() => setReplyingTo(replyingTo === post.id ? null : post.id)}
-                onEdit={(text) => editPost.mutateAsync({ id: post.id, body: markupToHtml(text) })}
+                onEdit={(html) => editPost.mutateAsync({ id: post.id, body: html })}
                 onDelete={() => deletePost.mutate(post.id)}
                 onReact={(emoji) => setReaction.mutate({ postId: post.id, emoji })}
                 onPin={() => pinPost.mutate(post.id)}
@@ -100,7 +99,7 @@ export function ClassChatTab({ cohortId }) {
                       currentUserId={user?.id}
                       canModerate={canModerate}
                       members={members || []}
-                      onEdit={(text) => editReply.mutateAsync({ id: reply.id, body: markupToHtml(text) })}
+                      onEdit={(html) => editReply.mutateAsync({ id: reply.id, body: html })}
                       onDelete={() => deleteReply.mutate(reply.id)}
                       onViewHistory={() => setHistoryTarget({ kind: 'reply', id: reply.id })}
                     />

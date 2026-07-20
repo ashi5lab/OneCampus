@@ -76,18 +76,17 @@ export function MessagePost({
       <div className="py-2">
         <MessageComposer
           members={members}
-          initialText=""
+          initialHtml={message.body}
           placeholder="Edit your message…"
           submitLabel="Save"
           showAttach={false}
           autoFocus
           onCancel={() => setEditing(false)}
-          onSubmit={async ({ text }) => {
-            await onEdit(text);
+          onSubmit={async ({ html }) => {
+            await onEdit(html);
             setEditing(false);
           }}
         />
-        <div className="mt-1 pl-1 text-[10.5px] text-ink-500">Editing replaces the message with plain text — re-apply formatting if you want it.</div>
       </div>
     );
   }

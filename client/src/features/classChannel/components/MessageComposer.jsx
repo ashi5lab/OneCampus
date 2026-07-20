@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { wrapSelection, insertMention, activeMentionQuery } from '../../../lib/richTextMarkup';
+import { useEffect, useRef, useState } from 'react';
+import { activeMentionQuery } from '../../../lib/mentionQuery';
 
 const COLORS = [
   { hex: '#191924', label: 'Default' },
@@ -14,16 +14,78 @@ function memberInitials(m) {
   return `${m.first_name?.[0] || ''}${m.last_name?.[0] || ''}`.toUpperCase();
 }
 
-// Shared by "new post", "reply", and "edit" — a plain <textarea> (not
-// contentEditable) driving a small custom markup language that the
-// toolbar wraps the current selection with, converted to sanitized HTML on
-// submit (see lib/richTextMarkup.js). A textarea was chosen over a rich
-// contentEditable box specifically for reliability: selection/formatting
-// state on a textarea is just string + index math, with none of
-// contentEditable's cross-browser Range/Selection quirks.
+// Everything before the caret, as plain text — used to detect an
+// in-progress "@query" (see lib/mentionQuery.js). Reading it via a Range
+// rather than tracking a mirrored string means it stays correct regardless
+// of how many formatted spans/mention chips sit earlier in the message.
+function textBeforeCaret(root) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return '';
+  const range = sel.getRangeAt(0);
+  if (!root.contains(range.startContainer)) return '';
+  const preRange = document.createRange();
+  preRange.selectNodeContents(root);
+  preRange.setEnd(range.endContainer, range.endOffset);
+  return preRange.toString();
+}
+
+// Wraps the current (non-collapsed) selection in a <span style="...">,
+// producing exactly the shape server/lib/richText.js's sanitizer expects —
+// there's no intermediate markup language to convert on submit, the editor's
+// own DOM already is the message body.
+function wrapSelectionWithStyle(styleProp, styleValue) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+  const range = sel.getRangeAt(0);
+  const span = document.createElement('span');
+  span.style[styleProp] = styleValue;
+  span.appendChild(range.extractContents());
+  range.insertNode(span);
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+  return true;
+}
+
+// Replaces the just-typed "@query" (assumed to be plain text immediately
+// before the caret, true for normal typing) with a mention chip, matching
+// the exact <span class="mention" data-user-id="…"> shape the sanitizer
+// allows.
+function insertMentionNode(removeLen, userId, name) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  if (range.startContainer.nodeType === Node.TEXT_NODE && range.startOffset >= removeLen) {
+    range.setStart(range.startContainer, range.startOffset - removeLen);
+  }
+  range.deleteContents();
+  const span = document.createElement('span');
+  span.className = 'mention';
+  span.setAttribute('data-user-id', String(userId));
+  span.textContent = `@${name}`;
+  range.insertNode(span);
+  const space = document.createTextNode(' ');
+  span.after(space);
+  const after = document.createRange();
+  after.setStartAfter(space);
+  after.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(after);
+}
+
+// Shared by "new post", "reply", and "edit" — a real contentEditable rich
+// text box (not a plain textarea) so formatting shows live as you type,
+// matching how Teams' own compose box works: Bold/Italic/Underline go
+// through the browser's native execCommand (which produces <b>/<i>/<u> —
+// already in the sanitizer's allow-list), and color/font-size wrap the
+// current selection in a styled <span> directly, since execCommand's
+// color/size commands emit legacy <font> tags the sanitizer doesn't allow.
+// The editor's innerHTML on submit IS the sanitized-HTML-shaped message
+// body — no separate markup-to-HTML conversion step.
 export function MessageComposer({
   members = [],
-  initialText = '',
+  initialHtml = '',
   placeholder = 'Message this class…',
   onSubmit,
   onCancel,
@@ -31,15 +93,32 @@ export function MessageComposer({
   showAttach = true,
   autoFocus = false
 }) {
-  const [text, setText] = useState(initialText);
   const [file, setFile] = useState(null);
   const [showToolbar, setShowToolbar] = useState(false);
   const [sizeIndex, setSizeIndex] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [isEmpty, setIsEmpty] = useState(!initialHtml);
   const [mention, setMention] = useState(null); // { start, query }
   const [mentionHi, setMentionHi] = useState(0);
-  const textareaRef = useRef(null);
+  const editorRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.innerHTML = initialHtml || '';
+    setIsEmpty(el.textContent.trim().length === 0);
+    if (autoFocus) {
+      el.focus();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredMembers = mention
     ? members
@@ -53,33 +132,46 @@ export function MessageComposer({
         .slice(0, 6)
     : [];
 
-  function applyResult(result) {
-    if (!result) return;
-    setText(result.value);
-    requestAnimationFrame(() => {
-      const el = textareaRef.current;
-      if (el) {
-        el.focus();
-        el.setSelectionRange(result.selectionStart, result.selectionEnd);
-      }
-    });
+  function syncEmpty() {
+    const el = editorRef.current;
+    if (!el) return;
+    const empty = el.textContent.trim().length === 0;
+    if (empty && el.innerHTML !== '') {
+      el.innerHTML = ''; // clears a leftover stray <br>
+      // Chromium remembers the last active inline style at the caret after
+      // you delete through a styled run, and silently re-applies it (as a
+      // legacy <font> tag, regardless of how the style was first set) to
+      // whatever gets typed next — even though the DOM is now empty.
+      // removeFormat only drops that cached "typing style" if the
+      // selection is actually collapsed inside the (now-empty) editor when
+      // it runs — rewriting innerHTML alone leaves the old selection
+      // dangling, so the caret has to be explicitly re-planted first.
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand('removeFormat');
+    }
+    setIsEmpty(empty);
   }
 
-  function handleInput(e) {
-    const value = e.target.value;
-    setText(value);
-    const caret = e.target.selectionStart;
-    const active = activeMentionQuery(value, caret);
-    setMention(active);
+  function handleInput() {
+    const el = editorRef.current;
+    if (!el) return;
+    syncEmpty();
+    const before = textBeforeCaret(el);
+    setMention(activeMentionQuery(before, before.length));
     setMentionHi(0);
   }
 
   function pickMention(member) {
-    const el = textareaRef.current;
-    if (!el || !mention) return;
-    const result = insertMention(el, mention.start, member.id, `${member.first_name} ${member.last_name}`);
+    if (!mention) return;
+    editorRef.current?.focus();
+    insertMentionNode(mention.query.length + 1, member.id, `${member.first_name} ${member.last_name}`);
     setMention(null);
-    applyResult(result);
+    syncEmpty();
   }
 
   function handleKeyDown(e) {
@@ -110,26 +202,22 @@ export function MessageComposer({
     }
   }
 
-  function fmt(kind) {
-    const el = textareaRef.current;
-    if (!el) return;
-    if (kind === 'bold') applyResult(wrapSelection(el, '**', '**'));
-    else if (kind === 'italic') applyResult(wrapSelection(el, '*', '*'));
-    else if (kind === 'underline') applyResult(wrapSelection(el, '__', '__'));
+  function fmt(cmd) {
+    editorRef.current?.focus();
+    document.execCommand(cmd);
+    syncEmpty();
   }
 
   function applyColor(hex) {
-    const el = textareaRef.current;
-    if (!el) return;
-    applyResult(wrapSelection(el, `[[c:${hex}]]`, '[[/c]]'));
+    editorRef.current?.focus();
+    if (wrapSelectionWithStyle('color', hex)) syncEmpty();
   }
 
   function applySize(dir) {
     const nextIndex = Math.min(SIZE_STEPS.length - 1, Math.max(0, sizeIndex + dir));
     setSizeIndex(nextIndex);
-    const el = textareaRef.current;
-    if (!el) return;
-    applyResult(wrapSelection(el, `[[s:${SIZE_STEPS[nextIndex]}]]`, '[[/s]]'));
+    editorRef.current?.focus();
+    if (wrapSelectionWithStyle('fontSize', `${SIZE_STEPS[nextIndex]}em`)) syncEmpty();
   }
 
   function handleFileChange(e) {
@@ -140,11 +228,14 @@ export function MessageComposer({
 
   async function handleSubmit() {
     if (submitting) return;
-    if (!text.trim() && !file) return;
+    const el = editorRef.current;
+    if (!el) return;
+    if (isEmpty && !file) return;
     setSubmitting(true);
     try {
-      await onSubmit({ text: text.trim(), file });
-      setText('');
+      await onSubmit({ html: el.innerHTML, file });
+      el.innerHTML = '';
+      setIsEmpty(true);
       setFile(null);
     } finally {
       setSubmitting(false);
@@ -160,29 +251,6 @@ export function MessageComposer({
           <button type="button" onClick={() => setFile(null)} className="font-bold text-ink-500 hover:text-danger">
             ✕
           </button>
-        </div>
-      )}
-
-      {showToolbar && (
-        <div className="mb-1.5 flex flex-wrap items-center gap-1 rounded-lg border border-border bg-surface p-1.5">
-          <button type="button" onClick={() => fmt('bold')} className="fmt-toolbar-btn font-bold" title="Bold">B</button>
-          <button type="button" onClick={() => fmt('italic')} className="fmt-toolbar-btn italic" title="Italic">I</button>
-          <button type="button" onClick={() => fmt('underline')} className="fmt-toolbar-btn underline" title="Underline">U</button>
-          <span className="mx-1 h-4 w-px bg-border" />
-          {COLORS.map((c) => (
-            <button
-              key={c.hex}
-              type="button"
-              title={c.label}
-              onClick={() => applyColor(c.hex)}
-              className="h-4 w-4 rounded-full ring-1 ring-border"
-              style={{ background: c.hex }}
-            />
-          ))}
-          <span className="mx-1 h-4 w-px bg-border" />
-          <button type="button" onClick={() => applySize(-1)} className="fmt-toolbar-btn" title="Smaller">A−</button>
-          <span className="text-[10.5px] font-semibold text-ink-500">{Math.round(SIZE_STEPS[sizeIndex] * 100)}%</span>
-          <button type="button" onClick={() => applySize(1)} className="fmt-toolbar-btn" title="Bigger">A+</button>
         </div>
       )}
 
@@ -216,6 +284,7 @@ export function MessageComposer({
 
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => setShowToolbar((v) => !v)}
           title="Formatting"
           className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[13px] font-bold ${showToolbar ? 'bg-accent/15 text-accent-dark' : 'text-ink-500 hover:bg-surface-muted'}`}
@@ -240,15 +309,13 @@ export function MessageComposer({
           </>
         )}
 
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={handleInput}
+        <div
+          ref={editorRef}
+          contentEditable
+          data-placeholder={placeholder}
+          onInput={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          rows={1}
-          autoFocus={autoFocus}
-          className="input max-h-24 min-h-[36px] flex-1 !rounded-2xl py-2 text-[12.5px] leading-relaxed"
+          className="rich-editor input max-h-24 min-h-[36px] flex-1 overflow-y-auto !rounded-2xl py-2 text-[12.5px] leading-relaxed"
         />
 
         {onCancel && (
@@ -259,7 +326,7 @@ export function MessageComposer({
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={submitting || (!text.trim() && !file)}
+          disabled={submitting || (isEmpty && !file)}
           className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink disabled:opacity-50"
           aria-label={submitLabel}
         >
@@ -274,6 +341,34 @@ export function MessageComposer({
           )}
         </button>
       </div>
+
+      {/* Below the input, not above — a formatting toolbar sitting right
+          above the box collided with the browser's native selection
+          popup (copy/cut/paste), which also renders just above selected
+          text. Below leaves that space clear. */}
+      {showToolbar && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1 rounded-lg border border-border bg-surface p-1.5">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => fmt('bold')} className="fmt-toolbar-btn font-bold" title="Bold">B</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => fmt('italic')} className="fmt-toolbar-btn italic" title="Italic">I</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => fmt('underline')} className="fmt-toolbar-btn underline" title="Underline">U</button>
+          <span className="mx-1 h-4 w-px bg-border" />
+          {COLORS.map((c) => (
+            <button
+              key={c.hex}
+              type="button"
+              title={c.label}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => applyColor(c.hex)}
+              className="h-4 w-4 rounded-full ring-1 ring-border"
+              style={{ background: c.hex }}
+            />
+          ))}
+          <span className="mx-1 h-4 w-px bg-border" />
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => applySize(-1)} className="fmt-toolbar-btn" title="Smaller">A−</button>
+          <span className="text-[10.5px] font-semibold text-ink-500">{Math.round(SIZE_STEPS[sizeIndex] * 100)}%</span>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => applySize(1)} className="fmt-toolbar-btn" title="Bigger">A+</button>
+        </div>
+      )}
     </div>
   );
 }
