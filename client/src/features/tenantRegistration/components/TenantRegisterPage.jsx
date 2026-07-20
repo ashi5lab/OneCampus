@@ -25,6 +25,7 @@ export function TenantRegisterPage() {
   const [submitted, setSubmitted] = useState(null);
 
   const slug = watch('slug');
+  const prefix = watch('prefix');
 
   async function onSubmit(values) {
     setSubmitError(null);
@@ -49,9 +50,16 @@ export function TenantRegisterPage() {
           </div>
           <h1 className="font-display text-xl font-bold text-ink-900">Registration submitted</h1>
           <p className="mt-2 text-sm text-ink-500">
-            <strong className="text-ink-700">{submitted.org_name}</strong> has been registered with domain{' '}
-            <code className="rounded bg-surface-muted px-1.5 py-0.5 text-[12.5px]">{submitted.domain}</code>. A
-            super admin will review your registration — you'll be able to sign in with{' '}
+            <strong className="text-ink-700">{submitted.org_name}</strong> has been registered with the prefix{' '}
+            <code className="rounded bg-surface-muted px-1.5 py-0.5 text-[12.5px]">{submitted.prefix}</code>. Once
+            approved, everyone signs in with just a username and password — no domain to remember — and every
+            username at your institution will start with{' '}
+            <code className="rounded bg-surface-muted px-1.5 py-0.5 text-[12.5px]">{submitted.prefix}_</code>. Your
+            own admin login will be{' '}
+            <code className="rounded bg-surface-muted px-1.5 py-0.5 text-[12.5px]">
+              {submitted.prefix}_{submitted.admin_username}
+            </code>
+            . A super admin will review your registration —{' '}
             <Link to="/login" className="font-semibold underline">
               Login as Tenant
             </Link>{' '}
@@ -104,6 +112,21 @@ export function TenantRegisterPage() {
             </div>
           )}
         </Field>
+        <Field label="Username Prefix" error={errors.prefix}>
+          <input className="input" placeholder="qs" autoCapitalize="none" {...register('prefix')} />
+          <div className="mt-1 text-[11px] text-ink-500">
+            {prefix
+              ? (
+                <>
+                  Everyone's username will start with{' '}
+                  <code className="rounded bg-surface-muted px-1 py-0.5">{prefix}_</code> — e.g.{' '}
+                  <code className="rounded bg-surface-muted px-1 py-0.5">{prefix}_adam2345</code>. There's no
+                  domain to sign in with anymore, just this prefix baked into the username.
+                </>
+              )
+              : "A short prefix (2-6 letters/numbers) every username at your institution starts with — e.g. \"qs\" for Q School."}
+          </div>
+        </Field>
 
         <div className="mb-4 mt-5 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Contact</div>
         <Field label="Contact Name" error={errors.contact_name}>
@@ -121,6 +144,10 @@ export function TenantRegisterPage() {
         </div>
         <Field label="Admin Username" error={errors.admin_username}>
           <input className="input" autoCapitalize="none" {...register('admin_username')} />
+          <div className="mt-1 text-[11px] text-ink-500">
+            Just the part after your prefix — e.g. "principal", not "{prefix || 'qs'}_principal". Your full login
+            username will have the prefix added automatically.
+          </div>
         </Field>
         <Field label="Password" error={errors.admin_password}>
           <input type="password" className="input" {...register('admin_password')} />

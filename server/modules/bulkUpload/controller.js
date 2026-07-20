@@ -1,7 +1,7 @@
 const multer = require('multer');
 const { parsePagination } = require('../../lib/pagination');
 const { ENTITY_FIELDS } = require('../../lib/bulkUploadFields');
-const { templateAsXlsxBuffer, templateAsCsvBuffer, failuresAsXlsxBuffer } = require('../../lib/bulkUploadTemplates');
+const { templateAsXlsxBuffer, templateAsCsvBuffer, failuresAsXlsxBuffer, credentialsAsXlsxBuffer } = require('../../lib/bulkUploadTemplates');
 const { MAX_DATA_ROWS, parseUploadedFile, buildHeaderKeyMap, getMissingRequiredHeaders, processJob } = require('../../lib/bulkUploadProcessor');
 const { logAudit } = require('../../lib/audit');
 
@@ -95,7 +95,8 @@ async function uploadFile(req, res) {
     // Captured into plain variables before the response ends and req/req.db
     // become unsafe to rely on for anything slow — see processJob's comment.
     const schemaName = req.tenantSchema;
-    processJob({ jobId: job.id, entityType, schemaName, headerKeyMap, rawRows: parsed.rows }).catch((err) => {
+    const tenant = { prefix: req.tenantConfig.prefix, domain: req.tenantConfig.domain };
+    processJob({ jobId: job.id, entityType, schemaName, headerKeyMap, rawRows: parsed.rows, tenant }).catch((err) => {
       console.error('Unhandled error kicking off bulk upload job:', err);
     });
 
@@ -187,6 +188,28 @@ async function downloadFailures(req, res) {
   }
 }
 
+// GET /bulk-upload/jobs/:id/credentials.xlsx — the one place to retrieve
+// the plaintext passwords generated for this job's successful rows; not
+// stored/shown anywhere else after this.
+async function downloadCredentials(req, res) {
+  try {
+    const { id } = req.params;
+    const result = await req.db.query('SELECT entity_type, credentials FROM onec_bulk_upload_jobs WHERE id = $1', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+
+    const { entity_type, credentials } = result.rows[0];
+    if (!credentials || credentials.length === 0) return res.status(400).json({ error: 'This job has no successfully created rows' });
+
+    const buffer = credentialsAsXlsxBuffer(entity_type, credentials);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="bulk_upload_${id}_credentials.xlsx"`);
+    res.send(buffer);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   upload,
   requireValidEntityType,
@@ -194,5 +217,6 @@ module.exports = {
   uploadFile,
   listJobs,
   getJob,
-  downloadFailures
+  downloadFailures,
+  downloadCredentials
 };

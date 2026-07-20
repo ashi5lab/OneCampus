@@ -104,7 +104,7 @@ export function SuperAdminDashboardPage() {
                     {tenant.status === 'approved' && !tenant.is_active && <Badge variant="inactive">disabled</Badge>}
                   </div>
                   <div className="mt-0.5 text-[12.5px] text-ink-500">
-                    {tenant.domain} &middot; {tenant.org_type}
+                    {tenant.domain} &middot; {tenant.org_type} &middot; prefix: {tenant.prefix}
                   </div>
                 </div>
               </div>

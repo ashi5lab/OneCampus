@@ -12,6 +12,7 @@ router.get('/template/:entityType', controller.requireValidEntityType, controlle
 router.get('/jobs', controller.listJobs);
 router.get('/jobs/:id', controller.getJob);
 router.get('/jobs/:id/failures.xlsx', controller.downloadFailures);
+router.get('/jobs/:id/credentials.xlsx', controller.downloadCredentials);
 
 // Manual .single() wrapping (same pattern as broadcast/routes.js's
 // voicemail upload) so a multer rejection (wrong extension, over the size

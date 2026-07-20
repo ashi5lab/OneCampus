@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
-import { getTenantDomain, setTenantDomain } from '../../../lib/apiClient';
 import { InstallAppPrompt } from '../../../components/InstallAppPrompt';
 
 export function LoginPage() {
@@ -10,7 +9,6 @@ export function LoginPage() {
   const { config, reloadConfig } = useConfig();
   const navigate = useNavigate();
   const location = useLocation();
-  const [domain, setDomain] = useState(getTenantDomain());
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -36,7 +34,6 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      setTenantDomain(domain.trim());
       try {
         await login(username, password);
       } catch (err) {
@@ -70,16 +67,6 @@ export function LoginPage() {
           {config?.org_name || 'OneCampus'}
         </div>
         <div className="mb-6 text-sm text-ink-500">Sign in to your institution</div>
-
-        <label className="mb-1 block text-xs font-semibold text-ink-700">Tenant Domain</label>
-        <input
-          className="input mb-4"
-          placeholder="yourschool.onecampus.local"
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
-          autoCapitalize="none"
-          autoCorrect="off"
-        />
 
         <label className="mb-1 block text-xs font-semibold text-ink-700">Username</label>
         <input

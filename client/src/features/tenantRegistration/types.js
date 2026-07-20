@@ -12,6 +12,11 @@ export const tenantRegistrationSchema = z
       .min(2, 'Subdomain must be at least 2 characters')
       .max(63, 'Subdomain is too long')
       .regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers, and hyphens only'),
+    prefix: z
+      .string()
+      .min(2, 'Prefix must be at least 2 characters')
+      .max(6, 'Prefix must be at most 6 characters')
+      .regex(/^[a-z0-9]+$/, 'Use lowercase letters and numbers only'),
     contact_name: z.string().min(1, 'Contact name is required'),
     contact_phone: z.string().min(7, 'A valid phone number is required'),
     contact_email: z.string().email('A valid email is required'),

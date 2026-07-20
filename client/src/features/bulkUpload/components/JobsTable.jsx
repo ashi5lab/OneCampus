@@ -3,6 +3,7 @@ import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { useBulkUploadJobs } from '../hooks/useBulkUpload';
 import { JobErrorsModal } from './JobErrorsModal';
+import { bulkUploadApi } from '../services/bulkUploadApi';
 
 const STATUS_META = {
   processing: { variant: 'pending', label: 'Processing…' },
@@ -47,6 +48,22 @@ export function JobsTable({ entityType }) {
           </button>
         ) : (
           <span className="text-ink-500">0</span>
+        )
+    },
+    {
+      key: 'logins',
+      header: 'Logins',
+      render: (job) =>
+        job.success_count > 0 ? (
+          <button
+            type="button"
+            onClick={() => bulkUploadApi.downloadCredentials(job.id)}
+            className="font-semibold text-accent-dark hover:opacity-80"
+          >
+            Download
+          </button>
+        ) : (
+          <span className="text-ink-500">—</span>
         )
     },
     { key: 'created_by_username', header: 'Uploaded by', render: (job) => job.created_by_username || '—' },

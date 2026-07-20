@@ -7,6 +7,7 @@ import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { SearchSelect } from '../../../components/SearchSelect';
 import { Avatar } from '../../../components/Avatar';
+import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners, useCreateLearner, useUpdateLearner, useDeleteLearner, useSetClassHead, useSetSchoolHead } from '../hooks/useLearners';
 import { LearnerFormModal } from './LearnerFormModal';
@@ -43,6 +44,7 @@ export function LearnersPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingLearner, setEditingLearner] = useState(null);
+  const [newCredentials, setNewCredentials] = useState(null);
 
   const columns = [
     {
@@ -215,8 +217,21 @@ export function LearnersPage() {
           submitting={createLearner.isPending}
           submitError={createLearner.error?.message}
           onSubmit={(values) =>
-            createLearner.mutate(values, { onSuccess: () => setShowForm(false) })
+            createLearner.mutate(values, {
+              onSuccess: (created) => {
+                setShowForm(false);
+                setNewCredentials({ username: created.username, password: created.password });
+              }
+            })
           }
+        />
+      )}
+
+      {newCredentials && (
+        <GeneratedCredentialsModal
+          username={newCredentials.username}
+          password={newCredentials.password}
+          onClose={() => setNewCredentials(null)}
         />
       )}
 

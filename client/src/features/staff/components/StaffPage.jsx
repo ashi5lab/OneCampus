@@ -3,6 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Avatar } from '../../../components/Avatar';
+import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
 import { useStaff, useCreateStaff, useUpdateStaff, useDeleteStaff, useSetStaffDesignation } from '../hooks/useStaff';
 import { StaffFormModal } from './StaffFormModal';
 import { DesignationPicker } from '../../../components/DesignationPicker';
@@ -34,6 +35,7 @@ export function StaffPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
+  const [newCredentials, setNewCredentials] = useState(null);
 
   const columns = [
     {
@@ -161,8 +163,21 @@ export function StaffPage() {
           submitting={createStaff.isPending}
           submitError={createStaff.error?.message}
           onSubmit={(values) =>
-            createStaff.mutate(values, { onSuccess: () => setShowForm(false) })
+            createStaff.mutate(values, {
+              onSuccess: (created) => {
+                setShowForm(false);
+                setNewCredentials({ username: created.username, password: created.password });
+              }
+            })
           }
+        />
+      )}
+
+      {newCredentials && (
+        <GeneratedCredentialsModal
+          username={newCredentials.username}
+          password={newCredentials.password}
+          onClose={() => setNewCredentials(null)}
         />
       )}
 

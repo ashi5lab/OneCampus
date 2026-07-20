@@ -42,18 +42,15 @@ export function LearnerFormModal({ onClose, onSubmit, submitting, submitError, i
 
         {!isEdit && (
           <>
-            <Field label="Username" error={errors.username}>
-              <input className="input w-full" {...register('username')} />
-            </Field>
-            <Field label="Email" error={errors.email}>
+            <div className="mb-3 text-[11.5px] text-ink-500">
+              A username and password are generated automatically — you'll see them once the account is created.
+            </div>
+            <Field label="Email (optional)" error={errors.email}>
               <input type="email" className="input w-full" {...register('email')} />
-            </Field>
-            <Field label="Password" error={errors.password}>
-              <input type="password" className="input w-full" {...register('password')} />
             </Field>
           </>
         )}
-        
+
         <Field label="Registry No." error={errors.registry_no}>
           <input className="input w-full" {...register('registry_no')} />
         </Field>

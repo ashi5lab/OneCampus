@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { apiClient, setAuthToken, refreshAccessToken, logoutRequest } from '../lib/apiClient';
+import { apiClient, setAuthToken, refreshAccessToken, logoutRequest, setTenantDomain } from '../lib/apiClient';
 import { isStandalone } from '../lib/pwa';
 
 const AuthContext = createContext(null);
@@ -153,6 +153,11 @@ export function AuthProvider({ children }) {
   const login = useCallback(
     async (username, password) => {
       const res = await apiClient.post('/auth/login', { username, password });
+      // The login page no longer asks for a tenant domain — it's resolved
+      // server-side from the username's prefix (see tenantResolver.js) and
+      // returned here so every request after this one (including a token
+      // refresh on the next page load) keeps sending the right one.
+      setTenantDomain(res.data.domain);
       applySession(res.data);
       return res.data.user;
     },

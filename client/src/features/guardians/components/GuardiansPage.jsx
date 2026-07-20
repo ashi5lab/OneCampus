@@ -5,6 +5,7 @@ import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { Avatar } from '../../../components/Avatar';
+import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
 import { useGuardians, useCreateGuardian, useUpdateGuardian, useDeleteGuardian } from '../hooks/useGuardians';
 import { useGuardianLinks } from '../hooks/useGuardianLinks';
 import { useLearners } from '../../learners/hooks/useLearners';
@@ -20,6 +21,7 @@ export function GuardiansPage() {
   const deleteGuardian = useDeleteGuardian();
   
   const [showForm, setShowForm] = useState(false);
+  const [newCredentials, setNewCredentials] = useState(null);
   const [editingGuardian, setEditingGuardian] = useState(null);
   const [linksTarget, setLinksTarget] = useState(null);
 
@@ -136,8 +138,24 @@ export function GuardiansPage() {
           submitting={createGuardian.isPending}
           submitError={createGuardian.error?.message}
           onSubmit={(values) =>
-            createGuardian.mutate(values, { onSuccess: () => setShowForm(false) })
+            createGuardian.mutate(values, {
+              onSuccess: (created) => {
+                setShowForm(false);
+                // No password here (unlike learners/instructors/staff) —
+                // guardians still type their own password, only the
+                // username gets this tenant's prefix added server-side.
+                setNewCredentials({ username: created.username });
+              }
+            })
           }
+        />
+      )}
+
+      {newCredentials && (
+        <GeneratedCredentialsModal
+          username={newCredentials.username}
+          password={newCredentials.password}
+          onClose={() => setNewCredentials(null)}
         />
       )}
 

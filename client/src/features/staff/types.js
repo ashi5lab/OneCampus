@@ -2,9 +2,10 @@ import { z } from 'zod';
 
 // Mirrors server/modules/staff/controller.js's staffCreateSchema.
 export const staffFormSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  email: z.string().email('A valid email is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  // No username/password here — both are auto-generated server-side (see
+  // server/modules/staff/controller.js's create()) from first_name +
+  // staff_id.
+  email: z.string().email('A valid email is required').optional().or(z.literal('')),
   staff_id: z.string().min(1, 'Staff ID is required'),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),

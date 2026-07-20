@@ -4,6 +4,7 @@ const { logAudit } = require('../../lib/audit');
 const { parsePagination } = require('../../lib/pagination');
 const { hasPermission } = require('../../lib/permissions');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
+const { withTenantPrefix } = require('../../lib/credentials');
 
 const guardianCreateSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -72,13 +73,18 @@ async function create(req, res) {
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
     const { username, email, password, first_name, last_name, phone, address, whatsapp_opt_in, meta } = parsed.data;
+    // Guardians still pick their own username (unlike learners/instructors/
+    // staff, there's no registry/staff id to auto-generate one from) — but
+    // it still needs this tenant's prefix to be resolvable at login, so
+    // it's prepended here rather than asking the admin to type it in.
+    const prefixedUsername = withTenantPrefix(req.tenantConfig.prefix, username);
     const password_hash = await bcrypt.hash(password, 10);
 
     await req.db.query('BEGIN');
     try {
       const userResult = await req.db.query(
         `INSERT INTO onec_users (username, email, password_hash, role) VALUES ($1, $2, $3, 'guardian') RETURNING id`,
-        [username, email, password_hash]
+        [prefixedUsername, email, password_hash]
       );
       const user_id = userResult.rows[0].id;
 
@@ -89,7 +95,10 @@ async function create(req, res) {
       );
 
       await req.db.query('COMMIT');
-      res.status(201).json({ data: guardianResult.rows[0] });
+      // Includes the final (prefixed) username — different from whatever
+      // local part the admin typed in, so the frontend can show them what
+      // to actually hand the guardian.
+      res.status(201).json({ data: { ...guardianResult.rows[0], username: prefixedUsername } });
     } catch (err) {
       await req.db.query('ROLLBACK');
       throw err;

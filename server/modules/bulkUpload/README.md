@@ -11,6 +11,7 @@ All require **`bulk_upload.manage`** (admin-only by default, like `users.manage_
 - `GET /api/v1/bulk-upload/jobs?entity_type=` — job history list (lightweight — no `errors` array; poll a single job for that).
 - `GET /api/v1/bulk-upload/jobs/:id` — single job, including the full `errors` array. Poll this while `status === 'processing'`.
 - `GET /api/v1/bulk-upload/jobs/:id/failures.xlsx` — downloads just the failed rows (original data + an `Error` column) so the admin can fix them in place and re-upload.
+- `GET /api/v1/bulk-upload/jobs/:id/credentials.xlsx` — downloads every successfully-created row's generated username + password. This is the only place the plaintext passwords exist after processing — they aren't stored anywhere else.
 
 ## Column model (`server/lib/bulkUploadFields.js`)
 
@@ -20,7 +21,7 @@ One shared definition drives both the downloadable template and the upload parse
 
 **Teachers / Staff** — required: First Name, Last Name, Mobile Number. Optional: Staff/Employee ID (auto-generated if blank), Gender.
 
-**Login Email / Login Username / Login Password** (all three entity types) — none is individually required, but filling in any one requires filling in all three; leaving all three blank imports the person with no portal login at all (`onec_learners`/`onec_instructors`/`onec_staff`/`onec_guardians`.`user_id` are all nullable — see `scripts/tenant_schema.sql`). This is deliberate: the common bulk-import case is a first roster load where most people don't have logins yet, and there's no safe way to auto-generate + hand out real passwords for hundreds of accounts through a spreadsheet without a much bigger credential-distribution flow that wasn't asked for. Logins can always be added later per-person.
+**Email** (all three entity types) — optional; a placeholder (`<generated username>@<tenant domain>`) is used if left blank. There's no Username/Password column anymore — every row gets a portal login automatically, username and password both generated (see `server/lib/credentials.js`, same generator the single-record "+ Add" forms use) rather than typed into the sheet. Download the job's credentials workbook (`GET .../jobs/:id/credentials.xlsx`) afterward to get everyone's login.
 
 **Guardian dedup**: if a guardian with the exact same phone number already exists in the tenant, the new learner is linked to that existing guardian instead of creating a duplicate — the common real case of siblings sharing one parent's number.
 
@@ -36,4 +37,4 @@ Every uploaded value round-trips through the sheet as a **string** (`raw: false`
 
 - No progress beyond `success_count`/`failure_count` on the job row — no per-row "processing now" indicator; the job's `status` is `processing` until every row has been attempted.
 - No queue/worker process — fine at school scale (a few thousand rows, sequential inserts against a local/regional DB finish in well under a minute); would need one for a much larger multi-tenant scale.
-- The uploaded file itself isn't retained after processing — only the `errors` array (original row data + message) survives, which is what backs the failures-workbook download.
+- The uploaded file itself isn't retained after processing — only the `errors` array (original row data + message) and the `credentials` array (generated username/password per success) survive, which is what backs the failures/credentials workbook downloads. There's no "did you already download this?" tracking — the credentials endpoint can be called repeatedly (e.g. to re-download after a lost file), same as failures.

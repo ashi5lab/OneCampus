@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const XLSX = require('xlsx');
 const db = require('../config/db');
 const { ENTITY_FIELDS, normalizeHeader } = require('./bulkUploadFields');
+const { generateUniqueUsername, generatePassword, placeholderEmail } = require('./credentials');
 
 const MAX_DATA_ROWS = 2000;
 
@@ -72,14 +73,13 @@ function buildExportData(entityType, values) {
   return data;
 }
 
-function validateLoginFields(values) {
-  const given = [values.email, values.username, values.password].filter(Boolean);
-  if (given.length === 0) return null;
-  if (given.length < 3) {
-    return 'To create a login for this person, fill in Login Email, Login Username, and Login Password together (or leave all three blank to skip creating a login).';
-  }
-  if (!/^\S+@\S+\.\S+$/.test(values.email)) return 'Login Email is not a valid email address.';
-  if (values.password.length < 6) return 'Login Password must be at least 6 characters.';
+// Email is the only login-related column left in the sheet, and it's
+// optional now (a placeholder is generated if blank — see insertLearnerRow/
+// insertStaffLikeRow) — the only thing worth validating is its shape when
+// one is actually given.
+function validateEmailField(values) {
+  if (!values.email) return null;
+  if (!/^\S+@\S+\.\S+$/.test(values.email)) return 'Email is not a valid email address.';
   return null;
 }
 
@@ -98,8 +98,8 @@ function validateLearnerRow(values, cohortMap) {
     return { ok: false, error: `Multiple classes named "${values.class_name}" exist — rename them to be unique, then re-upload this row.` };
   }
 
-  const loginError = validateLoginFields(values);
-  if (loginError) return { ok: false, error: loginError };
+  const emailError = validateEmailField(values);
+  if (emailError) return { ok: false, error: emailError };
 
   const registry_no = values.registry_no || `STU-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 
@@ -111,26 +111,27 @@ function validateStaffLikeRow(values) {
   if (!values.last_name) return { ok: false, error: 'Last Name is required.' };
   if (!values.mobile) return { ok: false, error: 'Mobile Number is required.' };
 
-  const loginError = validateLoginFields(values);
-  if (loginError) return { ok: false, error: loginError };
+  const emailError = validateEmailField(values);
+  if (emailError) return { ok: false, error: emailError };
 
   const staff_id = values.staff_id || `EMP-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 
   return { ok: true, values: { ...values, staff_id } };
 }
 
-async function insertLearnerRow(client, values) {
+async function insertLearnerRow(client, values, tenant) {
+  const username = await generateUniqueUsername(client, tenant.prefix, values.first_name, values.registry_no);
+  const password = generatePassword();
+  const email = values.email || placeholderEmail(username, tenant.domain);
+
   await client.query('BEGIN');
   try {
-    let userId = null;
-    if (values.password) {
-      const password_hash = await bcrypt.hash(values.password, 10);
-      const userResult = await client.query(
-        `INSERT INTO onec_users (username, email, password_hash, role) VALUES ($1, $2, $3, 'learner') RETURNING id`,
-        [values.username, values.email, password_hash]
-      );
-      userId = userResult.rows[0].id;
-    }
+    const password_hash = await bcrypt.hash(password, 10);
+    const userResult = await client.query(
+      `INSERT INTO onec_users (username, email, password_hash, role) VALUES ($1, $2, $3, 'learner') RETURNING id`,
+      [username, email, password_hash]
+    );
+    const userId = userResult.rows[0].id;
 
     const meta = { phone: values.mobile };
     if (values.gender) meta.gender = values.gender;
@@ -169,25 +170,28 @@ async function insertLearnerRow(client, values) {
     }
 
     await client.query('COMMIT');
+    return { username, first_name: values.first_name, last_name: values.last_name, class_name: values.class_name, password };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   }
 }
 
-async function insertStaffLikeRow(client, entityType, values) {
+async function insertStaffLikeRow(client, entityType, values, tenant) {
   const table = entityType === 'instructor' ? 'onec_instructors' : 'onec_staff';
+
+  const username = await generateUniqueUsername(client, tenant.prefix, values.first_name, values.staff_id);
+  const password = generatePassword();
+  const email = values.email || placeholderEmail(username, tenant.domain);
+
   await client.query('BEGIN');
   try {
-    let userId = null;
-    if (values.password) {
-      const password_hash = await bcrypt.hash(values.password, 10);
-      const userResult = await client.query(
-        `INSERT INTO onec_users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id`,
-        [values.username, values.email, password_hash, entityType]
-      );
-      userId = userResult.rows[0].id;
-    }
+    const password_hash = await bcrypt.hash(password, 10);
+    const userResult = await client.query(
+      `INSERT INTO onec_users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id`,
+      [username, email, password_hash, entityType]
+    );
+    const userId = userResult.rows[0].id;
 
     const meta = {};
     if (values.gender) meta.gender = values.gender;
@@ -197,6 +201,7 @@ async function insertStaffLikeRow(client, entityType, values) {
       [userId, values.staff_id, values.first_name, values.last_name, values.mobile, meta]
     );
     await client.query('COMMIT');
+    return { username, first_name: values.first_name, last_name: values.last_name, staff_id: values.staff_id, password };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -231,9 +236,12 @@ async function updateJobProgress(client, jobId, successCount, failureCount) {
 // for the same pooled connection (wrong search_path, cross-tenant writes) —
 // this opens and pins its own connection to `schemaName` for the whole job
 // and releases it only when done, exactly like tenantDb.js does per-request.
-async function processJob({ jobId, entityType, schemaName, headerKeyMap, rawRows }) {
+// `tenant` ({ prefix, domain }) is captured the same way, for generating
+// every row's login (see server/lib/credentials.js).
+async function processJob({ jobId, entityType, schemaName, headerKeyMap, rawRows, tenant }) {
   const client = await db.getPool().connect();
   const errors = [];
+  const credentials = [];
   let successCount = 0;
 
   try {
@@ -262,8 +270,11 @@ async function processJob({ jobId, entityType, schemaName, headerKeyMap, rawRows
         errors.push({ row: rowNumber, error: validation.error, data: exportData });
       } else {
         try {
-          if (entityType === 'learner') await insertLearnerRow(client, validation.values);
-          else await insertStaffLikeRow(client, entityType, validation.values);
+          const created =
+            entityType === 'learner'
+              ? await insertLearnerRow(client, validation.values, tenant)
+              : await insertStaffLikeRow(client, entityType, validation.values, tenant);
+          credentials.push(created);
           successCount++;
         } catch (err) {
           errors.push({ row: rowNumber, error: friendlyDbError(err), data: exportData });
@@ -278,8 +289,8 @@ async function processJob({ jobId, entityType, schemaName, headerKeyMap, rawRows
 
     const status = errors.length === 0 ? 'completed' : successCount === 0 ? 'failed' : 'completed_with_errors';
     await client.query(
-      `UPDATE onec_bulk_upload_jobs SET status = $1, success_count = $2, failure_count = $3, errors = $4, completed_at = CURRENT_TIMESTAMP WHERE id = $5`,
-      [status, successCount, errors.length, JSON.stringify(errors), jobId]
+      `UPDATE onec_bulk_upload_jobs SET status = $1, success_count = $2, failure_count = $3, errors = $4, credentials = $5, completed_at = CURRENT_TIMESTAMP WHERE id = $6`,
+      [status, successCount, errors.length, JSON.stringify(errors), JSON.stringify(credentials), jobId]
     );
   } catch (err) {
     console.error('Bulk upload job failed unexpectedly:', err);
@@ -292,8 +303,8 @@ async function processJob({ jobId, entityType, schemaName, headerKeyMap, rawRows
       : [{ row: 0, error: `Processing stopped unexpectedly: ${err.message}`, data: {} }];
     try {
       await client.query(
-        `UPDATE onec_bulk_upload_jobs SET status = 'failed', success_count = $1, failure_count = $2, errors = $3, completed_at = CURRENT_TIMESTAMP WHERE id = $4`,
-        [successCount, finalErrors.length, JSON.stringify(finalErrors), jobId]
+        `UPDATE onec_bulk_upload_jobs SET status = 'failed', success_count = $1, failure_count = $2, errors = $3, credentials = $4, completed_at = CURRENT_TIMESTAMP WHERE id = $5`,
+        [successCount, finalErrors.length, JSON.stringify(finalErrors), JSON.stringify(credentials), jobId]
       );
     } catch (updateErr) {
       console.error('Failed to record bulk upload job failure:', updateErr);
