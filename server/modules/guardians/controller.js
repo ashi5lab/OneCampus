@@ -2,6 +2,8 @@ const { z } = require('zod');
 const bcrypt = require('bcrypt');
 const { logAudit } = require('../../lib/audit');
 const { parsePagination } = require('../../lib/pagination');
+const { hasPermission } = require('../../lib/permissions');
+const { getScopedLearnerIds } = require('../../lib/rowScope');
 
 const guardianCreateSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -135,4 +137,61 @@ async function remove(req, res) {
   }
 }
 
-module.exports = { getAll, getById, create, update, remove };
+// A guardian-side counterpart to learners/controller.js's getProfile: the
+// linked-learners list plus the guardian's own details, for the guardian
+// profile page. Not gated by requirePermission('guardians.view') at the
+// route level (see routes.js) — a guardian should be able to view their own
+// profile, and a learner should be able to view their own guardian's
+// profile (the link on their own profile page), even without roster access.
+// Roster-level roles (admin/instructor) can view anyone's via guardians.view.
+async function getProfile(req, res) {
+  try {
+    const guardianId = Number(req.params.id);
+
+    const hasRosterAccess = await hasPermission(req, 'guardians.view');
+    if (!hasRosterAccess) {
+      let allowed = false;
+      if (req.user.role === 'guardian') {
+        const ownGuardian = await req.db.query('SELECT id FROM onec_guardians WHERE user_id = $1', [req.user.userId]);
+        allowed = ownGuardian.rows[0]?.id === guardianId;
+      } else {
+        const scopedLearnerIds = await getScopedLearnerIds(req);
+        if (scopedLearnerIds && scopedLearnerIds.length > 0) {
+          const linkResult = await req.db.query(
+            'SELECT 1 FROM onec_learner_guardian_map WHERE guardian_id = $1 AND learner_id = ANY($2::int[])',
+            [guardianId, scopedLearnerIds]
+          );
+          allowed = linkResult.rows.length > 0;
+        }
+      }
+      if (!allowed) return res.status(403).json({ error: 'Missing permission: guardians.view' });
+    }
+
+    const guardianResult = await req.db.query(
+      `SELECT g.*, usr.email, usr.profile_picture_url
+       FROM onec_guardians g
+       LEFT JOIN onec_users usr ON g.user_id = usr.id
+       WHERE g.id = $1`,
+      [guardianId]
+    );
+    if (guardianResult.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+
+    const learnersResult = await req.db.query(
+      `SELECT l.id, l.first_name, l.last_name, l.registry_no, l.status, c.name AS cohort_name, usr.profile_picture_url
+       FROM onec_learner_guardian_map map
+       JOIN onec_learners l ON map.learner_id = l.id
+       LEFT JOIN onec_cohorts c ON l.cohort_id = c.id
+       LEFT JOIN onec_users usr ON l.user_id = usr.id
+       WHERE map.guardian_id = $1
+       ORDER BY l.first_name, l.last_name`,
+      [guardianId]
+    );
+
+    res.json({ data: { guardian: guardianResult.rows[0], learners: learnersResult.rows } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getAll, getById, getProfile, create, update, remove };

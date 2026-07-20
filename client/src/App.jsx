@@ -22,6 +22,7 @@ import { ScoreEntryPage } from './features/evaluations/components/ScoreEntryPage
 import { UnitsPage } from './features/units/components/UnitsPage';
 import { ModulesPage } from './features/modules/components/ModulesPage';
 import { GuardiansPage } from './features/guardians/components/GuardiansPage';
+import { GuardianProfilePage } from './features/guardians/components/GuardianProfilePage';
 import { CertificatesPage } from './features/certificates/components/CertificatesPage';
 import { KindergartenActivityPage } from './features/kindergartenActivity/components/KindergartenActivityPage';
 import { MessagesPage } from './features/messages/components/MessagesPage';
@@ -160,6 +161,11 @@ export default function App() {
             </RequirePermission>
           }
         />
+        {/* Not RequirePermission-gated like the roster above — a guardian or
+            learner without guardians.view can still view their own/their
+            own guardian's profile; the endpoint itself enforces that (see
+            server/modules/guardians/controller.js's getProfile). */}
+        <Route path="guardians/:id" element={<GuardianProfilePage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="exams" element={<ExamsPage />} />
         <Route path="evaluations/:id" element={<EvaluationDetailPage />} />

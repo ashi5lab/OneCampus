@@ -14,6 +14,7 @@ import { evaluationsApi } from '../../evaluations/services/evaluationsApi';
 import { ReportCardModal } from '../../evaluations/components/ReportCardModal';
 import { idCardsApi } from '../../idCards/services/idCardsApi';
 import { MarkAlumniModal } from '../../alumni/components/MarkAlumniModal';
+import { LearnerGuardianLinksModal } from '../../guardians/components/LearnerGuardianLinksModal';
 
 const ATTENDANCE_STATUS_ORDER = ['present', 'absent', 'late', 'excused'];
 const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive', alumni: 'pending' };
@@ -36,9 +37,11 @@ export function LearnerProfilePage() {
   const [viewingEvaluationId, setViewingEvaluationId] = useState(null);
   const [showMarkAlumni, setShowMarkAlumni] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showGuardianLinks, setShowGuardianLinks] = useState(false);
 
   const isOwnProfile = ownProfile?.learnerId === learnerId;
   const canManage = can('learners.manage');
+  const canManageGuardianLinks = can('guardian_links.manage');
 
   if (isLoading) return <div className="p-8 text-center text-sm text-ink-500">Loading…</div>;
   if (error) {
@@ -109,7 +112,7 @@ export function LearnerProfilePage() {
         </div>
       </div>
 
-      <div className="mb-5 grid grid-cols-3 gap-3">
+      <div className="mb-5 grid max-w-[500px] grid-cols-3 gap-3">
         <StatCard label="Attendance" value={attendanceRate != null ? `${attendanceRate}%` : '—'} />
         <StatCard label="Avg Score" value={avgScorePct != null ? `${avgScorePct}%` : '—'} />
         <StatCard label="Roles" value={rolesCount} />
@@ -130,48 +133,68 @@ export function LearnerProfilePage() {
       </div>
 
       {tab === 'overview' && (
-        <div className="space-y-5">
-          {guardians.length > 0 && (
+        <div className="max-w-[760px] space-y-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
             <div>
-              <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Guardians</div>
-              <div className="space-y-2">
-                {guardians.map((g) => (
-                  <div key={g.id} className="rounded border border-border bg-surface p-3.5 text-[13px]">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-ink-500">Name</span>
-                      <span className="font-semibold text-ink-900">{g.first_name} {g.last_name}</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
-                      <span className="text-ink-500">Phone</span>
-                      <span className="font-semibold text-ink-900">{g.phone}</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Guardians</div>
+                {canManageGuardianLinks && (
+                  <button
+                    onClick={() => setShowGuardianLinks(true)}
+                    className="text-[11.5px] font-semibold text-accent hover:opacity-80"
+                  >
+                    Manage
+                  </button>
+                )}
               </div>
-            </div>
-          )}
-
-          <div>
-            <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Personal Details</div>
-            <div className="rounded border border-border bg-surface p-3.5 text-[13px]">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-ink-500">Gender</span>
-                <span className="font-semibold text-ink-900">{learner.meta?.gender ? learner.meta.gender[0].toUpperCase() + learner.meta.gender.slice(1) : '—'}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
-                <span className="text-ink-500">Date of birth</span>
-                <span className="font-semibold text-ink-900">{learner.meta?.date_of_birth ? new Date(learner.meta.date_of_birth).toLocaleDateString() : '—'}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
-                <span className="text-ink-500">Admitted</span>
-                <span className="font-semibold text-ink-900">{learner.meta?.admission_date ? new Date(learner.meta.admission_date).toLocaleDateString() : '—'}</span>
-              </div>
-              {learner.email && (
-                <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
-                  <span className="text-ink-500">Email</span>
-                  <span className="font-semibold text-ink-900">{learner.email}</span>
+              {guardians.length === 0 ? (
+                <div className="rounded border border-border bg-surface-muted p-3.5 text-[13px] text-ink-500">
+                  No guardians linked yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {guardians.map((g) => (
+                    <Link
+                      key={g.id}
+                      to={`/app/guardians/${g.id}`}
+                      className="block rounded border border-border bg-surface p-3.5 text-[13px] hover:bg-surface-muted"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-ink-500">Name</span>
+                        <span className="font-semibold text-accent-dark">{g.first_name} {g.last_name}</span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
+                        <span className="text-ink-500">Phone</span>
+                        <span className="font-semibold text-ink-900">{g.phone}</span>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               )}
+            </div>
+
+            <div>
+              <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Personal Details</div>
+              <div className="rounded border border-border bg-surface p-3.5 text-[13px]">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-ink-500">Gender</span>
+                  <span className="font-semibold text-ink-900">{learner.meta?.gender ? learner.meta.gender[0].toUpperCase() + learner.meta.gender.slice(1) : '—'}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
+                  <span className="text-ink-500">Date of birth</span>
+                  <span className="font-semibold text-ink-900">{learner.meta?.date_of_birth ? new Date(learner.meta.date_of_birth).toLocaleDateString() : '—'}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
+                  <span className="text-ink-500">Admitted</span>
+                  <span className="font-semibold text-ink-900">{learner.meta?.admission_date ? new Date(learner.meta.admission_date).toLocaleDateString() : '—'}</span>
+                </div>
+                {learner.email && (
+                  <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
+                    <span className="text-ink-500">Email</span>
+                    <span className="font-semibold text-ink-900">{learner.email}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -330,6 +353,7 @@ export function LearnerProfilePage() {
         <ReportCardModal evaluationId={viewingEvaluationId} learnerId={learnerId} onClose={() => setViewingEvaluationId(null)} />
       )}
       {showMarkAlumni && <MarkAlumniModal learner={learner} onClose={() => setShowMarkAlumni(false)} />}
+      {showGuardianLinks && <LearnerGuardianLinksModal learner={learner} onClose={() => setShowGuardianLinks(false)} />}
       {showEdit && (
         <LearnerFormModal
           initialData={learner}

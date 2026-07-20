@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 function initials(name) {
   return (name || '')
     .split(' ')
@@ -10,12 +12,17 @@ function initials(name) {
 
 export function Avatar({ name, src, size = 40 }) {
   const dimension = `${size}px`;
+  // Falls back to the initials circle if the photo URL 404s/goes stale
+  // (deleted from Cloudinary, etc.) — without this an <img> with a broken
+  // src renders a broken-image icon with overflowing alt text instead.
+  const [broken, setBroken] = useState(false);
 
-  if (src) {
+  if (src && !broken) {
     return (
       <img
         src={src}
         alt={name || 'Profile'}
+        onError={() => setBroken(true)}
         className="flex-shrink-0 rounded-full border border-border object-cover"
         style={{ width: dimension, height: dimension }}
       />

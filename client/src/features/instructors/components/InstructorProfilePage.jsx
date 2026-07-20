@@ -93,7 +93,7 @@ export function InstructorProfilePage() {
         </div>
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-3">
+      <div className="mb-5 grid max-w-[360px] grid-cols-2 gap-3">
         <StatCard label="Attendance Marked" value={stats.attendanceMarked} />
         <StatCard label="Scores Graded" value={stats.scoresGraded} />
       </div>
@@ -113,41 +113,43 @@ export function InstructorProfilePage() {
       </div>
 
       {tab === 'overview' && (
-        <div className="space-y-5">
-          <div>
-            <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">{t('topics')}</div>
-            {subjectNames.length === 0 ? (
-              <div className="rounded border border-border bg-surface-muted p-3.5 text-[13px] text-ink-500">
-                No {t('topics').toLowerCase()} assigned yet.
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {subjectNames.map((name) => (
-                  <span key={name} className="rounded-full bg-surface-muted px-2.5 py-1 text-[12px] font-semibold text-ink-700">
-                    {name}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Personal Details</div>
-            <div className="rounded border border-border bg-surface p-3.5 text-[13px]">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-ink-500">Gender</span>
-                <span className="font-semibold text-ink-900">{GENDER_LABEL[instructor.meta?.gender] || '—'}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
-                <span className="text-ink-500">Phone</span>
-                <span className="font-semibold text-ink-900">{instructor.phone || '—'}</span>
-              </div>
-              {instructor.email && (
-                <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
-                  <span className="text-ink-500">Email</span>
-                  <span className="font-semibold text-ink-900">{instructor.email}</span>
+        <div className="max-w-[760px] space-y-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
+            <div>
+              <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">{t('topics')}</div>
+              {subjectNames.length === 0 ? (
+                <div className="rounded border border-border bg-surface-muted p-3.5 text-[13px] text-ink-500">
+                  No {t('topics').toLowerCase()} assigned yet.
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {subjectNames.map((name) => (
+                    <span key={name} className="rounded-full bg-surface-muted px-2.5 py-1 text-[12px] font-semibold text-ink-700">
+                      {name}
+                    </span>
+                  ))}
                 </div>
               )}
+            </div>
+
+            <div>
+              <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Personal Details</div>
+              <div className="rounded border border-border bg-surface p-3.5 text-[13px]">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-ink-500">Gender</span>
+                  <span className="font-semibold text-ink-900">{GENDER_LABEL[instructor.meta?.gender] || '—'}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
+                  <span className="text-ink-500">Phone</span>
+                  <span className="font-semibold text-ink-900">{instructor.phone || '—'}</span>
+                </div>
+                {instructor.email && (
+                  <div className="mt-2 flex items-center justify-between gap-3 border-t border-surface-muted pt-2">
+                    <span className="text-ink-500">Email</span>
+                    <span className="font-semibold text-ink-900">{instructor.email}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
