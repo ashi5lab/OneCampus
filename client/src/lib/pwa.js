@@ -11,6 +11,13 @@ export function isIos() {
   return (/iPad|iPhone|iPod/.test(ua) || isIpadOs13Plus) && !window.MSStream;
 }
 
+export function isMobile() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const isIpadOs13Plus = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  return (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) || isIpadOs13Plus) && !window.MSStream;
+}
+
 export function isStandalone() {
   if (typeof window === 'undefined') return false;
   return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;

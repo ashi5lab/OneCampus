@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { usePwaInstall } from '../hooks/usePwaInstall';
 import { IosInstallModal } from './IosInstallModal';
+import { isMobile } from '../lib/pwa';
 
 // Drop-in install affordance: an "Install App" button on Android/Chrome/
 // desktop (real one-tap install via the browser's own prompt), or a "How
@@ -11,6 +12,9 @@ import { IosInstallModal } from './IosInstallModal';
 export function InstallAppPrompt({ className = '' }) {
   const { canInstall, isIosInstallable, installed, promptInstall } = usePwaInstall();
   const [showIosHelp, setShowIosHelp] = useState(false);
+
+  // Only show the install prompt on mobile devices
+  if (!isMobile()) return null;
 
   if (installed || (!canInstall && !isIosInstallable)) return null;
 
