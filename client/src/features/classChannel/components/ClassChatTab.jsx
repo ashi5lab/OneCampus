@@ -95,7 +95,7 @@ export function ClassChatTab({ cohortId }) {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded border border-border bg-surface">
+    <div className="flex h-full flex-col overflow-hidden sm:rounded border-y sm:border border-border bg-surface -mx-4 sm:mx-0">
       {pinnedPost && (
         <button
           onClick={() => document.getElementById(`class-post-${pinnedPost.id}`)?.scrollIntoView({ block: 'center' })}

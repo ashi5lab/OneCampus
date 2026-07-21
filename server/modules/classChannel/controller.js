@@ -103,6 +103,96 @@ async function listMembers(req, res) {
   }
 }
 
+async function listMembersPaginated(req, res) {
+  try {
+    const cohortId = Number(req.params.cohortId);
+    if (!(await canAccessCohort(req, cohortId))) {
+      return res.status(403).json({ error: 'Not a member of this class' });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 25;
+    const filter = req.query.filter || 'students'; // students, teachers, all
+    const search = req.query.search || '';
+    const offset = (page - 1) * limit;
+
+    let total = 0;
+    
+    // We will build conditions for the search
+    let searchConditionLearner = '';
+    let searchConditionInstructor = '';
+    const searchParams = [];
+    
+    if (search) {
+      searchParams.push(`%${search}%`);
+      const pIdx = searchParams.length + 1; // +1 because $1 is cohortId
+      searchConditionLearner = ` AND (l.first_name ILIKE $${pIdx} OR l.last_name ILIKE $${pIdx} OR l.registry_no ILIKE $${pIdx})`;
+      searchConditionInstructor = ` AND (i.first_name ILIKE $${pIdx} OR i.last_name ILIKE $${pIdx} OR i.registry_no ILIKE $${pIdx})`;
+    }
+
+    if (filter === 'students' || filter === 'all') {
+      const learnerCountQuery = await req.db.query(
+        `SELECT count(*) FROM onec_learners l JOIN onec_users u ON l.user_id = u.id
+         WHERE l.cohort_id = $1 AND u.is_active = true ${searchConditionLearner}`,
+        [cohortId, ...searchParams]
+      );
+      total += parseInt(learnerCountQuery.rows[0].count);
+    }
+
+    if (filter === 'teachers' || filter === 'all') {
+      const instructorCountQuery = await req.db.query(
+        `SELECT count(*) FROM onec_instructors i JOIN onec_users u ON i.user_id = u.id
+         WHERE u.is_active = true AND u.id IN (
+           SELECT advisor_id FROM onec_cohorts WHERE id = $1
+           UNION
+           SELECT i2.user_id FROM onec_instructor_cohorts ic
+             JOIN onec_instructors i2 ON ic.instructor_id = i2.id WHERE ic.cohort_id = $1
+         ) ${searchConditionInstructor}`,
+        [cohortId, ...searchParams]
+      );
+      total += parseInt(instructorCountQuery.rows[0].count);
+    }
+
+    // Since we are supporting all/teachers/students, to keep pagination simple, we can union them if filter='all'
+    let query = '';
+    const params = [cohortId, ...searchParams];
+
+    const studentSelect = `
+      SELECT u.id, l.id as role_id, l.first_name, l.last_name, u.username, u.role
+      FROM onec_learners l JOIN onec_users u ON l.user_id = u.id
+      WHERE l.cohort_id = $1 AND u.is_active = true ${searchConditionLearner}
+    `;
+    const teacherSelect = `
+      SELECT u.id, i.id as role_id, i.first_name, i.last_name, u.username, u.role
+      FROM onec_instructors i JOIN onec_users u ON i.user_id = u.id
+      WHERE u.is_active = true AND u.id IN (
+        SELECT advisor_id FROM onec_cohorts WHERE id = $1
+        UNION
+        SELECT i2.user_id FROM onec_instructor_cohorts ic
+          JOIN onec_instructors i2 ON ic.instructor_id = i2.id WHERE ic.cohort_id = $1
+      ) ${searchConditionInstructor}
+    `;
+
+    if (filter === 'students') {
+      query = studentSelect;
+    } else if (filter === 'teachers') {
+      query = teacherSelect;
+    } else {
+      query = `${teacherSelect} UNION ALL ${studentSelect}`;
+    }
+
+    // Append ordering, limit and offset
+    query += ` ORDER BY role ASC, first_name ASC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+
+    const result = await req.db.query(query, params);
+    res.json({ data: result.rows, meta: { total, page, limit } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 // Posts + their replies + reaction summaries in one round trip — channel
 // volume is small enough that N+1 separate endpoints would just be extra
 // round trips for no benefit. Soft-deleted messages (deleted_at IS NOT
@@ -438,6 +528,7 @@ module.exports = {
   upload,
   listMyCohorts,
   listMembers,
+  listMembersPaginated,
   listPosts,
   createPost,
   createReply,

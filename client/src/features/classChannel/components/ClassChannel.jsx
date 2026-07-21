@@ -9,6 +9,7 @@ import { ClassAssignmentsTab } from '../../assignments/components/ClassAssignmen
 import { ClassExamsTab } from '../../onlineExams/components/ClassExamsTab';
 import { ClassTimetableTab } from '../../timetable/components/ClassTimetableTab';
 import { ClassAttendanceTab } from '../../attendance/components/ClassAttendanceTab';
+import { ClassMembersTab } from './ClassMembersTab';
 
 // The Class tab's main view for one cohort — a Microsoft Teams-style
 // channel: Chat/Assignments/Exams/Timetable/Attendance all live as tabs
@@ -22,6 +23,7 @@ import { ClassAttendanceTab } from '../../attendance/components/ClassAttendanceT
 // privileged users get back to those.
 const TAB_DEFS = [
   { key: 'chat', label: 'Chat', moduleKey: 'messages' },
+  { key: 'members', label: 'Members', moduleKey: 'cohorts' },
   { key: 'assignments', label: 'Assignments', moduleKey: 'assignments', gate: (can) => can('assignments.view') },
   { key: 'exams', label: 'Exams', moduleKey: 'exams', gate: (can) => can('online_exams.view') },
   { key: 'timetable', label: 'Timetable', moduleKey: 'timetable', gate: (can) => can('timetable.view') },
@@ -52,14 +54,14 @@ export function ClassChannel({ cohort, showBack }) {
     // container can fill the screen; the other tabs are ordinary tables/
     // forms that scroll with the page like every other management screen,
     // so they don't want to be squeezed into that same fixed height.
-    <div className={isChat ? 'flex h-[calc(100vh-115px)] flex-col md:h-[calc(100vh-40px)] md:-mb-[60px]' : ''}>
+    <div className={isChat ? 'flex h-[calc(100dvh-185px)] flex-col md:h-[calc(100dvh-40px)] md:-mb-[60px]' : ''}>
       <div className="flex-shrink-0">
         <PageHeader
           title={cohort.name}
           subtitle={subtitle}
           back={showBack}
           onBack={() => navigate('/app/class')}
-          actions={
+          tabs={
             // Horizontally scrollable, not wrapping — up to 5 tabs need to
             // fit (or at least be reachable by a swipe) on the narrowest
             // phone screens.
@@ -94,6 +96,7 @@ export function ClassChannel({ cohort, showBack }) {
           {activeTab === 'exams' && <ClassExamsTab cohortId={cohort.id} />}
           {activeTab === 'timetable' && <ClassTimetableTab cohortId={cohort.id} cohortTimeBlock={cohort.time_block} />}
           {activeTab === 'attendance' && <ClassAttendanceTab cohortId={cohort.id} />}
+          {activeTab === 'members' && <ClassMembersTab cohortId={cohort.id} cohort={cohort} />}
         </>
       )}
     </div>

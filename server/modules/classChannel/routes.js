@@ -11,6 +11,7 @@ router.use(auth);
 // module.
 router.get('/my-cohorts', controller.listMyCohorts);
 router.get('/cohorts/:cohortId/members', controller.listMembers);
+router.get('/cohorts/:cohortId/members/paginated', controller.listMembersPaginated);
 router.get('/cohorts/:cohortId/posts', controller.listPosts);
 
 // multer's .single() is called manually so a rejected upload (wrong

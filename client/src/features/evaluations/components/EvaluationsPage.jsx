@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DataTable } from '../../../components/DataTable';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useEvaluations, useCreateEvaluation } from '../hooks/useEvaluations';
+import { useEvaluations, useCreateEvaluation, useUpdateEvaluation, useDeleteEvaluation } from '../hooks/useEvaluations';
 import { EvaluationFormModal } from './EvaluationFormModal';
 
 export function EvaluationsPage() {
