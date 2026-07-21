@@ -11,6 +11,7 @@ const COLORS = [
 const SIZE_STEPS = [0.85, 1, 1.15, 1.3, 1.45];
 
 function memberInitials(m) {
+  if (m.id === 'all') return '@';
   return `${m.first_name?.[0] || ''}${m.last_name?.[0] || ''}`.toUpperCase();
 }
 
@@ -120,10 +121,16 @@ export function MessageComposer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const combinedMembers = [
+    { id: 'all', first_name: 'All', last_name: 'Members', username: 'Notify everyone in the class' },
+    ...members
+  ];
+
   const filteredMembers = mention
-    ? members
+    ? combinedMembers
         .filter((m) => {
           const q = mention.query.toLowerCase();
+          if (m.id === 'all') return 'all'.includes(q) || 'everyone'.includes(q);
           return (
             `${m.first_name} ${m.last_name}`.toLowerCase().includes(q) ||
             m.username.toLowerCase().includes(q)

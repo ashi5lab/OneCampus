@@ -37,7 +37,7 @@ const SANITIZE_OPTIONS = {
   // attribute besides style/class we allow through, so it gets its own
   // narrow validation rather than trusting sanitize-html's generic pass.
   exclusiveFilter: (frame) =>
-    frame.tag === 'span' && frame.attribs['data-user-id'] !== undefined && !/^\d+$/.test(frame.attribs['data-user-id']),
+    frame.tag === 'span' && frame.attribs['data-user-id'] !== undefined && !/^(\d+|all)$/.test(frame.attribs['data-user-id']),
   disallowedTagsMode: 'discard'
 };
 

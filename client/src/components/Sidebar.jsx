@@ -57,9 +57,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <div className="px-3 pb-1.5 text-[10.5px] font-bold uppercase tracking-wide text-sidebar-text">
-        Overview
-      </div>
+
       <NavLink to="/app" end className={navItemClass}>
         Dashboard
       </NavLink>
@@ -69,9 +67,7 @@ export function Sidebar() {
         </NavLink>
       )}
 
-      <div className="px-3 pb-1.5 pt-4 text-[10.5px] font-bold uppercase tracking-wide text-sidebar-text">
-        Management
-      </div>
+
       {useNewShell ? (
         <>
           <NavLink to="/app/class" className={navItemClass}>
@@ -103,9 +99,7 @@ export function Sidebar() {
         </>
       )}
 
-      <div className="px-3 pb-1.5 pt-4 text-[10.5px] font-bold uppercase tracking-wide text-sidebar-text">
-        More
-      </div>
+
       <NavLink to="/app/more" className={navItemClass}>
         <span className="flex flex-1 items-center justify-between">
           More

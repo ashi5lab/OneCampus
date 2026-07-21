@@ -64,13 +64,14 @@ async function listActivities(req, res) {
       // 123. body is fetched whole and reduced to a plain-text preview below
       // so stripHtml never cuts a tag in half.
       const mentionPattern = `%data-user-id="${userId}"%`;
+      const allMentionPattern = `%data-user-id="all"%`;
       queries.push(
         req.db.query(
           `SELECT 'mention' AS type, p.id, p.body AS title, c.name AS subtitle, p.created_at AS ts, u.username AS actor, p.cohort_id
            FROM onec_class_posts p JOIN onec_users u ON p.author_id = u.id JOIN onec_cohorts c ON p.cohort_id = c.id
-           WHERE p.cohort_id = ANY($1) AND p.deleted_at IS NULL AND p.body LIKE $2
+           WHERE p.cohort_id = ANY($1) AND p.deleted_at IS NULL AND (p.body LIKE $2 OR p.body LIKE $3)
            ORDER BY p.created_at DESC LIMIT 15`,
-          [cohortIds, mentionPattern]
+          [cohortIds, mentionPattern, allMentionPattern]
         )
       );
       queries.push(
@@ -80,9 +81,9 @@ async function listActivities(req, res) {
            JOIN onec_class_posts p ON r.post_id = p.id
            JOIN onec_cohorts c ON p.cohort_id = c.id
            JOIN onec_users u ON r.author_id = u.id
-           WHERE p.cohort_id = ANY($1) AND r.deleted_at IS NULL AND r.body LIKE $2
+           WHERE p.cohort_id = ANY($1) AND r.deleted_at IS NULL AND (r.body LIKE $2 OR r.body LIKE $3)
            ORDER BY r.created_at DESC LIMIT 15`,
-          [cohortIds, mentionPattern]
+          [cohortIds, mentionPattern, allMentionPattern]
         )
       );
       queries.push(
