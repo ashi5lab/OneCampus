@@ -57,9 +57,15 @@ export function SuperAdminDashboardPage() {
   return (
     <div className="min-h-screen bg-bg font-body">
       <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 sm:px-6">
-        <div>
-          <div className="text-[15px] font-semibold text-ink-900">Super Admin</div>
-          <div className="text-[11px] text-ink-500">{admin?.username}</div>
+        <div className="flex items-center gap-6">
+          <div>
+            <div className="text-[15px] font-semibold text-ink-900">Super Admin</div>
+            <div className="text-[11px] text-ink-500">{admin?.username}</div>
+          </div>
+          <div className="flex gap-4 border-l border-border pl-6">
+            <Link to="/super-admin" className="text-sm font-semibold text-microsoft-blue border-b-2 border-microsoft-blue pb-1">Tenants</Link>
+            <Link to="/super-admin/inquiries" className="text-sm font-semibold text-ink-500 hover:text-ink-900 pb-1">Inbox</Link>
+          </div>
         </div>
         <button onClick={handleLogout} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
           Log out

@@ -64,10 +64,10 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4 py-10 font-body">
+    <div className="flex flex-col items-center justify-center font-body">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-[380px] rounded-xl border border-border bg-surface p-6 sm:p-8"
+        className="w-full max-w-[380px] bg-white p-8 shadow-lg"
       >
         <div className="mb-1 text-lg font-bold text-ink-900">
           OneCampus
@@ -95,7 +95,7 @@ export function LoginPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded bg-ink-900 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+          className="w-full bg-microsoft-blue py-2.5 text-sm font-semibold text-white hover:bg-microsoft-hover disabled:opacity-60"
         >
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>

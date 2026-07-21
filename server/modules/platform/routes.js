@@ -24,4 +24,13 @@ router.patch('/tenants/:id/decline', requireSuperAdmin, controller.declineTenant
 router.patch('/tenants/:id', requireSuperAdmin, controller.updateTenant);
 router.delete('/tenants/:id', requireSuperAdmin, controller.deleteTenant);
 
+// Public inquiries (Contact Us, Request Demo)
+// We don't rate limit this heavily right now, maybe consider standard rate limiter
+router.post('/inquiries', controller.submitInquiry);
+
+// Super-admin-only inquiries management
+router.get('/super-admin/inquiries', requireSuperAdmin, controller.listInquiries);
+router.patch('/super-admin/inquiries/:id/read', requireSuperAdmin, controller.markInquiryRead);
+router.delete('/super-admin/inquiries/:id', requireSuperAdmin, controller.deleteInquiry);
+
 module.exports = router;

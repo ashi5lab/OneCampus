@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneCampus | School Management Platform</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+<style>
+body{font-family:Inter,sans-serif;background:#f8fafc}
+.gradient{background:linear-gradient(135deg,#2563eb,#4f46e5)}
+.card{transition:.25s}.card:hover{transform:translateY(-4px)}
+html{scroll-behavior:smooth}
+</style>
+</head>
+<body>
+
+<nav class="bg-white shadow sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-6 py-4 flex justify-between">
+<div class="font-extrabold text-2xl text-blue-700">OneCampus</div>
+<div class="space-x-5 hidden md:block">
+<a href="#features">Features</a>
+<a href="#about">About</a>
+<a href="#privacy">Privacy</a>
+<a href="#terms">Terms</a>
+<a href="#contact">Contact</a>
+</div>
+</div>
+</nav>
+
+<section class="gradient text-white">
+<div class="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-10 items-center">
+<div>
+<h1 class="text-5xl font-extrabold leading-tight">Complete School Management Platform</h1>
+<p class="mt-6 text-lg opacity-90">
+OneCampus helps schools manage admissions, students, teachers, attendance,
+fees, communication, examinations and administration from a single cloud platform.
+</p>
+<div class="mt-8 space-x-4">
+<button class="bg-white text-blue-700 px-6 py-3 rounded-xl font-semibold">Request Demo</button>
+<button class="border border-white px-6 py-3 rounded-xl">Contact Us</button>
+</div>
+</div>
+
+<div class="flex justify-center">
+<svg width="430" height="320" viewBox="0 0 600 420">
+<rect x="60" y="70" width="470" height="260" rx="24" fill="#ffffff"/>
+<rect x="90" y="110" width="140" height="140" rx="18" fill="#DBEAFE"/>
+<circle cx="160" cy="150" r="28" fill="#2563EB"/>
+<rect x="260" y="110" width="220" height="18" rx="9" fill="#BFDBFE"/>
+<rect x="260" y="150" width="180" height="18" rx="9" fill="#BFDBFE"/>
+<rect x="260" y="190" width="140" height="18" rx="9" fill="#BFDBFE"/>
+<rect x="90" y="275" width="390" height="18" rx="9" fill="#DBEAFE"/>
+<path d="M90 55h390" stroke="#fff" stroke-width="12"/>
+</svg>
+</div>
+</div>
+</section>
+
+<section id="features" class="max-w-7xl mx-auto px-6 py-16">
+<h2 class="text-4xl font-bold text-center mb-12">Everything Your School Needs</h2>
+<div class="grid md:grid-cols-3 gap-6">
+<script></script>
+</div>
+</section>
+
+<script>
+const features=[
+["school","Student Management","Admissions, profiles, certificates, promotions"],
+["groups","Teacher Management","Attendance, leave, profiles, timetable"],
+["fact_check","Attendance","Daily attendance and reports"],
+["payments","Fee Management","Fees, dues, receipts, history"],
+["menu_book","Academics","Classes, exams, marks, rank lists"],
+["campaign","Communication","WhatsApp, SMS, Email notifications"],
+["language","Website CMS","News, gallery, events, banners"],
+["security","Security","Role based access and secure authentication"],
+["devices","Platforms","Web, Android and iPhone support"]
+];
+const grid=document.querySelector("#features .grid");
+features.forEach(f=>{
+grid.innerHTML+=`
+<div class="bg-white rounded-2xl shadow p-6 card">
+<span class="material-symbols-outlined text-blue-600 text-5xl">${f[0]}</span>
+<h3 class="text-xl font-bold mt-3">${f[1]}</h3>
+<p class="text-gray-600 mt-2">${f[2]}</p>
+</div>`;
+});
+</script>
+
+<section class="bg-white py-16">
+<div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-10">
+<div id="about">
+<h2 class="text-3xl font-bold mb-4">About OneCampus</h2>
+<p class="text-gray-700 leading-8">
+OneCampus is a modern cloud-based School ERP designed to simplify school administration,
+academic management, parent communication, admissions, attendance, examinations,
+fee management and institutional operations through a secure and easy-to-use platform.
+</p>
+</div>
+<div>
+<h2 class="text-3xl font-bold mb-4">About Webdez Studio</h2>
+<p class="text-gray-700 leading-8">
+Webdez Studio develops modern web and mobile software solutions with a focus on
+education technology and digital transformation for schools and institutions.
+</p>
+</div>
+</div>
+</section>
+
+<section class="max-w-6xl mx-auto px-6 py-16">
+<h2 class="text-3xl font-bold text-center mb-10">Why OneCampus?</h2>
+<div class="grid md:grid-cols-4 gap-5">
+<div class="bg-blue-50 p-5 rounded-xl">☁️ Cloud Based</div>
+<div class="bg-blue-50 p-5 rounded-xl">🔒 Secure</div>
+<div class="bg-blue-50 p-5 rounded-xl">📱 Mobile Friendly</div>
+<div class="bg-blue-50 p-5 rounded-xl">⚡ Fast & Modern</div>
+</div>
+</section>
+
+<section id="contact" class="gradient text-white py-16">
+<div class="max-w-4xl mx-auto px-6">
+<h2 class="text-4xl font-bold mb-6">Contact Us</h2>
+<form class="grid gap-4">
+<input class="p-3 rounded text-black" placeholder="Your Name">
+<input class="p-3 rounded text-black" placeholder="Email">
+<textarea class="p-3 rounded text-black" rows="5" placeholder="Message"></textarea>
+<button class="bg-white text-blue-700 font-bold rounded p-3">Send Message</button>
+</form>
+<div class="mt-8">
+<p><strong>Email:</strong> contact@onecampusedu.online</p>
+<p><strong>Website:</strong> https://onecampusedu.online</p>
+</div>
+</div>
+</section>
+
+<section id="privacy" class="max-w-6xl mx-auto px-6 py-16">
+<h2 class="text-3xl font-bold mb-4">Privacy Policy</h2>
+<ul class="list-disc pl-6 space-y-2 text-gray-700">
+<li>We collect only information necessary to provide school management services.</li>
+<li>Personal information is not sold to third parties.</li>
+<li>Data is stored securely using industry-standard practices.</li>
+<li>Schools retain ownership of their data.</li>
+<li>Privacy requests may be sent through our contact page.</li>
+</ul>
+</section>
+
+<section id="terms" class="max-w-6xl mx-auto px-6 py-16">
+<h2 class="text-3xl font-bold mb-4">Terms & Conditions</h2>
+<ul class="list-disc pl-6 space-y-2 text-gray-700">
+<li>Users agree to use OneCampus lawfully.</li>
+<li>Customers are responsible for safeguarding their accounts.</li>
+<li>Service features may evolve over time.</li>
+<li>Intellectual property belongs to Webdez Studio unless stated otherwise.</li>
+<li>Contact us for legal or contractual queries.</li>
+</ul>
+</section>
+
+<footer class="bg-slate-900 text-white">
+<div class="max-w-7xl mx-auto px-6 py-10">
+<div class="font-bold text-xl">OneCampus</div>
+<p class="mt-3">OneCampus is a product of <strong>Webdez Studio</strong>.</p>
+<p class="mt-2">© 2026 OneCampus. All rights reserved.</p>
+<div class="mt-3 text-gray-300">
+Privacy Policy • Terms & Conditions • Contact
+</div>
+</div>
+</footer>
+
+</body>
+</html>

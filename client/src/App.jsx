@@ -4,9 +4,10 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequirePermission } from './components/RequirePermission';
 import { SuperAdminProtectedRoute } from './components/SuperAdminProtectedRoute';
 import { SuperAdminAuthProvider } from './contexts/SuperAdminAuthContext';
-import { LoginPage } from './features/auth/components/LoginPage';
+import { LandingPage } from './features/landing/components/LandingPage';
 import { TenantRegisterPage } from './features/tenantRegistration/components/TenantRegisterPage';
 import { SuperAdminDashboardPage } from './features/superAdmin/components/SuperAdminDashboardPage';
+import { SuperAdminInboxPage } from './features/superAdmin/components/SuperAdminInboxPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { LearnersPage } from './features/learners/components/LearnersPage';
 import { LearnerProfilePage } from './features/learners/components/LearnerProfilePage';
@@ -51,8 +52,8 @@ import { ActivitiesPage } from './features/activities/components/ActivitiesPage'
 export default function App() {
   return (
     <Routes>
-      {/* Public login — no tenant session needed */}
-      <Route path="/" element={<LoginPage />} />
+      {/* Public landing page (includes login modal) — no tenant session needed */}
+      <Route path="/" element={<LandingPage />} />
 
       {/* Super admin area — its own auth context, scoped to this subtree only */}
       <Route element={<SuperAdminAuthProvider><Outlet /></SuperAdminAuthProvider>}>
@@ -62,6 +63,14 @@ export default function App() {
           element={
             <SuperAdminProtectedRoute>
               <SuperAdminDashboardPage />
+            </SuperAdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/super-admin/inquiries"
+          element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminInboxPage />
             </SuperAdminProtectedRoute>
           }
         />

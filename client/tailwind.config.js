@@ -23,6 +23,10 @@ export default {
         },
         success: 'var(--success)',
         danger: 'var(--danger)',
+        microsoft: {
+          blue: '#0067b8',
+          hover: '#005da6'
+        },
         sidebar: {
           bg: 'var(--sidebar-bg)',
           hover: 'var(--sidebar-bg-hover)',

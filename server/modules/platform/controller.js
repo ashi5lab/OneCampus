@@ -315,6 +315,79 @@ async function deleteTenant(req, res) {
   }
 }
 
+// Inquiries Endpoints
+const inquirySchema = z.object({
+  type: z.enum(['demo', 'contact']),
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Valid email is required'),
+  phone: z.string().optional(),
+  institution_name: z.string().optional(),
+  institution_type: z.string().optional(),
+  address: z.string().optional(),
+  source: z.string().optional(),
+  message: z.string().optional()
+});
+
+async function submitInquiry(req, res) {
+  try {
+    const parsed = inquirySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+    
+    const { type, name, email, phone, institution_name, institution_type, address, source, message } = parsed.data;
+
+    const result = await db.query(
+      `INSERT INTO public.onec_inquiries 
+         (type, name, email, phone, institution_name, institution_type, address, source, message) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+       RETURNING id, created_at`,
+      [type, name, email, phone, institution_name, institution_type, address, source, message]
+    );
+
+    res.status(201).json({ data: result.rows[0] });
+  } catch (err) {
+    console.error('Submit inquiry error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function listInquiries(req, res) {
+  try {
+    const result = await db.query('SELECT * FROM public.onec_inquiries ORDER BY created_at DESC');
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error('List inquiries error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function markInquiryRead(req, res) {
+  try {
+    const { id } = req.params;
+    const { is_read } = req.body;
+    const result = await db.query(
+      'UPDATE public.onec_inquiries SET is_read = $1 WHERE id = $2 RETURNING *',
+      [is_read, id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Inquiry not found' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    console.error('Mark inquiry read error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function deleteInquiry(req, res) {
+  try {
+    const { id } = req.params;
+    const result = await db.query('DELETE FROM public.onec_inquiries WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Inquiry not found' });
+    res.json({ data: { deleted: true } });
+  } catch (err) {
+    console.error('Delete inquiry error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   register,
   getRegistrationStatus,
@@ -324,5 +397,9 @@ module.exports = {
   approveTenant,
   declineTenant,
   updateTenant,
-  deleteTenant
+  deleteTenant,
+  submitInquiry,
+  listInquiries,
+  markInquiryRead,
+  deleteInquiry
 };
