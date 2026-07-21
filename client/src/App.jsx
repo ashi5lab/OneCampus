@@ -4,10 +4,8 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequirePermission } from './components/RequirePermission';
 import { SuperAdminProtectedRoute } from './components/SuperAdminProtectedRoute';
 import { SuperAdminAuthProvider } from './contexts/SuperAdminAuthContext';
-import { LandingPage } from './features/landing/components/LandingPage';
 import { LoginPage } from './features/auth/components/LoginPage';
 import { TenantRegisterPage } from './features/tenantRegistration/components/TenantRegisterPage';
-import { SuperAdminLoginPage } from './features/superAdmin/components/SuperAdminLoginPage';
 import { SuperAdminDashboardPage } from './features/superAdmin/components/SuperAdminDashboardPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { LearnersPage } from './features/learners/components/LearnersPage';
@@ -53,14 +51,12 @@ import { ActivitiesPage } from './features/activities/components/ActivitiesPage'
 export default function App() {
   return (
     <Routes>
-      {/* Public landing + tenant registration/login — no tenant session needed */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/register" element={<TenantRegisterPage />} />
-      <Route path="/login" element={<LoginPage />} />
+      {/* Public login — no tenant session needed */}
+      <Route path="/" element={<LoginPage />} />
 
       {/* Super admin area — its own auth context, scoped to this subtree only */}
       <Route element={<SuperAdminAuthProvider><Outlet /></SuperAdminAuthProvider>}>
-        <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
+        <Route path="/super-admin/register" element={<TenantRegisterPage />} />
         <Route
           path="/super-admin"
           element={

@@ -3,6 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { InstallAppPrompt } from '../../../components/InstallAppPrompt';
+import { superAdminApi } from '../../superAdmin/services/superAdminApi';
+import { setSuperAdminToken } from '../../../lib/superAdminApiClient';
 
 export function LoginPage() {
   const { login, isAuthenticated, initializing } = useAuth();
@@ -34,13 +36,17 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
+      if (username === 'onec_admin') {
+        const data = await superAdminApi.login({ username, password });
+        setSuperAdminToken(data.token);
+        // We do a hard redirect to ensure the SuperAdminAuthProvider remounts cleanly with the new token
+        window.location.href = '/super-admin';
+        return;
+      }
+
       try {
         await login(username, password);
       } catch (err) {
-        // A raw network failure (no `.status` — the request never got a
-        // response at all, vs. a real 401/400 which does) is often
-        // transient on mobile — one retry before surfacing an error avoids
-        // bouncing a login attempt that would have worked a second later.
         if (typeof err?.status !== 'number') {
           await login(username, password);
         } else {
@@ -64,7 +70,7 @@ export function LoginPage() {
         className="w-full max-w-[380px] rounded-xl border border-border bg-surface p-6 sm:p-8"
       >
         <div className="mb-1 text-lg font-bold text-ink-900">
-          {config?.org_name || 'OneCampus'}
+          OneCampus
         </div>
         <div className="mb-6 text-sm text-ink-500">Sign in to your institution</div>
 
@@ -95,15 +101,6 @@ export function LoginPage() {
         </button>
 
         <InstallAppPrompt className="mt-3" />
-
-        <div className="mt-5 flex justify-between text-xs">
-          <Link to="/" className="font-semibold text-ink-500 hover:text-ink-900">
-            &larr; Back
-          </Link>
-          <Link to="/register" className="font-semibold text-ink-500 hover:text-ink-900">
-            Register a new tenant
-          </Link>
-        </div>
       </form>
     </div>
   );

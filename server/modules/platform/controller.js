@@ -299,6 +299,8 @@ async function deleteTenant(req, res) {
       }
       await client.query(`DROP SCHEMA IF EXISTS "${tenant.schema_name}" CASCADE`);
     }
+    // Remove foreign key references from platform audit logs to allow deletion
+    await client.query('UPDATE public.onec_platform_audit_logs SET tenant_id = NULL WHERE tenant_id = $1', [id]);
     await client.query('DELETE FROM public.onec_tenants WHERE id = $1', [id]);
 
     await client.query('COMMIT');

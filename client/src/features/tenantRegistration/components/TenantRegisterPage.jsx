@@ -59,14 +59,10 @@ export function TenantRegisterPage() {
             <code className="rounded bg-surface-muted px-1.5 py-0.5 text-[12.5px]">
               {submitted.prefix}_{submitted.admin_username}
             </code>
-            . A super admin will review your registration —{' '}
-            <Link to="/login" className="font-semibold underline">
-              Login as Tenant
-            </Link>{' '}
-            once approved.
+            . This tenant is now pending approval. Return to the dashboard to approve it.
           </p>
           <Link
-            to="/"
+            to="/super-admin"
             className="mt-6 inline-block w-full rounded bg-ink-900 py-2.5 text-sm font-semibold text-white"
           >
             Back to home
@@ -166,12 +162,9 @@ export function TenantRegisterPage() {
           {submitting ? 'Submitting…' : 'Submit for approval'}
         </button>
 
-        <div className="mt-5 flex justify-between text-xs">
-          <Link to="/" className="font-semibold text-ink-500 hover:text-ink-900">
-            &larr; Back
-          </Link>
-          <Link to="/login" className="font-semibold text-ink-500 hover:text-ink-900">
-            Already approved? Sign in
+        <div className="mt-5 text-xs">
+          <Link to="/super-admin" className="font-semibold text-ink-500 hover:text-ink-900">
+            &larr; Back to Dashboard
           </Link>
         </div>
       </form>

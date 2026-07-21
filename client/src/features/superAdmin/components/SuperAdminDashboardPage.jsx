@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useSuperAdminAuth } from '../../../contexts/SuperAdminAuthContext';
 import { Badge } from '../../../components/Badge';
 import {
@@ -32,7 +32,7 @@ export function SuperAdminDashboardPage() {
 
   function handleLogout() {
     logout();
-    navigate('/super-admin/login', { replace: true });
+    navigate('/', { replace: true });
   }
 
   function handleApprove(tenant) {
@@ -68,7 +68,15 @@ export function SuperAdminDashboardPage() {
 
       <div className="mx-auto w-full max-w-[900px] px-4 py-5 sm:px-6 sm:py-7">
         <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Tenants</div>
-        <h1 className="mb-5 font-display text-2xl font-bold tracking-tight text-ink-900">Manage Tenants</h1>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Manage Tenants</h1>
+          <Link
+            to="/super-admin/register"
+            className="rounded bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-700"
+          >
+            Register New Tenant
+          </Link>
+        </div>
 
         <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
           {STATUS_TABS.map((tab) => (
