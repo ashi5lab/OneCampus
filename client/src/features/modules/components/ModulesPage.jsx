@@ -3,6 +3,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
+import { PageHeader } from '../../../components/PageHeader';
 import { useUnits } from '../../units/hooks/useUnits';
 import { useModules, useCreateModule, useUpdateModule, useDeleteModule } from '../hooks/useModules';
 import { ModuleFormModal } from './ModuleFormModal';
@@ -55,22 +56,20 @@ export function ModulesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            Management / {t('topics')}
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">{t('topics')}</h1>
-        </div>
-        {can('modules.manage') && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-          >
-            + Add {t('topic')}
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrow={`Management / ${t('topics')}`}
+        title={t('topics')}
+        actions={
+          can('modules.manage') && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+            >
+              + Add {t('topic')}
+            </button>
+          )
+        }
+      />
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard label={`Total ${t('topics')}`} value={isLoading ? '—' : modules.length} />

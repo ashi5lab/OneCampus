@@ -5,6 +5,7 @@ import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useCohortTimetable, useMyCohorts, useMyTimetable, useCreatePeriod, useUpdatePeriod, useDeletePeriod } from '../hooks/useTimetable';
 import { PeriodFormModal } from './PeriodFormModal';
 import { PeriodGrid } from './PeriodGrid';
+import { PageHeader } from '../../../components/PageHeader';
 
 export function TimetablePage() {
   const { can, user } = useAuth();
@@ -66,29 +67,28 @@ export function TimetablePage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Timetable</div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Class Timetable</h1>
-        </div>
-      </div>
-
-      {isInstructor && (
-        <div className="mb-5 flex flex-wrap gap-2">
-          <button
-            onClick={() => setTab('mine')}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${tab === 'mine' ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'}`}
-          >
-            My Schedule
-          </button>
-          <button
-            onClick={() => setTab('class')}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${tab === 'class' ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'}`}
-          >
-            By Class
-          </button>
-        </div>
-      )}
+      <PageHeader
+        eyebrow="Timetable"
+        title="Class Timetable"
+        tabs={
+          isInstructor && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setTab('mine')}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${tab === 'mine' ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'}`}
+              >
+                My Schedule
+              </button>
+              <button
+                onClick={() => setTab('class')}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${tab === 'class' ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'}`}
+              >
+                By Class
+              </button>
+            </div>
+          )
+        }
+      />
 
       {tab === 'mine' && isInstructor && (
         <PeriodGrid

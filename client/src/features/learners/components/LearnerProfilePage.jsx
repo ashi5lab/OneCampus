@@ -6,6 +6,7 @@ import { StatCard } from '../../../components/StatCard';
 import { Badge } from '../../../components/Badge';
 import { DataTable } from '../../../components/DataTable';
 import { Avatar } from '../../../components/Avatar';
+import { BackButton, useAutoBack } from '../../../components/PageHeader';
 import { ProfilePictureUploader } from '../../profile/components/ProfilePictureUploader';
 import { useLearnerProfile, useUpdateLearner, useDeleteLearner } from '../hooks/useLearners';
 import { LearnerFormModal } from './LearnerFormModal';
@@ -42,6 +43,7 @@ export function LearnerProfilePage() {
   const isOwnProfile = ownProfile?.learnerId === learnerId;
   const canManage = can('learners.manage');
   const canManageGuardianLinks = can('guardian_links.manage');
+  const { showBack, goBack } = useAutoBack();
 
   if (isLoading) return <div className="p-8 text-center text-sm text-ink-500">Loading…</div>;
   if (error) {
@@ -76,7 +78,8 @@ export function LearnerProfilePage() {
 
   return (
     <div>
-      <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
+      <div className="mb-1 flex items-center gap-1.5 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
+        {showBack && <BackButton onClick={goBack} />}
         Management / {t('learners')}
       </div>
 
@@ -344,10 +347,6 @@ export function LearnerProfilePage() {
           </div>
         </div>
       )}
-
-      <Link to="/app/learners" className="mt-6 inline-block text-xs font-semibold text-ink-500 hover:text-ink-900">
-        &larr; Back to {t('learners')}
-      </Link>
 
       {viewingEvaluationId && (
         <ReportCardModal evaluationId={viewingEvaluationId} learnerId={learnerId} onClose={() => setViewingEvaluationId(null)} />

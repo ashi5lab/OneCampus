@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { ModuleBadge } from '../../../components/ModuleBadge';
+import { PageHeader } from '../../../components/PageHeader';
 import { useMyCohorts } from '../hooks/useClassChannel';
 import { ClassChannel } from './ClassChannel';
 
@@ -43,10 +44,7 @@ export function ClassPage() {
 function ClassPicker({ cohorts }) {
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Class</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Your Classes</h1>
-      </div>
+      <PageHeader eyebrow="Class" title="Your Classes" />
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
         {cohorts.map((c) => (
           <Link

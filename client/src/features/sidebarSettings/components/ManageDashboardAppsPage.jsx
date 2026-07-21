@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { PageHeader } from '../../../components/PageHeader';
 import { NAV_LINK_DEFS, DEFAULT_DASHBOARD_APPS } from '../../../lib/sidebarLinks';
 import { useUpdateDashboardApps } from '../hooks/useSidebarLinks';
 
@@ -46,14 +46,11 @@ export function ManageDashboardAppsPage() {
 
   return (
     <div className="max-w-[640px]">
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Settings / Manage Dashboard Apps</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Manage Dashboard Apps</h1>
-        <p className="mt-1 text-[13px] text-ink-500">
-          Choose which modules appear on the Home dashboard for everyone in your organisation. Everything is always
-          reachable from More, whether or not it's pinned here.
-        </p>
-      </div>
+      <PageHeader eyebrow="Settings / Manage Dashboard Apps" title="Manage Dashboard Apps" />
+      <p className="mb-4 text-[13px] text-ink-500">
+        Choose which modules appear on the Home dashboard for everyone in your organisation. Everything is always
+        reachable from More, whether or not it's pinned here.
+      </p>
 
       <div className="rounded border border-border bg-surface p-5">
         {availableDefs.length === 0 && (
@@ -87,10 +84,6 @@ export function ManageDashboardAppsPage() {
           {updateDashboardApps.isPending ? 'Saving…' : 'Save'}
         </button>
       </div>
-
-      <Link to="/app/profile" className="mt-6 inline-block text-xs font-semibold text-ink-500 hover:text-ink-900">
-        &larr; Back to Settings
-      </Link>
     </div>
   );
 }

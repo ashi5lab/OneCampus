@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DataTable } from '../../../components/DataTable';
+import { PageHeader } from '../../../components/PageHeader';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useCertificates, useIssueCertificate } from '../hooks/useCertificates';
 import { certificatesApi } from '../services/certificatesApi';
@@ -64,22 +65,20 @@ export function CertificatesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            Management / Certificates
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Certificates</h1>
-        </div>
-        {can('certificates.issue') && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-          >
-            + Issue Certificate
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Management / Certificates"
+        title="Certificates"
+        actions={
+          can('certificates.issue') && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+            >
+              + Issue Certificate
+            </button>
+          )
+        }
+      />
 
       {downloadError && (
         <div className="mb-3 rounded border border-danger/30 bg-danger/10 px-4 py-2.5 text-[12.5px] font-semibold text-danger">

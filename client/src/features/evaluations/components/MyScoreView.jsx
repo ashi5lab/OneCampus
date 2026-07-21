@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
+import { PageHeader } from '../../../components/PageHeader';
 import { useScores } from '../hooks/useEvaluations';
 
 // Read-only view for roles with evaluations.view but not .grade (learner/
@@ -12,12 +13,14 @@ export function MyScoreView() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-          <Link to="/app/exams" className="hover:underline">Exams</Link> / Score
-        </div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Your Score</h1>
-      </div>
+      <PageHeader
+        eyebrow={
+          <>
+            <Link to="/app/exams" className="hover:underline">Exams</Link> / Score
+          </>
+        }
+        title="Your Score"
+      />
 
       <div className="rounded border border-border bg-surface p-8 text-center">
         {isLoading && <div className="text-sm text-ink-500">Loading…</div>}

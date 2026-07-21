@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '../../../components/PageHeader';
 import { OverviewTab } from './OverviewTab';
 import { AnalyticsTab } from './AnalyticsTab';
 import { AttendanceTab } from './AttendanceTab';
@@ -25,24 +26,25 @@ export function ReportsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Reports</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Reports</h1>
-      </div>
-
-      <div className="mb-5 flex flex-wrap gap-2">
-        {TABS.map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
-              tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PageHeader
+        eyebrow="Reports"
+        title="Reports"
+        tabs={
+          <div className="flex flex-wrap gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => setTab(t.value)}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
+                  tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       <ActiveTab />
     </div>

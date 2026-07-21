@@ -1,4 +1,5 @@
 import { useAuth } from '../../../contexts/AuthContext';
+import { PageHeader } from '../../../components/PageHeader';
 import { StaffAttendanceRoster } from './StaffAttendanceRoster';
 import { MyStaffAttendanceView } from './MyStaffAttendanceView';
 
@@ -12,14 +13,10 @@ export function StaffAttendancePage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-          {canViewRoster ? 'Management / Staff Attendance' : 'Staff Attendance'}
-        </div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-          {canViewRoster ? 'Staff Attendance' : 'My Attendance'}
-        </h1>
-      </div>
+      <PageHeader
+        eyebrow={canViewRoster ? 'Management / Staff Attendance' : 'Staff Attendance'}
+        title={canViewRoster ? 'Staff Attendance' : 'My Attendance'}
+      />
 
       {canViewRoster ? <StaffAttendanceRoster /> : <MyStaffAttendanceView />}
     </div>

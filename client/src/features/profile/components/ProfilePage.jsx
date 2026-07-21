@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
+import { PageHeader, BackButton } from '../../../components/PageHeader';
 import { ProfilePictureUploader } from './ProfilePictureUploader';
 import { getHomeCardsForRole, isCardVisible } from '../../../lib/homeCardKeys';
 import {
@@ -76,10 +77,7 @@ export function ProfilePage() {
 
   return (
     <div className="max-w-[860px]">
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Account</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Settings</h1>
-      </div>
+      <PageHeader eyebrow="Account" title="Settings" />
 
       <div className="mb-5 rounded border border-border bg-surface p-5">
         <ProfilePictureUploader name={me.username} pictureUrl={me.profile_picture_url} invalidateKey={MY_PROFILE_KEY} />
@@ -147,16 +145,10 @@ export function ProfilePage() {
 
         {activeMobileRow && (
           <div>
-            <button
-              type="button"
-              onClick={() => setMobileSection(null)}
-              className="mb-3 flex items-center gap-1 text-[12.5px] font-semibold text-ink-500"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
+            <div className="mb-3 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-500">
+              <BackButton onClick={() => setMobileSection(null)} />
               {activeMobileRow.label}
-            </button>
+            </div>
             {mobileSection === 'notifications' && <NotificationPreferencesCard />}
             {mobileSection === 'home-cards' && showHomeCardsTab && <HomeCardsCard />}
             {mobileSection === 'password' && <ChangePasswordCard />}

@@ -1,20 +1,15 @@
 import { useEffect, useRef } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomTabBar } from './BottomTabBar';
 
-// No mobile header bar anymore — each page's own "Management / X" heading
-// in the content area is the only title now, instead of duplicating it in
-// a boxed bar above. Primary navigation on mobile lives in BottomTabBar,
-// not a hamburger + drawer. "Root" screens (the bottom tabs' own
-// destinations) show no back arrow since there's nowhere shallower to pop
-// to within the app shell.
-const ROOT_PATHS = ['/app', '/app/learners', '/app/cohorts', '/app/more', '/app/profile'];
-
+// No mobile header bar anymore — each page's own PageHeader (eyebrow/title/
+// back icon) is the only title now, instead of duplicating it in a boxed
+// bar above. Primary navigation on mobile lives in BottomTabBar, not a
+// hamburger + drawer. The back button itself lives in PageHeader, inline
+// with each page's title, not here — see PageHeader.jsx for why.
 export function Layout() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const isRoot = ROOT_PATHS.includes(location.pathname);
   const contentRef = useRef(null);
 
   // Client-side route changes don't reset scroll position the way a full
@@ -47,18 +42,6 @@ export function Layout() {
         className="mx-auto w-full max-w-[1180px] px-4 pb-4 pt-5 sm:px-6 md:overflow-y-auto md:px-9 md:py-7"
         style={{ paddingBottom: 'max(4.5rem, calc(3.75rem + env(safe-area-inset-bottom)))' }}
       >
-        {!isRoot && (
-          <button
-            onClick={() => navigate(-1)}
-            className="-ml-1.5 mb-3 flex items-center gap-1 rounded p-1.5 text-sm font-semibold text-ink-500 hover:bg-surface-muted hover:text-ink-900 md:hidden"
-            aria-label="Back"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-        )}
         <Outlet />
       </div>
 

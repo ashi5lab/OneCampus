@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DataTable } from '../../../components/DataTable';
 import { StatCard } from '../../../components/StatCard';
+import { PageHeader } from '../../../components/PageHeader';
 import { useMyLeave, useLeaveQueue, useCancelLeave } from '../hooks/useLeave';
 import { LEAVE_TYPE_LABEL, LEAVE_STATUS_LABEL } from '../types';
 import { LeaveApplyModal } from './LeaveApplyModal';
@@ -103,35 +104,36 @@ export function LeavePage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Leave</div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Leave</h1>
-        </div>
-        <button
-          onClick={() => setShowApply(true)}
-          className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-        >
-          + Apply for Leave
-        </button>
-      </div>
-
-      {canApprove && (
-        <div className="mb-5 flex flex-wrap gap-2">
+      <PageHeader
+        eyebrow="Leave"
+        title="Leave"
+        actions={
           <button
-            onClick={() => setTab('mine')}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${tab === 'mine' ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'}`}
+            onClick={() => setShowApply(true)}
+            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
           >
-            My Requests
+            + Apply for Leave
           </button>
-          <button
-            onClick={() => setTab('approvals')}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${tab === 'approvals' ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'}`}
-          >
-            Approvals
-          </button>
-        </div>
-      )}
+        }
+        tabs={
+          canApprove && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setTab('mine')}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${tab === 'mine' ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'}`}
+              >
+                My Requests
+              </button>
+              <button
+                onClick={() => setTab('approvals')}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${tab === 'approvals' ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'}`}
+              >
+                Approvals
+              </button>
+            </div>
+          )
+        }
+      />
 
       {(tab === 'mine' || !canApprove) && (
         <>

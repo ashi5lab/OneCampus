@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
+import { PageHeader } from '../../../components/PageHeader';
 import { useAccessGroups, useDeleteAccessGroup } from '../hooks/useAccessControl';
 import { AccessGroupFormModal } from './AccessGroupFormModal';
 
@@ -61,21 +62,21 @@ export function AccessControlPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Access Control</div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Access Control</h1>
-          <p className="mt-1 text-[13px] text-ink-500">
-            Grant extra permissions on top of a role's defaults — to every user of a role, or to specific users.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-        >
-          + Create Access Group
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Access Control"
+        title="Access Control"
+        actions={
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+          >
+            + Create Access Group
+          </button>
+        }
+      />
+      <p className="mb-4 text-[13px] text-ink-500">
+        Grant extra permissions on top of a role's defaults — to every user of a role, or to specific users.
+      </p>
 
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}

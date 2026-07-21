@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { Badge } from '../../../components/Badge';
 import { DataTable } from '../../../components/DataTable';
 import { Avatar } from '../../../components/Avatar';
+import { BackButton, useAutoBack } from '../../../components/PageHeader';
 import { ProfilePictureUploader } from '../../profile/components/ProfilePictureUploader';
 import { useInstructorProfile, useUpdateInstructor, useDeleteInstructor } from '../hooks/useInstructors';
 import { useModules } from '../../modules/hooks/useModules';
@@ -32,6 +33,7 @@ export function InstructorProfilePage() {
   const deleteInstructor = useDeleteInstructor();
   const [tab, setTab] = useState('overview');
   const [showEdit, setShowEdit] = useState(false);
+  const { showBack, goBack } = useAutoBack();
 
   const isOwnProfile = ownProfile?.instructorId === instructorId;
   const canManage = can('instructors.manage');
@@ -59,7 +61,8 @@ export function InstructorProfilePage() {
 
   return (
     <div>
-      <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
+      <div className="mb-1 flex items-center gap-1.5 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
+        {showBack && <BackButton onClick={goBack} />}
         Management / {t('instructors')}
       </div>
 
@@ -201,10 +204,6 @@ export function InstructorProfilePage() {
           </div>
         </div>
       )}
-
-      <Link to="/app/instructors" className="mt-6 inline-block text-xs font-semibold text-ink-500 hover:text-ink-900">
-        &larr; Back to {t('instructors')}
-      </Link>
 
       {showEdit && (
         <InstructorFormModal

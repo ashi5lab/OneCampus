@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { Badge } from '../../../components/Badge';
 import { Avatar } from '../../../components/Avatar';
+import { BackButton, useAutoBack } from '../../../components/PageHeader';
 import { ProfilePictureUploader } from '../../profile/components/ProfilePictureUploader';
 import { useGuardianProfile, useUpdateGuardian, useDeleteGuardian } from '../hooks/useGuardians';
 import { GuardianFormModal } from './GuardianFormModal';
@@ -19,6 +20,7 @@ export function GuardianProfilePage() {
   const deleteGuardian = useDeleteGuardian();
   const [showEdit, setShowEdit] = useState(false);
   const [showLinks, setShowLinks] = useState(false);
+  const { showBack, goBack } = useAutoBack();
 
   const isOwnProfile = ownProfile?.guardianId === guardianId;
   const canManage = can('guardians.manage');
@@ -42,7 +44,8 @@ export function GuardianProfilePage() {
 
   return (
     <div>
-      <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
+      <div className="mb-1 flex items-center gap-1.5 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
+        {showBack && <BackButton onClick={goBack} />}
         Management / Guardians
       </div>
 
@@ -160,10 +163,6 @@ export function GuardianProfilePage() {
           )}
         </div>
       </div>
-
-      <Link to="/app/guardians" className="mt-6 inline-block text-xs font-semibold text-ink-500 hover:text-ink-900">
-        &larr; Back to Guardians
-      </Link>
 
       {showEdit && (
         <GuardianFormModal

@@ -8,6 +8,7 @@ import { Badge } from '../../../components/Badge';
 import { SearchSelect } from '../../../components/SearchSelect';
 import { Avatar } from '../../../components/Avatar';
 import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
+import { PageHeader } from '../../../components/PageHeader';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearnersPage, useCreateLearner, useUpdateLearner, useDeleteLearner, useSetClassHead, useSetSchoolHead } from '../hooks/useLearners';
 import { LearnerFormModal } from './LearnerFormModal';
@@ -132,24 +133,20 @@ export function LearnersPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            Management / {t('learners')}
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-            {t('learners')}
-          </h1>
-        </div>
-        {can('learners.manage') && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-          >
-            + Add {t('learner')}
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrow={`Management / ${t('learners')}`}
+        title={t('learners')}
+        actions={
+          can('learners.manage') && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+            >
+              + Add {t('learner')}
+            </button>
+          )
+        }
+      />
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard label={`Total ${t('learners')}`} value={isLoading ? '—' : meta?.total ?? 0} />

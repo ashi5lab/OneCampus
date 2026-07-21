@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllFeatureLinks } from '../../../hooks/useNavLinks';
 import { ModuleBadge } from '../../../components/ModuleBadge';
+import { PageHeader } from '../../../components/PageHeader';
 
 // Full feature directory — every module this user can access, regardless
 // of whether it's pinned to the Dashboard's "Your Modules" grid (see
@@ -21,9 +22,7 @@ export function MorePage() {
 
   return (
     <div>
-      <div className="mb-5">
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">More</h1>
-      </div>
+      <PageHeader title="More" />
 
       <div className="mb-5">
         <input
