@@ -21,7 +21,9 @@ export function AssignmentFormModal({ onClose, onSubmit, submitting, submitError
   const { t } = useConfig();
   const { data: modules } = useModules();
   const { data: cohorts } = useCohorts();
-  const isEdit = !!initialData;
+  // Not just !!initialData — a create prefilled with only a cohort_id (see
+  // ClassAssignmentsTab, opened from within a class) is still a create.
+  const isEdit = !!initialData?.id;
   const {
     register,
     control,
@@ -29,7 +31,7 @@ export function AssignmentFormModal({ onClose, onSubmit, submitting, submitError
     formState: { errors }
   } = useForm({
     resolver: zodResolver(assignmentSchema),
-    defaultValues: initialData || { max_score: 100 }
+    defaultValues: { max_score: 100, ...initialData }
   });
 
   return (
