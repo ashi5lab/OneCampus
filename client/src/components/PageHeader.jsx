@@ -76,7 +76,6 @@ export function PageHeader({ eyebrow, title, subtitle, actions, tabs, back, onBa
         <div className="flex items-center gap-2 sm:items-baseline sm:gap-3">
           {showBack && <BackButton onClick={onBack || goBack} />}
           <div>
-            {eyebrow && <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">{eyebrow}</div>}
             <h1 className="flex items-center gap-1.5 font-display text-2xl font-bold tracking-tight text-ink-900">
               {title}
               <InfoTooltip text={subtitleText} />
