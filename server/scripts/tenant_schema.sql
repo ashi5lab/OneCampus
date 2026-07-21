@@ -173,7 +173,8 @@ CREATE TABLE onec_assignments (
     due_date DATE NOT NULL,
     max_score DECIMAL(5,2) DEFAULT 100.0,
     created_by INT REFERENCES onec_users(id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    publish_marks BOOLEAN DEFAULT false
 );
 
 CREATE TABLE onec_assignment_submissions (
@@ -281,7 +282,8 @@ CREATE TABLE onec_online_exams (
     published BOOLEAN NOT NULL DEFAULT false,
     published_at TIMESTAMP,
     created_by INT REFERENCES onec_users(id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    publish_marks BOOLEAN DEFAULT false
 );
 
 CREATE TABLE onec_exam_questions (

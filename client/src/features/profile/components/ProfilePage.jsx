@@ -29,6 +29,7 @@ const TABS = [
   { key: 'home-cards', label: 'Home Screen', roleGated: true },
   { key: 'password', label: 'Change Password' },
   { key: 'display', label: 'Display' },
+  { key: 'rules', label: 'Rules', adminOnly: true },
   { key: 'admin', label: 'Admin', adminOnly: true }
 ];
 
@@ -47,6 +48,7 @@ const MOBILE_ROWS = [
   { key: 'home-cards', label: 'Home Screen', roleGated: true },
   { key: 'password', label: 'Change Password' },
   { key: 'display', label: 'Display' },
+  { key: 'rules', label: 'Rules', adminOnly: true },
   { key: 'dashboard-apps', label: 'Manage Dashboard Apps', adminOnly: true, to: '/app/manage-dashboard-apps' },
   { key: 'admin-tools', label: 'Admin Tools', adminOnly: true }
 ];
@@ -153,6 +155,7 @@ export function ProfilePage() {
             {mobileSection === 'home-cards' && showHomeCardsTab && <HomeCardsCard />}
             {mobileSection === 'password' && <ChangePasswordCard />}
             {mobileSection === 'display' && <DisplayCard />}
+            {mobileSection === 'rules' && canManagePasswords && <RulesCard />}
             {mobileSection === 'admin-tools' && canManagePasswords && (
               <div className="space-y-5">
                 <AdminPasswordResetCard />
@@ -185,6 +188,7 @@ export function ProfilePage() {
           {activeTab === 'home-cards' && showHomeCardsTab && <HomeCardsCard />}
           {activeTab === 'password' && <ChangePasswordCard />}
           {activeTab === 'display' && <DisplayCard />}
+          {activeTab === 'rules' && canManagePasswords && <RulesCard />}
           {activeTab === 'admin' && canManagePasswords && (
             <div className="space-y-5">
               <ManageSidebarCard />
@@ -435,6 +439,62 @@ function ManageSidebarCard() {
       >
         Manage Dashboard Apps
       </Link>
+    </div>
+  );
+}
+
+function RulesCard() {
+  const { config, reloadConfig } = useConfig();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const isGlobalVisible = config?.rules?.global_teacher_visibility || false;
+
+  async function handleToggle(checked) {
+    setIsUpdating(true);
+    setErrorMsg('');
+    try {
+      const { apiClient } = await import('../../../lib/apiClient');
+      await apiClient.patch('/tenant/config/rules', { rules: { global_teacher_visibility: checked } });
+      await reloadConfig();
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to update rules');
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
+  return (
+    <div className="rounded border border-border bg-surface p-5">
+      <div className="mb-1 text-[15px] font-bold text-ink-900">Tenant Rules</div>
+      <div className="mb-5 text-[12px] text-ink-500">
+        Admin only — configure global access overrides for your institution.
+      </div>
+
+      <div className="flex items-center justify-between gap-3 border-t border-surface-muted py-3.5">
+        <div>
+          <div className="text-[13px] font-semibold text-ink-900">Global Teacher Visibility</div>
+          <div className="mt-0.5 text-[11.5px] text-ink-500 max-w-sm">
+            If enabled, teachers can view classes, assignments, and exams for cohorts they do not teach. If disabled, teachers only see content for their assigned cohorts.
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isGlobalVisible}
+          disabled={isUpdating}
+          onClick={() => handleToggle(!isGlobalVisible)}
+          className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${isGlobalVisible ? 'bg-accent' : 'bg-surface-muted'}`}
+        >
+          <span
+            className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${
+              isGlobalVisible ? 'translate-x-[18px]' : 'translate-x-0.5'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {errorMsg && <div className="mt-3 text-xs font-semibold text-danger">{errorMsg}</div>}
     </div>
   );
 }

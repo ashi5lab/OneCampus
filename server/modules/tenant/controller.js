@@ -23,7 +23,8 @@ function getConfig(req, res) {
       // to "which Dashboard cards show"), then the default set — same
       // schemaless-JSONB fallback pattern as active_modules/branding above,
       // no migration/backfill needed.
-      dashboard_apps: tenant.config?.dashboard_apps || tenant.config?.sidebar_links || DEFAULT_DASHBOARD_APPS
+      dashboard_apps: tenant.config?.dashboard_apps || tenant.config?.sidebar_links || DEFAULT_DASHBOARD_APPS,
+      rules: tenant.config?.rules || { global_teacher_visibility: false }
     }
   });
 }
@@ -61,4 +62,31 @@ async function updateDashboardApps(req, res) {
   }
 }
 
-module.exports = { getConfig, updateDashboardApps };
+const updateRulesSchema = z.object({
+  rules: z.object({
+    global_teacher_visibility: z.boolean().optional()
+  })
+});
+
+async function updateRules(req, res) {
+  try {
+    const parsed = updateRulesSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+
+    // Merge existing rules with the new updates
+    const currentRules = req.tenantConfig.config?.rules || { global_teacher_visibility: false };
+    const newRules = { ...currentRules, ...parsed.data.rules };
+
+    const result = await db.query(
+      `UPDATE public.onec_tenants SET config = jsonb_set(COALESCE(config, '{}'::jsonb), '{rules}', $1::jsonb) WHERE id = $2 RETURNING config`,
+      [JSON.stringify(newRules), req.tenantConfig.id]
+    );
+
+    res.json({ data: { rules: result.rows[0].config.rules } });
+  } catch (err) {
+    console.error('Update rules error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getConfig, updateDashboardApps, updateRules };

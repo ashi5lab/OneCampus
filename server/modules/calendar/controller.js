@@ -101,6 +101,14 @@ async function create(req, res) {
 async function update(req, res) {
   try {
     const { id } = req.params;
+
+    // Access control: only admin or the creator can edit
+    const existing = await req.db.query('SELECT created_by FROM onec_calendar_events WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role !== 'admin' && existing.rows[0].created_by !== req.user.userId) {
+      return res.status(403).json({ error: 'You do not have permission to edit this event' });
+    }
+
     const parsed = eventSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
     const d = parsed.data;
@@ -135,6 +143,14 @@ async function update(req, res) {
 async function remove(req, res) {
   try {
     const { id } = req.params;
+
+    // Access control: only admin or the creator can delete
+    const existing = await req.db.query('SELECT created_by FROM onec_calendar_events WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role !== 'admin' && existing.rows[0].created_by !== req.user.userId) {
+      return res.status(403).json({ error: 'You do not have permission to delete this event' });
+    }
+
     const result = await req.db.query('DELETE FROM onec_calendar_events WHERE id = $1 RETURNING *', [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     logAudit(req, 'calendar.event_deleted', { event_id: result.rows[0].id, title: result.rows[0].title });

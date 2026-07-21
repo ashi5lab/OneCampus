@@ -65,6 +65,14 @@ async function create(req, res) {
 async function update(req, res) {
   try {
     const { id } = req.params;
+
+    // Access control: only admin or the creator can edit
+    const existing = await req.db.query('SELECT posted_by FROM onec_notices WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role !== 'admin' && existing.rows[0].posted_by !== req.user.userId) {
+      return res.status(403).json({ error: 'You do not have permission to edit this notice' });
+    }
+
     const parsed = noticeSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
@@ -85,6 +93,14 @@ async function update(req, res) {
 async function remove(req, res) {
   try {
     const { id } = req.params;
+
+    // Access control: only admin or the creator can delete
+    const existing = await req.db.query('SELECT posted_by FROM onec_notices WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role !== 'admin' && existing.rows[0].posted_by !== req.user.userId) {
+      return res.status(403).json({ error: 'You do not have permission to delete this notice' });
+    }
+
     const result = await req.db.query('DELETE FROM onec_notices WHERE id = $1 RETURNING *', [id]);
 
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });

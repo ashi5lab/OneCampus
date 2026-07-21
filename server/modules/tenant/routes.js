@@ -14,5 +14,6 @@ router.get('/config', controller.getConfig);
 // action" grouping rather than introducing a new granular permission for
 // one page.
 router.patch('/config/dashboard-apps', auth, requirePermission('users.manage_passwords'), controller.updateDashboardApps);
+router.patch('/config/rules', auth, requirePermission('users.manage_passwords'), controller.updateRules);
 
 module.exports = router;

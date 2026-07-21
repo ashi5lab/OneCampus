@@ -103,6 +103,16 @@ async function listExams(req, res) {
                  JOIN onec_cohorts c ON e.cohort_id = c.id
                  LEFT JOIN onec_exam_submissions s ON s.exam_id = e.id AND s.learner_id = $2
                  WHERE e.cohort_id = $1`;
+    } else if (req.user.role === 'instructor' && !req.tenantConfig.config?.rules?.global_teacher_visibility) {
+      params.push(req.user.userId);
+      query += ` FROM onec_online_exams e
+                 JOIN onec_modules m ON e.module_id = m.id
+                 JOIN onec_cohorts c ON e.cohort_id = c.id
+                 WHERE e.created_by = $1 OR e.cohort_id IN (
+                   SELECT cohort_id FROM onec_instructor_cohorts ic
+                   JOIN onec_instructors i ON ic.instructor_id = i.id
+                   WHERE i.user_id = $1
+                 )`;
     } else {
       query += ` FROM onec_online_exams e
                  JOIN onec_modules m ON e.module_id = m.id
@@ -192,6 +202,13 @@ async function updateExam(req, res) {
     const submissionCount = await req.db.query('SELECT COUNT(*) FROM onec_exam_submissions WHERE exam_id = $1', [id]);
     const hasSubmissions = Number(submissionCount.rows[0].count) > 0;
 
+    // Access control: only admin or the creator can edit
+    const existing = await req.db.query('SELECT created_by FROM onec_online_exams WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role !== 'admin' && existing.rows[0].created_by !== req.user.userId) {
+      return res.status(403).json({ error: 'You do not have permission to edit this exam' });
+    }
+
     if (hasSubmissions) {
       const result = await req.db.query(
         `UPDATE onec_online_exams SET title = $1, description = $2, module_id = $3, cohort_id = $4, duration_minutes = $5
@@ -231,6 +248,14 @@ async function updateExam(req, res) {
 async function deleteExam(req, res) {
   try {
     const { id } = req.params;
+
+    // Access control: only admin or the creator can delete
+    const existing = await req.db.query('SELECT created_by FROM onec_online_exams WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role !== 'admin' && existing.rows[0].created_by !== req.user.userId) {
+      return res.status(403).json({ error: 'You do not have permission to delete this exam' });
+    }
+
     const result = await req.db.query('DELETE FROM onec_online_exams WHERE id = $1 RETURNING *', [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
 

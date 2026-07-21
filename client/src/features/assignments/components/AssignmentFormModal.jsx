@@ -13,7 +13,8 @@ const assignmentSchema = z.object({
   module_id: z.coerce.number().int({ message: 'Choose a subject' }),
   cohort_id: z.coerce.number().int({ message: 'Choose a class' }),
   due_date: z.string().min(1, 'Due date is required'),
-  max_score: z.coerce.number().default(100)
+  max_score: z.coerce.number().default(100),
+  publish_marks: z.boolean().default(false)
 });
 
 export function AssignmentFormModal({ onClose, onSubmit, submitting, submitError, initialData = null }) {
@@ -82,6 +83,11 @@ export function AssignmentFormModal({ onClose, onSubmit, submitting, submitError
         <Field label="Description (optional)" error={errors.description}>
           <textarea rows={4} className="input" {...register('description')} />
         </Field>
+
+        <label className="mb-4 mt-2 flex items-center gap-2">
+          <input type="checkbox" className="h-4 w-4 rounded border-border" {...register('publish_marks')} />
+          <span className="text-sm text-ink-800">Publish marks to students</span>
+        </label>
 
         {submitError && <div className="mb-3 text-xs font-semibold text-danger">{submitError}</div>}
 

@@ -8,7 +8,8 @@ const assignmentSchema = z.object({
   module_id: z.number().int(),
   cohort_id: z.number().int(),
   due_date: z.string(), // YYYY-MM-DD
-  max_score: z.number().default(100)
+  max_score: z.number().default(100),
+  publish_marks: z.boolean().optional()
 });
 
 const submissionSchema = z.object({
@@ -41,6 +42,14 @@ async function listAssignments(req, res) {
         : { rows: [] };
       params.push(cohortResult.rows[0]?.cohort_id ?? -1);
       query += ' WHERE a.cohort_id = $1';
+    } else if (req.user.role === 'instructor' && !req.tenantConfig.config?.rules?.global_teacher_visibility) {
+      // Teachers only see their own classes unless global visibility is ON
+      params.push(req.user.userId);
+      query += ` WHERE a.created_by = $1 OR a.cohort_id IN (
+        SELECT cohort_id FROM onec_instructor_cohorts ic
+        JOIN onec_instructors i ON ic.instructor_id = i.id
+        WHERE i.user_id = $1
+      )`;
     }
     query += ' ORDER BY a.due_date DESC';
 
@@ -77,11 +86,19 @@ async function updateAssignment(req, res) {
     const parsed = assignmentSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { title, description, module_id, cohort_id, due_date, max_score } = parsed.data;
+    const { title, description, module_id, cohort_id, due_date, max_score, publish_marks } = parsed.data;
+
+    // Access control: only admin or the creator can edit
+    const existing = await req.db.query('SELECT created_by FROM onec_assignments WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role !== 'admin' && existing.rows[0].created_by !== req.user.userId) {
+      return res.status(403).json({ error: 'You do not have permission to edit this assignment' });
+    }
+
     const result = await req.db.query(
-      `UPDATE onec_assignments SET title = $1, description = $2, module_id = $3, cohort_id = $4, due_date = $5, max_score = $6
-       WHERE id = $7 RETURNING *`,
-      [title, description ?? null, module_id, cohort_id, due_date, max_score, id]
+      `UPDATE onec_assignments SET title = $1, description = $2, module_id = $3, cohort_id = $4, due_date = $5, max_score = $6, publish_marks = COALESCE($7, publish_marks)
+       WHERE id = $8 RETURNING *`,
+      [title, description ?? null, module_id, cohort_id, due_date, max_score, publish_marks ?? null, id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
@@ -94,6 +111,14 @@ async function updateAssignment(req, res) {
 async function deleteAssignment(req, res) {
   try {
     const { id } = req.params;
+
+    // Access control: only admin or the creator can delete
+    const existing = await req.db.query('SELECT created_by FROM onec_assignments WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role !== 'admin' && existing.rows[0].created_by !== req.user.userId) {
+      return res.status(403).json({ error: 'You do not have permission to delete this assignment' });
+    }
+
     const result = await req.db.query('DELETE FROM onec_assignments WHERE id = $1 RETURNING *', [id]);
 
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
@@ -127,6 +152,19 @@ async function listSubmissions(req, res) {
     query += ' ORDER BY s.submitted_at DESC NULLS LAST';
 
     const result = await req.db.query(query, params);
+
+    // If it's a learner, check if marks are published. If not, hide them.
+    if (!isGrader) {
+      const assignRes = await req.db.query('SELECT publish_marks FROM onec_assignments WHERE id = $1', [id]);
+      const publishMarks = assignRes.rows[0]?.publish_marks;
+      if (!publishMarks) {
+        result.rows.forEach(row => {
+          row.score_obtained = null;
+          row.feedback = null;
+        });
+      }
+    }
+
     res.json({ data: result.rows });
   } catch (err) {
     console.error(err);
