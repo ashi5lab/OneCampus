@@ -26,15 +26,20 @@ function todayIso() {
 // Lets an instructor/admin pick a cohort + date, see that cohort's roster,
 // and mark each learner's status in one batch — the mark endpoint upserts
 // per-learner, so "Save All" just fires one POST per row.
-export function AttendanceRoster() {
+//
+// `lockedCohortId`, when passed (from the Class channel's Attendance tab),
+// skips the cohort picker entirely and marks that one class — the same
+// component, just without the "which class" question since the caller
+// already knows.
+export function AttendanceRoster({ lockedCohortId } = {}) {
   const { t } = useConfig();
   const { can } = useAuth();
   const canMark = can('attendance.mark');
-  const { data: cohorts } = useCohorts();
+  const { data: cohorts } = useCohorts({ enabled: !lockedCohortId });
   const { data: allLearners } = useLearners();
   const markAttendance = useMarkAttendance();
 
-  const [cohortId, setCohortId] = useState('');
+  const [cohortId, setCohortId] = useState(lockedCohortId || '');
   const [date, setDate] = useState(todayIso());
   const [statuses, setStatuses] = useState({});
   const [saveError, setSaveError] = useState(null);
@@ -82,19 +87,21 @@ export function AttendanceRoster() {
   return (
     <div className="mb-6 overflow-hidden rounded border border-border bg-surface">
       <div className="flex flex-wrap items-end gap-3 border-b border-surface-muted p-4">
-        <label className="block">
-          <div className="mb-1 text-xs font-semibold text-ink-700">{t('cohort')}</div>
-          <select
-            className="input"
-            value={cohortId}
-            onChange={(e) => setCohortId(e.target.value)}
-          >
-            <option value="">Select {t('cohort').toLowerCase()}…</option>
-            {(cohorts || []).map((cohort) => (
-              <option key={cohort.id} value={cohort.id}>{cohort.name}</option>
-            ))}
-          </select>
-        </label>
+        {!lockedCohortId && (
+          <label className="block">
+            <div className="mb-1 text-xs font-semibold text-ink-700">{t('cohort')}</div>
+            <select
+              className="input"
+              value={cohortId}
+              onChange={(e) => setCohortId(e.target.value)}
+            >
+              <option value="">Select {t('cohort').toLowerCase()}…</option>
+              {(cohorts || []).map((cohort) => (
+                <option key={cohort.id} value={cohort.id}>{cohort.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="block">
           <div className="mb-1 text-xs font-semibold text-ink-700">Date</div>
           <input

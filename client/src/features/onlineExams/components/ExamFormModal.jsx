@@ -17,7 +17,9 @@ export function ExamFormModal({ onClose, onSubmit, submitting, submitError, init
   const { t } = useConfig();
   const { data: modules } = useModules();
   const { data: cohorts } = useCohorts();
-  const isEdit = !!initialData;
+  // Not just !!initialData — a create prefilled with only a cohort_id (see
+  // ClassExamsTab, opened from within a class) is still a create.
+  const isEdit = !!initialData?.id;
 
   const [title, setTitle] = useState(initialData?.title || '');
   const [description, setDescription] = useState(initialData?.description || '');

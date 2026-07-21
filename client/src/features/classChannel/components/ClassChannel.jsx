@@ -1,24 +1,38 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { ModuleBadge } from '../../../components/ModuleBadge';
+import { useConfig } from '../../../contexts/ConfigContext';
 import { ClassChatTab } from './ClassChatTab';
+import { ClassAssignmentsTab } from '../../assignments/components/ClassAssignmentsTab';
+import { ClassExamsTab } from '../../onlineExams/components/ClassExamsTab';
+import { ClassTimetableTab } from '../../timetable/components/ClassTimetableTab';
+import { ClassAttendanceTab } from '../../attendance/components/ClassAttendanceTab';
 
-// The Class tab's main view for one cohort — quick-link cards into the
-// existing Assignments/Exams/Timetable/Attendance pages (scoped to this
-// class where those pages support it), plus a Teams-style Chat feed as the
-// main content. Deliberately doesn't rebuild those pages' management UI
-// inline — a teacher who can already add/grade/mark keeps using the same
-// full-featured pages, just reached from here instead of only the sidebar.
+// The Class tab's main view for one cohort — a Microsoft Teams-style
+// channel: Chat/Assignments/Exams/Timetable/Attendance all live as tabs
+// inside this one page, scoped to this cohort, instead of each being its
+// own page you navigate away to. There's no "which class" picker inside any
+// tab — you're already looking at one class, so each tab is just that
+// class's slice of the feature. The full, class-selectable versions of
+// these pages (for whoever's browsing the whole school, not one class)
+// still exist at /app/assignments etc., reached from the More directory —
+// see each Class*Tab component for the "manage across all classes" link
+// privileged users get back to those.
+const TAB_DEFS = [
+  { key: 'chat', label: 'Chat' },
+  { key: 'assignments', label: 'Assignments', gate: (can) => can('assignments.view') },
+  { key: 'exams', label: 'Exams', gate: (can) => can('online_exams.view') },
+  { key: 'timetable', label: 'Timetable', gate: (can) => can('timetable.view') },
+  { key: 'attendance', label: 'Attendance', gate: (can, hasModule) => hasModule('attendance') && can('attendance.view') }
+];
+
 export function ClassChannel({ cohort, showBack }) {
   const { can } = useAuth();
-  const canMarkAttendance = can('attendance.mark');
+  const { hasModule } = useConfig();
+  const [tab, setTab] = useState('chat');
 
-  const quickLinks = [
-    { key: 'assignments', label: 'Assignments', to: '/app/assignments' },
-    { key: 'exams', label: 'Exams', to: '/app/exams' },
-    { key: 'timetable', label: 'Timetable', to: `/app/timetable?cohort=${cohort.id}` },
-    ...(canMarkAttendance ? [{ key: 'attendance', label: 'Attendance', to: '/app/attendance' }] : [])
-  ];
+  const tabs = TAB_DEFS.filter((t) => !t.gate || t.gate(can, hasModule));
+  const activeTab = tabs.some((t) => t.key === tab) ? tab : 'chat';
 
   return (
     <div>
@@ -39,17 +53,29 @@ export function ClassChannel({ cohort, showBack }) {
         </div>
       </div>
 
-      <div className={`mb-6 grid gap-2.5 ${quickLinks.length > 3 ? 'grid-cols-4' : 'grid-cols-3'}`}>
-        {quickLinks.map((q) => (
-          <Link key={q.key} to={q.to} className="rounded border border-border bg-surface p-3 transition hover:border-accent">
-            <ModuleBadge moduleKey={q.key} label={q.label} size={26} />
-            <div className="mt-2 text-[12px] font-semibold text-ink-900">{q.label}</div>
-          </Link>
+      {/* Horizontally scrollable, not wrapping — up to 5 tabs need to fit
+          (or at least be reachable by a swipe) on the narrowest phone
+          screens without pushing content down. */}
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-0.5">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={`flex-shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold ${
+              activeTab === t.key ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
+            }`}
+          >
+            {t.label}
+          </button>
         ))}
       </div>
 
-      <div className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-ink-500">Class Chat</div>
-      <ClassChatTab cohortId={cohort.id} />
+      {activeTab === 'chat' && <ClassChatTab cohortId={cohort.id} />}
+      {activeTab === 'assignments' && <ClassAssignmentsTab cohortId={cohort.id} />}
+      {activeTab === 'exams' && <ClassExamsTab cohortId={cohort.id} />}
+      {activeTab === 'timetable' && <ClassTimetableTab cohortId={cohort.id} cohortTimeBlock={cohort.time_block} />}
+      {activeTab === 'attendance' && <ClassAttendanceTab cohortId={cohort.id} />}
     </div>
   );
 }
