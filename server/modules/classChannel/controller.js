@@ -3,7 +3,7 @@ const multer = require('multer');
 const { getMyCohorts } = require('../../lib/myCohorts');
 const { canAccessCohort, canModerateCohort } = require('../../lib/cohortAccess');
 const { sanitizeMessageBody } = require('../../lib/richText');
-const { isConfigured, uploadBuffer } = require('../../lib/cloudinary');
+const { isConfigured, uploadBuffer } = require('../../lib/storage');
 const { logAudit } = require('../../lib/audit');
 
 // Deliberately broader than profile pictures (documents/spreadsheets/zips,
@@ -33,10 +33,8 @@ function attachmentTypeLabel(mimetype) {
   return 'file';
 }
 
-// Uploads req.file (if present) to Cloudinary and returns the four
+// Uploads req.file (if present) to R2 and returns the four
 // attachment_* columns to persist, or null fields if there's no file.
-// resource_type must be 'raw' for anything that isn't an image — Cloudinary
-// otherwise rejects PDFs/docs/etc. uploaded as 'image'.
 async function uploadAttachmentIfPresent(req, cohortId) {
   if (!req.file) return { attachment_url: null, attachment_name: null, attachment_size: null, attachment_type: null };
   if (!isConfigured) throw Object.assign(new Error('File attachments are not configured for this deployment'), { status: 503 });
@@ -44,7 +42,8 @@ async function uploadAttachmentIfPresent(req, cohortId) {
   const resourceType = req.file.mimetype.startsWith('image/') ? 'image' : 'raw';
   const result = await uploadBuffer(req.file.buffer, {
     folder: `onecampus/${req.tenantSchema}/class-chat/${cohortId}`,
-    resourceType
+    resourceType,
+    mimetype: req.file.mimetype
   });
   return {
     attachment_url: result.secure_url,

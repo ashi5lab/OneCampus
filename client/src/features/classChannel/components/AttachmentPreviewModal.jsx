@@ -50,13 +50,21 @@ export function AttachmentPreviewModal({ attachment, onClose }) {
 
         <div className="flex-1 overflow-auto bg-surface-muted/40 p-3">
           {kind === 'image' && <img src={url} alt={name} className="mx-auto max-h-[75vh] w-auto max-w-full rounded-lg object-contain" />}
-          {kind === 'pdf' && <iframe src={url} title={name} className="h-[75vh] w-full rounded-lg border border-border bg-white" />}
-          {kind === 'office' && (
-            <iframe
-              src={`https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`}
-              title={name}
-              className="h-[75vh] w-full rounded-lg border border-border bg-white"
-            />
+          {(kind === 'pdf' || kind === 'office') && (
+            <div className="flex h-[40vh] flex-col items-center justify-center gap-3 text-center">
+              <span className="text-[13px] font-semibold text-ink-700">Preview not available inline</span>
+              <span className="max-w-xs text-[11.5px] text-ink-500">
+                To view this document, please open it in your device's default application.
+              </span>
+              <a
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 rounded bg-accent px-4 py-2 text-[12px] font-bold text-accent-ink hover:bg-accent-dark"
+              >
+                Open File
+              </a>
+            </div>
           )}
           {kind === 'none' && (
             <div className="flex h-[40vh] flex-col items-center justify-center gap-2 text-center">

@@ -1,6 +1,6 @@
 const multer = require('multer');
 const { z } = require('zod');
-const { isConfigured, uploadBuffer } = require('../../lib/cloudinary');
+const { isConfigured, uploadBuffer } = require('../../lib/storage');
 const { logAudit } = require('../../lib/audit');
 const { listActiveUsers } = require('../../lib/userDirectory');
 const { dispatchToAll, getActiveConfig } = require('../../lib/broadcastDispatch');
@@ -341,7 +341,8 @@ async function createVoicemail(req, res) {
     const uploaded = await uploadBuffer(req.file.buffer, {
       folder,
       publicId: `voicemail-${req.user.userId}-${Date.now()}`,
-      resourceType: 'video' // Cloudinary's resource type for all audio/video
+      resourceType: 'video', // Cloudinary/R2 audio/video mapping can be left or handled in storage.js
+      mimetype: req.file.mimetype
     });
 
     const result = await req.db.query(
