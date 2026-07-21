@@ -63,15 +63,15 @@ function relativeTime(ts) {
 
 function getActivityLink(item) {
   switch (item.type) {
-    case 'notice': return '/app/notices';
-    case 'message': return '/app/messages';
-    case 'mention': return '/app/class';
-    case 'assignment': return '/app/assignments';
-    case 'exam': return '/app/exams';
-    case 'attendance': return '/app/attendance';
-    case 'score': return '/app/profile';
-    case 'leave': return '/app/leave';
-    default: return '/app/activities';
+    case 'notice': return { to: '/app/notices' };
+    case 'message': return { to: '/app/messages' };
+    case 'mention': return { to: `/app/class/${item.cohort_id}`, state: { tab: 'chat', postId: item.id } };
+    case 'assignment': return { to: `/app/class/${item.cohort_id}`, state: { tab: 'assignments' } };
+    case 'exam': return { to: `/app/class/${item.cohort_id}`, state: { tab: 'exams' } };
+    case 'attendance': return { to: '/app/attendance' };
+    case 'score': return { to: '/app/profile' };
+    case 'leave': return { to: '/app/leave' };
+    default: return { to: '/app/activities' };
   }
 }
 
@@ -117,8 +117,10 @@ export function ActivitiesPage() {
             <div className="mb-2 text-[10.5px] font-bold uppercase tracking-wide text-ink-500">{label}</div>
             <div className="overflow-hidden rounded border border-border bg-surface">
               <div className="divide-y divide-surface-muted">
-                {groups[label].map((item) => (
-                  <Link to={getActivityLink(item)} key={`${item.type}-${item.id}`} className="flex items-start gap-3 p-3.5 transition-colors hover:bg-surface-muted">
+                {groups[label].map((item) => {
+                  const linkProps = getActivityLink(item);
+                  return (
+                    <Link to={linkProps.to} state={linkProps.state} key={`${item.type}-${item.id}`} className="flex items-start gap-3 p-3.5 transition-colors hover:bg-surface-muted">
                     <TypeIcon type={item.type} />
                     <div className="min-w-0 flex-1">
                       <div className="text-[13px] font-semibold leading-snug text-ink-900">{item.title}</div>
@@ -126,8 +128,9 @@ export function ActivitiesPage() {
                       {item.actor && <div className="mt-0.5 text-[11px] text-ink-500">{item.actor}</div>}
                     </div>
                     <div className="flex-shrink-0 whitespace-nowrap text-[11px] text-ink-500">{relativeTime(item.ts)}</div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </div>

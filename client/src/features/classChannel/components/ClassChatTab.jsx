@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   useClassPosts,
@@ -13,12 +14,14 @@ import {
   usePinPost,
   useUnpinPost
 } from '../hooks/useClassChannel';
+import { useMarkActivityContextViewed } from '../../activities/hooks/useActivities';
 import { MessageComposer } from './MessageComposer';
 import { MessagePost } from './MessagePost';
 import { EditHistoryModal } from './EditHistoryModal';
 
 export function ClassChatTab({ cohortId }) {
   const { user } = useAuth();
+  const location = useLocation();
   const { data: result, isLoading, error } = useClassPosts(cohortId);
   const { data: members } = useClassMembers(cohortId);
   const createPost = useCreateClassPost(cohortId);
@@ -30,6 +33,8 @@ export function ClassChatTab({ cohortId }) {
   const setReaction = useSetReaction(cohortId);
   const pinPost = usePinPost(cohortId);
   const unpinPost = useUnpinPost(cohortId);
+  
+  useMarkActivityContextViewed(`chat_${cohortId}`);
 
   const [replyingTo, setReplyingTo] = useState(null);
   const [historyTarget, setHistoryTarget] = useState(null); // { kind, id }
@@ -61,13 +66,24 @@ export function ClassChatTab({ cohortId }) {
       if (!el) return;
       const isFirstLoad = initializedFor.current !== cohortId;
       const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 350;
+      const targetPostId = location.state?.postId;
       
-      if (isFirstLoad || nearBottom) {
+      if (isFirstLoad && targetPostId) {
+        const targetEl = document.getElementById(`class-post-${targetPostId}`);
+        if (targetEl) {
+          targetEl.scrollIntoView({ block: 'center', behavior: 'auto' });
+          // Highlight it briefly
+          targetEl.classList.add('bg-accent/10', 'transition-colors', 'duration-500');
+          setTimeout(() => targetEl.classList.remove('bg-accent/10'), 2000);
+        } else {
+          el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+        }
+      } else if (isFirstLoad || nearBottom) {
         el.scrollTo({ top: el.scrollHeight, behavior: isFirstLoad ? 'auto' : 'smooth' });
       }
       initializedFor.current = cohortId;
     }, 150);
-  }, [cohortId, posts.length, isLoading]);
+  }, [cohortId, posts.length, isLoading, location.state?.postId]);
 
   async function handleNewPost({ html, file }) {
     await createPost.mutateAsync({ body: html, file });

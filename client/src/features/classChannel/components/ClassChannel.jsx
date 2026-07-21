@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { ModuleBadge } from '../../../components/ModuleBadge';
@@ -32,7 +32,14 @@ export function ClassChannel({ cohort, showBack }) {
   const { can } = useAuth();
   const { hasModule } = useConfig();
   const navigate = useNavigate();
-  const [tab, setTab] = useState('chat');
+  const location = useLocation();
+  const [tab, setTab] = useState(location.state?.tab || 'chat');
+
+  useEffect(() => {
+    if (location.state?.tab) {
+      setTab(location.state.tab);
+    }
+  }, [location.state?.tab]);
 
   const tabs = TAB_DEFS.filter((t) => !t.gate || t.gate(can, hasModule));
   const activeTab = tabs.some((t) => t.key === tab) ? tab : 'chat';

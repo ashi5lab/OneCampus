@@ -5,6 +5,7 @@ const { canAccessCohort, canModerateCohort } = require('../../lib/cohortAccess')
 const { sanitizeMessageBody } = require('../../lib/richText');
 const { isConfigured, uploadBuffer } = require('../../lib/storage');
 const { logAudit } = require('../../lib/audit');
+const { emitToCohort } = require('../../lib/socket');
 
 // Deliberately broader than profile pictures (documents/spreadsheets/zips,
 // not just images) since a class chat attachment is "whatever a teacher or
@@ -199,7 +200,11 @@ async function createPost(req, res) {
        LEFT JOIN onec_staff s ON s.user_id = ins.author_id`,
       [cohortId, req.user.userId, body, attachment.attachment_url, attachment.attachment_name, attachment.attachment_size, attachment.attachment_type]
     );
-    res.status(201).json({ data: { ...result.rows[0], replies: [], reactions: [], my_reaction: null } });
+    const newPost = { ...result.rows[0], replies: [], reactions: [], my_reaction: null };
+    res.status(201).json({ data: newPost });
+    
+    // Broadcast real-time event to room
+    emitToCohort(req.tenantConfig.domain, cohortId, 'new_post', newPost);
   } catch (err) {
     console.error(err);
     if (err.status) return res.status(err.status).json({ error: err.message });
@@ -240,7 +245,11 @@ async function createReply(req, res) {
        LEFT JOIN onec_staff s ON s.user_id = ins.author_id`,
       [postId, req.user.userId, body, attachment.attachment_url, attachment.attachment_name, attachment.attachment_size, attachment.attachment_type]
     );
-    res.status(201).json({ data: result.rows[0] });
+    const newReply = result.rows[0];
+    res.status(201).json({ data: newReply });
+    
+    // Broadcast real-time event to room
+    emitToCohort(req.tenantConfig.domain, cohortId, 'new_reply', { ...newReply, post_id: postId });
   } catch (err) {
     console.error(err);
     if (err.status) return res.status(err.status).json({ error: err.message });

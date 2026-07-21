@@ -66,7 +66,7 @@ async function listActivities(req, res) {
       const mentionPattern = `%data-user-id="${userId}"%`;
       queries.push(
         req.db.query(
-          `SELECT 'mention' AS type, p.id, p.body AS title, c.name AS subtitle, p.created_at AS ts, u.username AS actor
+          `SELECT 'mention' AS type, p.id, p.body AS title, c.name AS subtitle, p.created_at AS ts, u.username AS actor, p.cohort_id
            FROM onec_class_posts p JOIN onec_users u ON p.author_id = u.id JOIN onec_cohorts c ON p.cohort_id = c.id
            WHERE p.cohort_id = ANY($1) AND p.deleted_at IS NULL AND p.body LIKE $2
            ORDER BY p.created_at DESC LIMIT 15`,
@@ -75,7 +75,7 @@ async function listActivities(req, res) {
       );
       queries.push(
         req.db.query(
-          `SELECT 'mention' AS type, r.id, r.body AS title, c.name AS subtitle, r.created_at AS ts, u.username AS actor
+          `SELECT 'mention' AS type, r.post_id AS id, r.body AS title, c.name AS subtitle, r.created_at AS ts, u.username AS actor, p.cohort_id
            FROM onec_class_post_replies r
            JOIN onec_class_posts p ON r.post_id = p.id
            JOIN onec_cohorts c ON p.cohort_id = c.id
@@ -87,7 +87,7 @@ async function listActivities(req, res) {
       );
       queries.push(
         req.db.query(
-          `SELECT 'assignment' AS type, a.id, a.title AS title, m.name AS subtitle, a.created_at AS ts, NULL::text AS actor
+          `SELECT 'assignment' AS type, a.id, a.title AS title, m.name AS subtitle, a.created_at AS ts, NULL::text AS actor, a.cohort_id
            FROM onec_assignments a JOIN onec_modules m ON a.module_id = m.id
            WHERE a.cohort_id = ANY($1) ORDER BY a.created_at DESC LIMIT 10`,
           [cohortIds]
@@ -95,7 +95,7 @@ async function listActivities(req, res) {
       );
       queries.push(
         req.db.query(
-          `SELECT 'exam' AS type, e.id, e.title AS title, m.name AS subtitle, e.created_at AS ts, NULL::text AS actor
+          `SELECT 'exam' AS type, e.id, e.title AS title, m.name AS subtitle, e.created_at AS ts, NULL::text AS actor, e.cohort_id
            FROM onec_online_exams e JOIN onec_modules m ON e.module_id = m.id
            WHERE e.cohort_id = ANY($1)
            ORDER BY e.created_at DESC LIMIT 10`,
@@ -108,7 +108,7 @@ async function listActivities(req, res) {
       queries.push(
         req.db.query(
           `SELECT 'attendance' AS type, a.id, CONCAT('Attendance marked: ', INITCAP(a.status)) AS title, NULL::text AS subtitle, a.date::timestamp AS ts, NULL::text AS actor
-           FROM onec_attendance a WHERE a.learner_id = $1 ORDER BY a.date DESC LIMIT 10`,
+           FROM onec_attendance a WHERE a.learner_id = $1 AND a.status != 'present' ORDER BY a.date DESC LIMIT 10`,
           [ownLearnerId]
         )
       );

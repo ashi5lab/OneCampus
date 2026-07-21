@@ -1,6 +1,7 @@
 import { useAuth } from '../../../contexts/AuthContext';
 import { AttendanceRoster } from './AttendanceRoster';
 import { MyAttendanceView } from './MyAttendanceView';
+import { useMarkActivityContextViewed } from '../../activities/hooks/useActivities';
 
 // The Class channel's Attendance tab. Markers (instructor/admin/staff with
 // attendance.mark) get the roster locked to this one cohort — no class
@@ -10,6 +11,8 @@ import { MyAttendanceView } from './MyAttendanceView';
 export function ClassAttendanceTab({ cohortId }) {
   const { can } = useAuth();
   const isMarker = can('attendance.mark');
+  
+  useMarkActivityContextViewed('attendance_global');
 
   return isMarker ? <AttendanceRoster lockedCohortId={cohortId} /> : <MyAttendanceView />;
 }

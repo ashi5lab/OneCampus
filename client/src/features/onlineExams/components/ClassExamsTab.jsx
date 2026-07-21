@@ -5,6 +5,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { useOnlineExams, useOnlineExam, useCreateOnlineExam, useUpdateOnlineExam, useDeleteOnlineExam } from '../hooks/useOnlineExams';
+import { useMarkActivityContextViewed } from '../../activities/hooks/useActivities';
 import { ExamFormModal } from './ExamFormModal';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 
@@ -22,6 +23,8 @@ export function ClassExamsTab({ cohortId }) {
   const updateExam = useUpdateOnlineExam();
   const deleteExam = useDeleteOnlineExam();
   const isManager = can('online_exams.manage');
+  
+  useMarkActivityContextViewed(`exams_${cohortId}`);
 
   const [showForm, setShowForm] = useState(false);
   const [editingExamId, setEditingExamId] = useState(null);

@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { DataTable } from '../../../components/DataTable';
 import { useAssignments, useCreateAssignment, useUpdateAssignment, useDeleteAssignment } from '../hooks/useAssignments';
+import { useMarkActivityContextViewed } from '../../activities/hooks/useActivities';
 import { AssignmentFormModal } from './AssignmentFormModal';
 
 // The Class channel's Assignments tab — the same list as the full
@@ -20,6 +21,8 @@ export function ClassAssignmentsTab({ cohortId }) {
   const updateAssignment = useUpdateAssignment();
   const deleteAssignment = useDeleteAssignment();
   const canManage = can('assignments.manage');
+
+  useMarkActivityContextViewed(`assignments_${cohortId}`);
 
   const [showForm, setShowForm] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
