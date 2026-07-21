@@ -86,7 +86,7 @@ function insertMentionNode(removeLen, userId, name) {
 export function MessageComposer({
   members = [],
   initialHtml = '',
-  placeholder = 'Message this class…',
+  placeholder = 'Type a message…',
   onSubmit,
   onCancel,
   submitLabel = 'Send',

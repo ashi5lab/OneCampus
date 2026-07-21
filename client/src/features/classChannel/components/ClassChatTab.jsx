@@ -53,12 +53,20 @@ export function ClassChatTab({ cohortId }) {
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || isLoading) return;
-    const isFirstLoad = initializedFor.current !== cohortId;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
-    if (isFirstLoad || nearBottom) {
-      el.scrollTop = el.scrollHeight;
-    }
-    initializedFor.current = cohortId;
+    
+    // Use a slightly longer timeout so complex DOM elements (like attachments)
+    // finish their initial layout. A larger tolerance (300px) ensures we stay
+    // snapped to the bottom even if a large post is added.
+    setTimeout(() => {
+      if (!el) return;
+      const isFirstLoad = initializedFor.current !== cohortId;
+      const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 350;
+      
+      if (isFirstLoad || nearBottom) {
+        el.scrollTo({ top: el.scrollHeight, behavior: isFirstLoad ? 'auto' : 'smooth' });
+      }
+      initializedFor.current = cohortId;
+    }, 150);
   }, [cohortId, posts.length, isLoading]);
 
   async function handleNewPost({ html, file }) {
@@ -71,7 +79,7 @@ export function ClassChatTab({ cohortId }) {
   }
 
   return (
-    <div className="overflow-hidden rounded border border-border bg-surface">
+    <div className="flex h-full flex-col overflow-hidden rounded border border-border bg-surface">
       {pinnedPost && (
         <button
           onClick={() => document.getElementById(`class-post-${pinnedPost.id}`)?.scrollIntoView({ block: 'center' })}
@@ -86,7 +94,7 @@ export function ClassChatTab({ cohortId }) {
         </button>
       )}
 
-      <div ref={scrollRef} className="max-h-[520px] overflow-y-auto p-3">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-3">
         {isLoading && <div className="py-6 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="py-6 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {posts.length === 0 && !isLoading && (
