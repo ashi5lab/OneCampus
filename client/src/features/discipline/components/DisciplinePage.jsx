@@ -17,9 +17,10 @@ const SEVERITY_META = {
 // this page automatically sees only their own/linked children's records,
 // no client-side branching needed the way AttendancePage needs one.
 export function DisciplinePage() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const canLog = can('discipline.log');
   const [showForm, setShowForm] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
   const { data: records, isLoading, error } = useDisciplineRecords();
   const deleteRecord = useDeleteDisciplineRecord();
 
@@ -48,16 +49,25 @@ export function DisciplinePage() {
     columns.push({
       key: 'actions',
       header: '',
-      render: (row) => (
-        <button
-          onClick={() => {
-            if (window.confirm('Delete this record?')) deleteRecord.mutate(row.id);
-          }}
-          className="text-xs font-semibold text-danger hover:opacity-80"
-        >
-          Delete
-        </button>
-      )
+      render: (row) => {
+        const canManage = user.role === 'admin' || row.reported_by === user.id;
+        if (!canManage) return null;
+        return (
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setEditingRecord(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
+              Edit
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm('Delete this record?')) deleteRecord.mutate(row.id);
+              }}
+              className="text-xs font-semibold text-danger hover:opacity-80"
+            >
+              Delete
+            </button>
+          </div>
+        );
+      }
     });
   }
 
@@ -85,6 +95,7 @@ export function DisciplinePage() {
       </div>
 
       {showForm && <IncidentFormModal onClose={() => setShowForm(false)} />}
+      {editingRecord && <IncidentFormModal initialData={editingRecord} onClose={() => setEditingRecord(null)} />}
     </div>
   );
 }

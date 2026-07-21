@@ -4,6 +4,8 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { PageHeader } from '../../../components/PageHeader';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useScores, useRecordScore } from '../hooks/useEvaluations';
+import { SearchSelect } from '../../../components/SearchSelect';
+import { Pagination } from '../../../components/Pagination';
 
 // Only ever mounted for roles with evaluations.grade (see ScoreEntryPage's
 // dispatcher) — safe to fetch the full learner roster here.
@@ -21,6 +23,10 @@ export function ScoreGradingRoster() {
   const [values, setValues] = useState({});
   const [saveError, setSaveError] = useState(null);
   const [savedAt, setSavedAt] = useState(null);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const scoreByLearner = useMemo(() => {
     const map = {};
@@ -35,6 +41,22 @@ export function ScoreGradingRoster() {
     }
     setValues(next);
   }, [learners, scoreByLearner]);
+
+  const filteredLearners = useMemo(() => {
+    if (!learners) return [];
+    if (!searchTerm) return learners;
+    const lower = searchTerm.toLowerCase();
+    return learners.filter((l) => 
+      l.first_name.toLowerCase().includes(lower) || 
+      l.last_name.toLowerCase().includes(lower) || 
+      l.registry_no.toLowerCase().includes(lower)
+    );
+  }, [learners, searchTerm]);
+
+  const paginatedLearners = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredLearners.slice(start, start + itemsPerPage);
+  }, [filteredLearners, currentPage]);
 
   async function handleSaveAll() {
     setSaveError(null);
@@ -77,11 +99,23 @@ export function ScoreGradingRoster() {
       {saveError && <div className="mb-3 text-xs font-semibold text-danger">{saveError}</div>}
 
       <div className="overflow-hidden rounded border border-border bg-surface">
+        <div className="border-b border-border p-4">
+          <input
+            type="text"
+            className="input w-full max-w-sm"
+            placeholder={`Search ${t('learners').toLowerCase()} by name or ID...`}
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
-        {!isLoading && (!learners || learners.length === 0) && (
-          <div className="p-8 text-center text-sm text-ink-500">No {t('learners').toLowerCase()} yet.</div>
+        {!isLoading && filteredLearners.length === 0 && (
+          <div className="p-8 text-center text-sm text-ink-500">No {t('learners').toLowerCase()} found.</div>
         )}
-        {!isLoading && learners && learners.length > 0 && (
+        {!isLoading && filteredLearners.length > 0 && (
           <table className="w-full border-collapse">
             <thead>
               <tr>
@@ -94,7 +128,7 @@ export function ScoreGradingRoster() {
               </tr>
             </thead>
             <tbody>
-              {learners.map((learner) => (
+              {paginatedLearners.map((learner) => (
                 <tr key={learner.id}>
                   <td className="border-b border-surface-muted px-5 py-2.5 text-[13.5px] last:border-b-0">
                     <div className="font-semibold text-ink-900">{learner.first_name} {learner.last_name}</div>
@@ -117,6 +151,16 @@ export function ScoreGradingRoster() {
           </table>
         )}
       </div>
+
+      {!isLoading && filteredLearners.length > 0 && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredLearners.length / itemsPerPage)}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 }

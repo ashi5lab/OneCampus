@@ -128,9 +128,11 @@ CREATE TABLE onec_attendance (
 
 CREATE TABLE onec_evaluations (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    time_block VARCHAR(20) NOT NULL,
-    type VARCHAR(50) NOT NULL   -- 'exam', 'activity_log', 'project'
+    name VARCHAR(255) NOT NULL,
+    time_block VARCHAR(50) NOT NULL,
+    type VARCHAR(50) NOT NULL CHECK (type IN ('exam', 'activity_log', 'project')),
+    created_by INT REFERENCES onec_users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE onec_evaluation_schedules (

@@ -12,13 +12,13 @@ import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const STATUS_LABEL = { in_progress: 'In progress', submitted: 'Submitted', graded: 'Graded' };
 
 export function OnlineExamsPage() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const { t } = useConfig();
   const { data: exams, isLoading, error } = useOnlineExams();
   const createExam = useCreateOnlineExam();
   const updateExam = useUpdateOnlineExam();
   const deleteExam = useDeleteOnlineExam();
-  const isManager = can('online_exams.manage');
+  const canCreate = can('online_exams.manage');
 
   const [showForm, setShowForm] = useState(false);
   const [editingExamId, setEditingExamId] = useState(null);
@@ -39,42 +39,44 @@ export function OnlineExamsPage() {
     { key: 'questions', header: 'Questions', render: (row) => row.question_count },
     {
       key: 'status',
-      header: isManager ? 'Published' : 'Your Status',
+      header: canCreate ? 'Published' : 'Your Status',
       render: (row) =>
-        isManager ? (
+        canCreate ? (
           <Badge variant={row.published ? 'active' : 'pending'}>{row.published ? 'Published' : 'Draft'}</Badge>
         ) : row.my_status ? (
           <Badge variant={row.my_status === 'in_progress' ? 'pending' : 'active'}>{STATUS_LABEL[row.my_status]}</Badge>
         ) : (
           <Badge variant="inactive">Not started</Badge>
         )
-    }
-  ];
-  if (isManager) {
-    columns.push({
+    },
+    {
       key: 'actions',
       header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          <button onClick={() => setEditingExamId(row.id)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
-            Edit
-          </button>
-          <button
-            onClick={() => {
-              if (window.confirm(`Delete "${row.title}"?`)) deleteExam.mutate(row.id);
-            }}
-            className="text-xs font-semibold text-danger hover:opacity-80"
-          >
-            Delete
-          </button>
-        </div>
-      )
-    });
-  }
+      render: (row) => {
+        const canManage = user.role === 'admin' || row.created_by === user.id;
+        if (!canManage) return null;
+        return (
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setEditingExamId(row.id)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
+              Edit
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm(`Delete "${row.title}"?`)) deleteExam.mutate(row.id);
+              }}
+              className="text-xs font-semibold text-danger hover:opacity-80"
+            >
+              Delete
+            </button>
+          </div>
+        );
+      }
+    }
+  ];
 
   return (
     <div>
-      {isManager && (
+      {canCreate && (
         <div className="mb-4 flex justify-end">
           <button
             onClick={() => setShowForm(true)}

@@ -6,10 +6,13 @@ import { useEvaluations, useCreateEvaluation } from '../hooks/useEvaluations';
 import { EvaluationFormModal } from './EvaluationFormModal';
 
 export function EvaluationsPage() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const { data: evaluations, isLoading, error } = useEvaluations();
   const createEvaluation = useCreateEvaluation();
+  const updateEvaluation = useUpdateEvaluation();
+  const deleteEvaluation = useDeleteEvaluation();
   const [showForm, setShowForm] = useState(false);
+  const [editingEval, setEditingEval] = useState(null);
 
   const columns = [
     {
@@ -22,7 +25,33 @@ export function EvaluationsPage() {
       )
     },
     { key: 'type', header: 'Type', render: (row) => row.type },
-    { key: 'time_block', header: 'Term', render: (row) => row.time_block }
+    { key: 'time_block', header: 'Term', render: (row) => row.time_block },
+    {
+      key: 'actions',
+      header: '',
+      render: (row) => {
+        const canManage = can('evaluations.manage') || row.created_by === user.id;
+        if (!canManage) return null;
+        return (
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setEditingEval(row)}
+              className="text-xs font-semibold text-ink-500 hover:text-ink-900"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm(`Delete "${row.name}"?`)) deleteEvaluation.mutate(row.id);
+              }}
+              className="text-xs font-semibold text-danger hover:opacity-80"
+            >
+              Delete
+            </button>
+          </div>
+        );
+      }
+    }
   ];
 
   return (
@@ -53,6 +82,21 @@ export function EvaluationsPage() {
           submitError={createEvaluation.error?.message}
           onSubmit={(values) =>
             createEvaluation.mutate(values, { onSuccess: () => setShowForm(false) })
+          }
+        />
+      )}
+
+      {editingEval && (
+        <EvaluationFormModal
+          initialData={editingEval}
+          onClose={() => setEditingEval(null)}
+          submitting={updateEvaluation.isPending}
+          submitError={updateEvaluation.error?.message}
+          onSubmit={(values) =>
+            updateEvaluation.mutate(
+              { id: editingEval.id, payload: values },
+              { onSuccess: () => setEditingEval(null) }
+            )
           }
         />
       )}

@@ -17,6 +17,22 @@ export function useCreateEvaluation() {
   });
 }
 
+export function useUpdateEvaluation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => evaluationsApi.update(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['evaluations'] })
+  });
+}
+
+export function useDeleteEvaluation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: evaluationsApi.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['evaluations'] })
+  });
+}
+
 export function useSchedules(evaluationId) {
   return useQuery({
     queryKey: ['evaluations', evaluationId, 'schedules'],

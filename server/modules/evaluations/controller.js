@@ -27,7 +27,7 @@ const scoreSchema = z.object({
 
 async function listEvaluations(req, res) {
   try {
-    const result = await req.db.query('SELECT * FROM onec_evaluations ORDER BY id DESC');
+    const result = await req.db.query('SELECT e.*, u.username AS created_by_username FROM onec_evaluations e LEFT JOIN onec_users u ON e.created_by = u.id ORDER BY e.id DESC');
     res.json({ data: result.rows });
   } catch (err) {
     console.error(err);
@@ -56,8 +56,8 @@ async function createEvaluation(req, res) {
     const { name, time_block, type } = parsed.data;
 
     const result = await req.db.query(
-      'INSERT INTO onec_evaluations (name, time_block, type) VALUES ($1, $2, $3) RETURNING *',
-      [name, time_block, type]
+      'INSERT INTO onec_evaluations (name, time_block, type, created_by) VALUES ($1, $2, $3, $4) RETURNING *',
+      [name, time_block, type, req.user.userId]
     );
     res.status(201).json({ data: result.rows[0] });
   } catch (err) {
@@ -73,6 +73,12 @@ async function updateEvaluation(req, res) {
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
     const { name, time_block, type } = parsed.data;
+
+    const existing = await req.db.query('SELECT created_by FROM onec_evaluations WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role !== 'admin' && existing.rows[0].created_by !== req.user.userId) {
+      return res.status(403).json({ error: 'You can only edit evaluations you created' });
+    }
 
     const result = await req.db.query(
       'UPDATE onec_evaluations SET name = $1, time_block = $2, type = $3 WHERE id = $4 RETURNING *',
@@ -90,6 +96,12 @@ async function updateEvaluation(req, res) {
 async function removeEvaluation(req, res) {
   try {
     const { id } = req.params;
+
+    const existing = await req.db.query('SELECT created_by FROM onec_evaluations WHERE id = $1', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role !== 'admin' && existing.rows[0].created_by !== req.user.userId) {
+      return res.status(403).json({ error: 'You can only delete evaluations you created' });
+    }
 
     const result = await req.db.query('DELETE FROM onec_evaluations WHERE id = $1 RETURNING *', [id]);
 

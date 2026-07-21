@@ -3,6 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useInstructors } from '../../instructors/hooks/useInstructors';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useCreateSlot } from '../hooks/usePtm';
+import { SearchSelect } from '../../../components/SearchSelect';
 
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 function todayIso() {
@@ -52,12 +53,13 @@ export function AddSlotModal({ canManageAny, onClose }) {
         {canManageAny && (
           <label className="mb-3 block">
             <div className="mb-1 text-xs font-semibold text-ink-700">Instructor</div>
-            <select className="input w-full" required value={instructorId} onChange={(e) => setInstructorId(e.target.value)}>
-              <option value="">Select…</option>
-              {(instructors || []).map((i) => (
-                <option key={i.id} value={i.id}>{i.first_name} {i.last_name}</option>
-              ))}
-            </select>
+            <SearchSelect
+              options={(instructors || []).map((i) => ({ value: String(i.id), label: `${i.first_name} ${i.last_name}` }))}
+              value={String(instructorId)}
+              onChange={setInstructorId}
+              placeholder="Select instructor…"
+              className="w-full"
+            />
           </label>
         )}
 

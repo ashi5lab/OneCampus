@@ -17,6 +17,10 @@ export function useCreateDisciplineRecord() {
   return useInvalidatingMutation(disciplineApi.create);
 }
 
+export function useUpdateDisciplineRecord() {
+  return useInvalidatingMutation(({ id, payload }) => disciplineApi.update(id, payload));
+}
+
 export function useDeleteDisciplineRecord() {
   return useInvalidatingMutation(disciplineApi.remove);
 }

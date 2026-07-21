@@ -4,6 +4,8 @@ export const evaluationsApi = {
   list: () => apiClient.get('/evaluations').then((res) => res.data),
   get: (id) => apiClient.get(`/evaluations/${id}`).then((res) => res.data),
   create: (payload) => apiClient.post('/evaluations', payload).then((res) => res.data),
+  update: (id, payload) => apiClient.put(`/evaluations/${id}`, payload).then((res) => res.data),
+  remove: (id) => apiClient.delete(`/evaluations/${id}`).then((res) => res.data),
   listSchedules: (evaluationId) =>
     apiClient.get(`/evaluations/${evaluationId}/schedules`).then((res) => res.data),
   createSchedule: (evaluationId, payload) =>

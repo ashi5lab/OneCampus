@@ -10,6 +10,6 @@ export function ProtectedRoute({ children }) {
   // user on every page reload, before we've even asked the server.
   if (initializing) return null;
 
-  if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!isAuthenticated) return <Navigate to="/" state={{ from: location }} replace />;
   return children;
 }

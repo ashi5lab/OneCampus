@@ -5,6 +5,6 @@ export function SuperAdminProtectedRoute({ children }) {
   const { isAuthenticated, initializing } = useSuperAdminAuth();
 
   if (initializing) return null;
-  if (!isAuthenticated) return <Navigate to="/super-admin/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/" replace />;
   return children;
 }
