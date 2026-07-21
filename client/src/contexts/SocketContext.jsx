@@ -20,7 +20,7 @@ export function SocketProvider({ children }) {
       return;
     }
 
-    const VITE_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const VITE_API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:3001' : undefined);
     
     // We pass the token via auth just in case we switch from cookies to local storage
     // but the cookie is also sent because of withCredentials: true
