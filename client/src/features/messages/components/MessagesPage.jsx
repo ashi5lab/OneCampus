@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '../../../components/PageHeader';
 import { useInbox, useSentMessages, useMarkMessageRead } from '../hooks/useMessages';
 import { ComposeMessageModal } from './ComposeMessageModal';
 
@@ -27,35 +28,36 @@ export function MessagesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Messages</div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Messages</h1>
-        </div>
-        <button
-          onClick={() => setShowCompose(true)}
-          className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-        >
-          + Compose
-        </button>
-      </div>
-
-      <div className="mb-5 flex gap-2">
-        {TABS.map((t) => (
+      <PageHeader
+        eyebrow="Messages"
+        title="Messages"
+        actions={
           <button
-            key={t.value}
-            onClick={() => {
-              setTab(t.value);
-              setExpandedId(null);
-            }}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
-              tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
-            }`}
+            onClick={() => setShowCompose(true)}
+            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
           >
-            {t.label}
+            + Compose
           </button>
-        ))}
-      </div>
+        }
+        tabs={
+          <div className="flex gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => {
+                  setTab(t.value);
+                  setExpandedId(null);
+                }}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
+                  tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
       {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}

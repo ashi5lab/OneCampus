@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
+import { PageHeader } from '../../../components/PageHeader';
 import { useVisitors, useCheckOutVisitor } from '../hooks/useVisitors';
 import { CheckInModal } from './CheckInModal';
 
@@ -64,18 +65,18 @@ export function VisitorLogPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Front Desk</div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Visitor Log</h1>
-        </div>
-        <button
-          onClick={() => setShowCheckIn(true)}
-          className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-        >
-          + Check In Visitor
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Front Desk"
+        title="Visitor Log"
+        actions={
+          <button
+            onClick={() => setShowCheckIn(true)}
+            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+          >
+            + Check In Visitor
+          </button>
+        }
+      />
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard label="Visitors (selected date)" value={isLoading ? '—' : (visitors || []).length} />

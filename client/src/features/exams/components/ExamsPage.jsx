@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '../../../components/PageHeader';
 import { EvaluationsPage } from '../../evaluations/components/EvaluationsPage';
 import { OnlineExamsPage } from '../../onlineExams/components/OnlineExamsPage';
 
@@ -18,24 +19,25 @@ export function ExamsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Exams</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Exams</h1>
-      </div>
-
-      <div className="mb-5 flex gap-2">
-        {TABS.map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
-              tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PageHeader
+        eyebrow="Exams"
+        title="Exams"
+        tabs={
+          <div className="flex gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => setTab(t.value)}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
+                  tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {tab === 'evaluations' ? <EvaluationsPage /> : <OnlineExamsPage />}
     </div>

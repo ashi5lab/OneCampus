@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DataTable } from '../../../components/DataTable';
+import { PageHeader } from '../../../components/PageHeader';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useKindergartenActivity, useLogActivity } from '../hooks/useKindergartenActivity';
 import { ActivityLogFormModal } from './ActivityLogFormModal';
@@ -34,22 +35,20 @@ export function KindergartenActivityPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            Management / Daily Activity
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Daily Activity</h1>
-        </div>
-        {can('kindergarten_activity.log') && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-          >
-            + Log Activity
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Management / Daily Activity"
+        title="Daily Activity"
+        actions={
+          can('kindergarten_activity.log') && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+            >
+              + Log Activity
+            </button>
+          )
+        }
+      />
 
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}

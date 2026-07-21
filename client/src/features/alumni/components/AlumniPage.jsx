@@ -5,6 +5,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Avatar } from '../../../components/Avatar';
+import { PageHeader } from '../../../components/PageHeader';
 import { useLearners, useUpdateLearner } from '../../learners/hooks/useLearners';
 
 // The alumni directory is just the learners list filtered to status=alumni —
@@ -75,10 +76,7 @@ export function AlumniPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Management / Alumni</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Alumni Directory</h1>
-      </div>
+      <PageHeader eyebrow="Management / Alumni" title="Alumni Directory" />
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard label="Total Alumni" value={isLoading ? '—' : alumni.length} />

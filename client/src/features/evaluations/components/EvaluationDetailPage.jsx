@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { DataTable } from '../../../components/DataTable';
+import { PageHeader } from '../../../components/PageHeader';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useModules } from '../../modules/hooks/useModules';
@@ -38,27 +39,27 @@ export function EvaluationDetailPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
+      <PageHeader
+        eyebrow={
+          <>
             <Link to="/app/exams" className="hover:underline">Exams</Link> / {evaluation?.name || '…'}
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-            {evaluation?.name}
-          </h1>
-          {evaluation && (
-            <div className="mt-1 text-[13.5px] text-ink-500">{evaluation.type} · {evaluation.time_block}</div>
-          )}
-        </div>
-        {can('evaluations.manage') && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-          >
-            + Add Schedule
-          </button>
-        )}
-      </div>
+          </>
+        }
+        title={evaluation?.name}
+        actions={
+          can('evaluations.manage') && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+            >
+              + Add Schedule
+            </button>
+          )
+        }
+      />
+      {evaluation && (
+        <div className="mb-4 text-[13.5px] text-ink-500">{evaluation.type} · {evaluation.time_block}</div>
+      )}
 
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}

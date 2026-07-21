@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
+import { PageHeader } from '../../../components/PageHeader';
 import { useAssignments, useCreateAssignment, useUpdateAssignment, useDeleteAssignment } from '../hooks/useAssignments';
 import { AssignmentFormModal } from './AssignmentFormModal';
 
@@ -56,20 +57,20 @@ export function AssignmentsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Assignments</div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Homework &amp; Assignments</h1>
-        </div>
-        {can('assignments.manage') && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-          >
-            + Post Assignment
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Assignments"
+        title="Homework & Assignments"
+        actions={
+          can('assignments.manage') && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+            >
+              + Post Assignment
+            </button>
+          )
+        }
+      />
 
       <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total Assignments" value={isLoading ? '—' : assignments.length} />

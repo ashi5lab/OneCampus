@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Badge } from '../../../components/Badge';
+import { PageHeader } from '../../../components/PageHeader';
 import { useNotices, useCreateNotice, useUpdateNotice, useDeleteNotice } from '../hooks/useNotices';
 import { NoticeFormModal } from './NoticeFormModal';
 
@@ -18,20 +19,20 @@ export function NoticesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Notices</div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Notice Board</h1>
-        </div>
-        {can('notices.manage') && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-          >
-            + Post Notice
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Notices"
+        title="Notice Board"
+        actions={
+          can('notices.manage') && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+            >
+              + Post Notice
+            </button>
+          )
+        }
+      />
 
       {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
       {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}

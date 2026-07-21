@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DataTable } from '../../../components/DataTable';
+import { PageHeader } from '../../../components/PageHeader';
 import { ITEM_TYPE_META, WEEKDAY_LABELS } from '../types';
 import { useAgenda, useCalendarEvents, useCreateCalendarEvent, useUpdateCalendarEvent, useDeleteCalendarEvent } from '../hooks/useCalendar';
 import { EventFormModal } from './EventFormModal';
@@ -91,28 +92,28 @@ export function CalendarPage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Calendar</div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Org Calendar</h1>
-        </div>
-        {canManage && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowManageList((v) => !v)}
-              className="rounded border border-border px-3.5 py-2.5 text-[13.5px] font-semibold text-ink-700"
-            >
-              {showManageList ? 'Hide' : 'Manage'} Events
-            </button>
-            <button
-              onClick={() => setShowForm(true)}
-              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-            >
-              + Add Event/Holiday
-            </button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Calendar"
+        title="Org Calendar"
+        actions={
+          canManage && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowManageList((v) => !v)}
+                className="rounded border border-border px-3.5 py-2.5 text-[13.5px] font-semibold text-ink-700"
+              >
+                {showManageList ? 'Hide' : 'Manage'} Events
+              </button>
+              <button
+                onClick={() => setShowForm(true)}
+                className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+              >
+                + Add Event/Holiday
+              </button>
+            </div>
+          )
+        }
+      />
 
       {/* Legend */}
       <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1.5">

@@ -13,6 +13,7 @@ import { InstructorFormModal } from './InstructorFormModal';
 import { InstructorModulesModal } from './InstructorModulesModal';
 import { StaffPage } from '../../staff/components/StaffPage';
 import { DesignationPicker } from '../../../components/DesignationPicker';
+import { PageHeader } from '../../../components/PageHeader';
 
 const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
 
@@ -34,21 +35,27 @@ export function InstructorsPage() {
 
   return (
     <div>
-      {tabs.length > 1 && (
-        <div className="mb-5 flex gap-2">
-          {tabs.map((tabOption) => (
-            <button
-              key={tabOption.value}
-              onClick={() => setTab(tabOption.value)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
-                tab === tabOption.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
-              }`}
-            >
-              {tabOption.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <PageHeader
+        eyebrow={`Management / ${t('instructors')}`}
+        title={t('instructors')}
+        tabs={
+          tabs.length > 1 && (
+            <div className="flex gap-2">
+              {tabs.map((tabOption) => (
+                <button
+                  key={tabOption.value}
+                  onClick={() => setTab(tabOption.value)}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
+                    tab === tabOption.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
+                  }`}
+                >
+                  {tabOption.label}
+                </button>
+              ))}
+            </div>
+          )
+        }
+      />
 
       {tab === 'staff' && showStaffTab && <StaffPage />}
       {tab === 'teacherSubjects' && showTeacherSubjectsTab && <TeacherSubjectsTab />}
@@ -230,24 +237,16 @@ function TeachersTab() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            Management / {t('instructors')}
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-            {t('instructors')}
-          </h1>
-        </div>
-        {can('instructors.manage') && (
+      {can('instructors.manage') && (
+        <div className="mb-4 flex justify-end">
           <button
             onClick={() => setShowForm(true)}
             className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
           >
             + Add {t('instructor')}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard label={`Total ${t('instructors')}`} value={isLoading ? '—' : meta?.total ?? 0} />

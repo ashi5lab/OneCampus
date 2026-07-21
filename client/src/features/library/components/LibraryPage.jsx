@@ -3,6 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
+import { PageHeader } from '../../../components/PageHeader';
 import { useBooks, useLoans, useCreateBook, useUpdateBook, useDeleteBook, useReturnLoan } from '../hooks/useLibrary';
 import { BookFormModal } from './BookFormModal';
 import { IssueLoanModal } from './IssueLoanModal';
@@ -130,34 +131,36 @@ export function LibraryPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Library</div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Library</h1>
-        </div>
-        {tab === 'catalog' && can('library.manage') && (
-          <button
-            onClick={() => setShowAddBook(true)}
-            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-          >
-            + Add Book
-          </button>
-        )}
-      </div>
-
-      <div className="mb-5 flex gap-2">
-        {TABS.map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
-              tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PageHeader
+        eyebrow="Library"
+        title="Library"
+        actions={
+          tab === 'catalog' &&
+          can('library.manage') && (
+            <button
+              onClick={() => setShowAddBook(true)}
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+            >
+              + Add Book
+            </button>
+          )
+        }
+        tabs={
+          <div className="flex gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => setTab(t.value)}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
+                  tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {tab === 'catalog' && (
         <>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
+import { PageHeader } from '../../../components/PageHeader';
 import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit } from '../hooks/useUnits';
 import { UnitFormModal } from './UnitFormModal';
 
@@ -44,22 +45,20 @@ export function UnitsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            Management / Units
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Units</h1>
-        </div>
-        {can('units.manage') && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-          >
-            + Add Unit
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Management / Units"
+        title="Units"
+        actions={
+          can('units.manage') && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+            >
+              + Add Unit
+            </button>
+          )
+        }
+      />
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard label="Total Units" value={isLoading ? '—' : units.length} />

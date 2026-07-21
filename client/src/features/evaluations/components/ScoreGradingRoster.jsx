@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { PageHeader } from '../../../components/PageHeader';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useScores, useRecordScore } from '../hooks/useEvaluations';
 
@@ -55,21 +56,23 @@ export function ScoreGradingRoster() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
+      <PageHeader
+        eyebrow={
+          <>
             <Link to="/app/exams" className="hover:underline">Exams</Link> / Scores
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Record Scores</h1>
-        </div>
-        <button
-          onClick={handleSaveAll}
-          disabled={recordScore.isPending || !learners?.length}
-          className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60"
-        >
-          {recordScore.isPending ? 'Saving…' : 'Save All'}
-        </button>
-      </div>
+          </>
+        }
+        title="Record Scores"
+        actions={
+          <button
+            onClick={handleSaveAll}
+            disabled={recordScore.isPending || !learners?.length}
+            className="rounded bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60"
+          >
+            {recordScore.isPending ? 'Saving…' : 'Save All'}
+          </button>
+        }
+      />
       {savedAt && <div className="mb-3 text-xs font-semibold text-success">Saved</div>}
       {saveError && <div className="mb-3 text-xs font-semibold text-danger">{saveError}</div>}
 

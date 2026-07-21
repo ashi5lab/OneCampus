@@ -4,6 +4,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
+import { PageHeader } from '../../../components/PageHeader';
 import { useUnits } from '../../units/hooks/useUnits';
 import { useCohorts, useCreateCohort, useUpdateCohort, useDeleteCohort } from '../hooks/useCohorts';
 import { CohortFormModal } from './CohortFormModal';
@@ -71,24 +72,20 @@ export function CohortsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-            Management / {t('cohorts')}
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-            {t('cohorts')}
-          </h1>
-        </div>
-        {can('cohorts.manage') && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
-          >
-            + Add {t('cohort')}
-          </button>
-        )}
-      </div>
+      <PageHeader
+        eyebrow={`Management / ${t('cohorts')}`}
+        title={t('cohorts')}
+        actions={
+          can('cohorts.manage') && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
+            >
+              + Add {t('cohort')}
+            </button>
+          )
+        }
+      />
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard label={`Total ${t('cohorts')}`} value={isLoading ? '—' : cohorts.length} />

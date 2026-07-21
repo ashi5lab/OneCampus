@@ -1,4 +1,5 @@
 import { useActivities } from '../hooks/useActivities';
+import { PageHeader } from '../../../components/PageHeader';
 
 const TYPE_ICON_BG = {
   notice: { bg: '#FDF0D5', fg: '#92400E' },
@@ -74,10 +75,7 @@ export function ActivitiesPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Activities</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Activities</h1>
-      </div>
+      <PageHeader eyebrow="Activities" title="Activities" />
 
       {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
       {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}

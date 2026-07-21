@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { PageHeader } from '../../../components/PageHeader';
 import { useAssignments } from '../hooks/useAssignments';
 import { SubmissionsRoster } from './SubmissionsRoster';
 import { SubmissionForm } from './SubmissionForm';
@@ -27,20 +28,22 @@ export function AssignmentDetailPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-          <Link to="/app/assignments" className="hover:underline">
-            Assignments
-          </Link>{' '}
-          / {assignment.title}
-        </div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">{assignment.title}</h1>
-        <div className="mt-1 text-[13px] text-ink-500">
-          {t('topic')}: {assignment.module_name} &middot; {t('cohort')}: {assignment.cohort_name} &middot; Due{' '}
-          {new Date(assignment.due_date).toLocaleDateString()}
-        </div>
-        {assignment.description && <p className="mt-2 text-[13.5px] text-ink-700">{assignment.description}</p>}
+      <PageHeader
+        eyebrow={
+          <>
+            <Link to="/app/assignments" className="hover:underline">
+              Assignments
+            </Link>{' '}
+            / {assignment.title}
+          </>
+        }
+        title={assignment.title}
+      />
+      <div className="mb-4 text-[13px] text-ink-500">
+        {t('topic')}: {assignment.module_name} &middot; {t('cohort')}: {assignment.cohort_name} &middot; Due{' '}
+        {new Date(assignment.due_date).toLocaleDateString()}
       </div>
+      {assignment.description && <p className="mb-4 text-[13.5px] text-ink-700">{assignment.description}</p>}
 
       {isGrader ? <SubmissionsRoster assignment={assignment} /> : <SubmissionForm assignment={assignment} />}
     </div>

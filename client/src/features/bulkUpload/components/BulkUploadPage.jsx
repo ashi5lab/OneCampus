@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '../../../components/PageHeader';
 import { UploadPanel } from './UploadPanel';
 import { JobsTable } from './JobsTable';
 
@@ -14,24 +15,25 @@ export function BulkUploadPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-1 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Management / Bulk Upload</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Bulk Upload</h1>
-      </div>
-
-      <div className="mb-5 flex gap-2">
-        {TABS.map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
-              tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PageHeader
+        eyebrow="Management / Bulk Upload"
+        title="Bulk Upload"
+        tabs={
+          <div className="flex gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => setTab(t.value)}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ${
+                  tab === t.value ? 'bg-ink-900 text-white' : 'border border-border bg-surface text-ink-700'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       <UploadPanel entityType={activeTab.value} label={activeTab.label} fileLabel={activeTab.fileLabel} />
       <JobsTable entityType={activeTab.value} />
