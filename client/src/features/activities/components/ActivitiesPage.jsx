@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useActivities } from '../hooks/useActivities';
 import { PageHeader } from '../../../components/PageHeader';
 
@@ -58,14 +61,37 @@ function relativeTime(ts) {
   return `${days}d ago`;
 }
 
+function getActivityLink(item) {
+  switch (item.type) {
+    case 'notice': return '/app/notices';
+    case 'message': return '/app/messages';
+    case 'mention': return '/app/class';
+    case 'assignment': return '/app/assignments';
+    case 'exam': return '/app/exams';
+    case 'attendance': return '/app/attendance';
+    case 'score': return '/app/profile';
+    case 'leave': return '/app/leave';
+    default: return '/app/activities';
+  }
+}
+
 // A single chronological feed of everything relevant to this user or their
 // class(es) — see server/modules/activity for the fan-out query. Grouped
 // by Today/Yesterday/Earlier so a return visit reads what's new at a
 // glance, same idea as the Home tab's Activities preview card (of which
 // this is the full view).
 export function ActivitiesPage() {
+  const queryClient = useQueryClient();
   const { data: result, isLoading, error } = useActivities();
   const items = result?.data || [];
+
+  useEffect(() => {
+    localStorage.setItem('activitiesLastViewed', Date.now().toString());
+    // Clear the badge immediately for other components
+    if (result && result.recentCount > 0) {
+      queryClient.setQueryData(['activities'], { ...result, recentCount: 0 });
+    }
+  }, [result, queryClient]);
 
   const groups = items.reduce((acc, item) => {
     const label = groupLabel(item.ts);
@@ -92,7 +118,7 @@ export function ActivitiesPage() {
             <div className="overflow-hidden rounded border border-border bg-surface">
               <div className="divide-y divide-surface-muted">
                 {groups[label].map((item) => (
-                  <div key={`${item.type}-${item.id}`} className="flex items-start gap-3 p-3.5">
+                  <Link to={getActivityLink(item)} key={`${item.type}-${item.id}`} className="flex items-start gap-3 p-3.5 transition-colors hover:bg-surface-muted">
                     <TypeIcon type={item.type} />
                     <div className="min-w-0 flex-1">
                       <div className="text-[13px] font-semibold leading-snug text-ink-900">{item.title}</div>
@@ -100,7 +126,7 @@ export function ActivitiesPage() {
                       {item.actor && <div className="mt-0.5 text-[11px] text-ink-500">{item.actor}</div>}
                     </div>
                     <div className="flex-shrink-0 whitespace-nowrap text-[11px] text-ink-500">{relativeTime(item.ts)}</div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

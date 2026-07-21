@@ -123,10 +123,6 @@ export function GuardiansPage() {
         }
       />
 
-      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <StatCard label="Total Guardians" value={isLoading ? '—' : meta?.total ?? 0} />
-      </div>
-
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && (

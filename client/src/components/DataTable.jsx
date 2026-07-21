@@ -66,10 +66,10 @@ export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records fo
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-2.5 p-3 md:hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 md:hidden">
           {paginatedRows.map((row) => (
-            <div key={rowKey(row)} className="rounded border border-border bg-surface p-4 shadow-sm">
-              <div className="text-[15px] font-semibold leading-snug text-ink-900">{primaryColumn.render(row)}</div>
+            <div key={rowKey(row)} className="rounded border border-border bg-surface p-3">
+              <div className="text-[14px] font-semibold leading-snug text-ink-900">{primaryColumn.render(row)}</div>
               {restColumns.length > 0 && (
                 <div className="mt-3 space-y-2 border-t border-surface-muted pt-3">
                   {restColumns.map((col) => (

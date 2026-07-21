@@ -95,10 +95,10 @@ async function listActivities(req, res) {
       );
       queries.push(
         req.db.query(
-          `SELECT 'exam' AS type, e.id, e.title AS title, m.name AS subtitle, COALESCE(e.published_at, e.created_at) AS ts, NULL::text AS actor
+          `SELECT 'exam' AS type, e.id, e.title AS title, m.name AS subtitle, e.created_at AS ts, NULL::text AS actor
            FROM onec_online_exams e JOIN onec_modules m ON e.module_id = m.id
-           WHERE e.cohort_id = ANY($1) AND e.published = true
-           ORDER BY COALESCE(e.published_at, e.created_at) DESC LIMIT 10`,
+           WHERE e.cohort_id = ANY($1)
+           ORDER BY e.created_at DESC LIMIT 10`,
           [cohortIds]
         )
       );

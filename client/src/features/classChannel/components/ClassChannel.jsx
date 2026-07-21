@@ -56,7 +56,7 @@ export function ClassChannel({ cohort, showBack }) {
             // Horizontally scrollable, not wrapping — up to 5 tabs need to
             // fit (or at least be reachable by a swipe) on the narrowest
             // phone screens.
-            <div className="flex flex-nowrap items-center gap-4 overflow-x-auto sm:gap-6">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
               {tabs.map((t) => (
                 <button
                   key={t.key}

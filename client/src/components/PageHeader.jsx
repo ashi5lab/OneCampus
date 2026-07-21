@@ -42,11 +42,11 @@ export function useAutoBack(back) {
 function InfoTooltip({ text }) {
   if (!text) return null;
   return (
-    <div className="flex flex-shrink-0 items-center text-ink-400 sm:hidden" title={text}>
+    <button type="button" onClick={() => alert(text)} className="flex flex-shrink-0 items-center text-ink-400 sm:hidden" title={text}>
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
-    </div>
+    </button>
   );
 }
 

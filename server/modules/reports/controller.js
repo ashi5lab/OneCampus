@@ -387,7 +387,7 @@ async function dashboardMine(req, res) {
         `SELECT e.id, e.title
          FROM onec_online_exams e
          LEFT JOIN onec_exam_submissions sub ON sub.exam_id = e.id AND sub.learner_id = $1
-         WHERE e.cohort_id = $2 AND e.published = true AND sub.id IS NULL
+         WHERE e.cohort_id = $2 AND sub.id IS NULL
          ORDER BY e.id DESC LIMIT 2`,
         [learner.id, learner.cohort_id]
       ),

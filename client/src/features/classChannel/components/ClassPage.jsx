@@ -45,19 +45,19 @@ function ClassPicker({ cohorts }) {
   return (
     <div>
       <PageHeader eyebrow="Class" title="Your Classes" />
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {cohorts.map((c) => (
           <Link
             key={c.id}
             to={`/app/class/${c.id}`}
-            className="flex items-start gap-3 rounded border border-border bg-surface p-4 transition hover:border-accent active:scale-[0.99]"
+            className="flex flex-col items-start gap-2 rounded border border-border bg-surface p-3 transition hover:border-accent active:scale-[0.99]"
           >
             <ModuleBadge moduleKey="cohorts" label={c.name} />
             <div className="min-w-0">
-              <div className="text-[15px] font-semibold text-ink-900">{c.name}</div>
-              <div className="mt-0.5 text-[12.5px] text-ink-500">
+              <div className="text-[14px] font-semibold text-ink-900 leading-tight">{c.name}</div>
+              <div className="mt-1 text-[11.5px] text-ink-500 leading-tight">
                 {c.learner_count} students
-                {c.advisor_first_name ? ` · ${c.advisor_first_name} ${c.advisor_last_name}` : ''}
+                {c.advisor_first_name ? <><br/>{c.advisor_first_name} {c.advisor_last_name}</> : ''}
               </div>
             </div>
           </Link>
