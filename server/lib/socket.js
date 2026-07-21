@@ -53,6 +53,12 @@ function initSocket(server) {
   });
 
   io.on('connection', (socket) => {
+    // Join a personal room for direct messages and targeted notifications
+    if (socket.tenant && socket.user) {
+      const personalRoom = `${socket.tenant.domain}_user_${socket.user.userId}`;
+      socket.join(personalRoom);
+    }
+
     // Rooms are scoped to tenant_cohortId to prevent cross-tenant leakage
     // if cohort IDs happen to overlap between schemas (they do start at 1).
     socket.on('join_class', (cohortId) => {
@@ -85,4 +91,11 @@ function emitToCohort(tenantDomain, cohortId, event, data) {
   io.to(room).emit(event, data);
 }
 
-module.exports = { initSocket, getIo, emitToCohort };
+// Helper to broadcast events to a specific user
+function emitToUser(tenantDomain, userId, event, data) {
+  if (!io) return; // fail gracefully if not initialized
+  const room = `${tenantDomain}_user_${userId}`;
+  io.to(room).emit(event, data);
+}
+
+module.exports = { initSocket, getIo, emitToCohort, emitToUser };

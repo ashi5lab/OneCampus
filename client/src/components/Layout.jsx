@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
 import { BottomTabBar } from './BottomTabBar';
+import { useSocket } from '../contexts/SocketContext';
 
 // No mobile header bar anymore — each page's own PageHeader (eyebrow/title/
 // back icon) is the only title now, instead of duplicating it in a boxed
@@ -11,6 +13,8 @@ import { BottomTabBar } from './BottomTabBar';
 export function Layout() {
   const location = useLocation();
   const contentRef = useRef(null);
+  const socket = useSocket();
+  const queryClient = useQueryClient();
 
   // Client-side route changes don't reset scroll position the way a full
   // page load does. On mobile the document itself scrolls, but on desktop
@@ -23,6 +27,17 @@ export function Layout() {
     window.scrollTo(0, 0);
     contentRef.current?.scrollTo(0, 0);
   }, [location.pathname]);
+
+  // Global socket listener for new direct messages
+  useEffect(() => {
+    if (!socket) return;
+    const handleNewMessage = () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', 'inbox'] });
+      queryClient.invalidateQueries({ queryKey: ['messages', 'unread-count'] });
+    };
+    socket.on('new_message', handleNewMessage);
+    return () => socket.off('new_message', handleNewMessage);
+  }, [socket, queryClient]);
 
   return (
     <div className="flex min-h-screen flex-col bg-bg font-body text-ink-900 md:grid md:h-screen md:grid-cols-[248px_1fr] md:overflow-hidden">

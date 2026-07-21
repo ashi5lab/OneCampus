@@ -68,6 +68,8 @@ async function listRecipients(req, res) {
   }
 }
 
+const { emitToUser } = require('../../lib/socket');
+
 async function send(req, res) {
   try {
     const parsed = sendSchema.safeParse(req.body);
@@ -79,6 +81,10 @@ async function send(req, res) {
       'INSERT INTO onec_messages (sender_id, recipient_id, subject, body) VALUES ($1, $2, $3, $4) RETURNING *',
       [req.user.userId, recipient_id, subject ?? null, body]
     );
+
+    // Notify the recipient in real-time
+    emitToUser(req.user.tenant, recipient_id, 'new_message', { messageId: result.rows[0].id });
+
     res.status(201).json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
