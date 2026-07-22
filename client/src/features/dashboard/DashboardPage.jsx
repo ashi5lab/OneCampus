@@ -9,6 +9,7 @@ import { HorizontalBarChart } from '../../components/charts/HorizontalBarChart';
 import { useDashboardReport } from '../reports/hooks/useReports';
 import { HomeInsightsPage } from '../home/components/HomeInsightsPage';
 import { ProfileMenu } from '../../components/ProfileMenu';
+import { useMyProfile } from '../profile/hooks/useProfile';
 
 // Learner/instructor/staff get the redesigned personal-insights Home (see
 // HomeInsightsPage) instead of this file's card-grid/reports-toggle view —
@@ -23,6 +24,7 @@ const STATUS_COLOR = { present: 'var(--success)', absent: 'var(--danger)', late:
 export function DashboardPage() {
   const { config } = useConfig();
   const { user } = useAuth();
+  const { data: me } = useMyProfile();
 
   if (REDESIGNED_ROLES.includes(user?.role)) return <HomeInsightsPage />;
 
@@ -42,7 +44,7 @@ export function DashboardPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-[13.5px] text-ink-500">Good morning{user?.username ? `, ${user.username}` : ''}</div>
+          <div className="text-[13.5px] text-ink-500">Good morning{me?.name ? `, ${me.name}` : user?.username ? `, ${user.username}` : ''}</div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
             {config?.org_name || 'Dashboard'}
           </h1>

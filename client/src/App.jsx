@@ -104,19 +104,11 @@ export default function App() {
             themselves (see server/lib/cohortAccess.js). */}
         <Route
           path="class"
-          element={
-            <RequirePermission permission="class.view">
-              <ClassPage />
-            </RequirePermission>
-          }
+          element={<ClassPage />}
         />
         <Route
           path="class/:cohortId"
-          element={
-            <RequirePermission permission="class.view">
-              <ClassPage />
-            </RequirePermission>
-          }
+          element={<ClassPage />}
         />
         <Route path="activities" element={<ActivitiesPage />} />
         <Route

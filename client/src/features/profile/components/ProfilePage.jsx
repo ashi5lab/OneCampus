@@ -77,6 +77,10 @@ export function ProfilePage() {
         <ProfilePictureUploader name={me.username} pictureUrl={me.profile_picture_url} invalidateKey={MY_PROFILE_KEY} />
         <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4 text-[13.5px]">
           <div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-ink-500">Name</div>
+            <div className="mt-0.5 font-semibold text-ink-900">{me.name || '-'}</div>
+          </div>
+          <div>
             <div className="text-[11px] font-bold uppercase tracking-wide text-ink-500">Username</div>
             <div className="mt-0.5 font-semibold text-ink-900">{me.username}</div>
           </div>

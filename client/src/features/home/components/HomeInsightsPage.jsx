@@ -7,6 +7,7 @@ import { useActivities } from '../../activities/hooks/useActivities';
 import { useHomeCardPrefs } from '../../profile/hooks/useProfile';
 import { getHomeCardsForRole, isCardVisible } from '../../../lib/homeCardKeys';
 import { ProfileMenu } from '../../../components/ProfileMenu';
+import { useMyProfile } from '../../profile/hooks/useProfile';
 
 const ACTIVITY_DOT_COLOR = {
   notice: 'var(--accent)',
@@ -50,6 +51,7 @@ export function HomeInsightsPage() {
 
 function Greeting() {
   const { user } = useAuth();
+  const { data: me } = useMyProfile();
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
@@ -57,7 +59,7 @@ function Greeting() {
     <div className="mb-5 flex items-center justify-between">
       <div>
         <div className="text-[13.5px] text-ink-500">{greeting}</div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">{user?.username}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">{me?.name || user?.username}</h1>
       </div>
       <ProfileMenu />
     </div>
