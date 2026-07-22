@@ -73,7 +73,7 @@ export function Sidebar() {
           Dashboard
         </NavLink>
 
-        {user?.role !== 'guardian' && (user?.role === 'admin' || can('class.view')) && (
+        {user?.role !== 'guardian' && (user?.role === 'admin' || user?.role === 'instructor' || user?.role === 'learner' || can('class.view')) && (
           <NavLink to={user?.role === 'admin' ? '/app/class-channels' : '/app/class'} className={navItemClass}>
             <TabIcon name="classes" />
             Class
