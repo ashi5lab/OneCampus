@@ -11,6 +11,7 @@ export const NAV_LINK_DEFS = [
   { key: 'learners', to: '/app/learners', label: (t) => t('learners'), description: () => 'Manage learner records', gate: (can) => can('learners.view') },
   { key: 'instructors', to: '/app/instructors', label: (t) => t('instructors'), description: () => 'Staff directory & profiles', gate: (can) => can('instructors.view') },
   { key: 'cohorts', to: '/app/cohorts', label: (t) => t('cohorts'), description: () => 'Sections, rosters & subjects', gate: (can) => can('cohorts.view') },
+  { key: 'class-channels', to: '/app/class-channels', label: () => 'Class Channels', description: () => 'View and manage all class channels', gate: (can) => can('cohorts.manage') || can('cohorts.view') },
   { key: 'units', to: '/app/units', label: () => 'Units', description: () => 'Departments & structural units', gate: (can) => can('units.view') },
   { key: 'modules', to: '/app/modules', label: (t) => t('topics'), description: () => 'Curriculum units per subject', gate: (can) => can('modules.view') },
   { key: 'guardians', to: '/app/guardians', label: () => 'Guardians', description: () => 'Parent & guardian contacts', gate: (can) => can('guardians.view') },

@@ -47,6 +47,7 @@ import { PtmPage } from './features/ptm/components/PtmPage';
 import { AlumniPage } from './features/alumni/components/AlumniPage';
 import { VisitorLogPage } from './features/visitors/components/VisitorLogPage';
 import { ClassPage } from './features/classChannel/components/ClassPage';
+import { AdminClassChannelsPage } from './features/classChannel/components/AdminClassChannelsPage';
 import { ActivitiesPage } from './features/activities/components/ActivitiesPage';
 
 export default function App() {
@@ -141,6 +142,22 @@ export default function App() {
           element={
             <RequirePermission permission="cohorts.view">
               <CohortsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="class-channels"
+          element={
+            <RequirePermission permission="cohorts.view">
+              <AdminClassChannelsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="class-channels/:cohortId"
+          element={
+            <RequirePermission permission="cohorts.view">
+              <AdminClassChannelsPage />
             </RequirePermission>
           }
         />
