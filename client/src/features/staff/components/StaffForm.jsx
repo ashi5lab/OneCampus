@@ -31,7 +31,8 @@ export function StaffForm({ onClose, onSubmit, submitting, submitError, initialD
     const handler = setTimeout(async () => {
       if (firstName.length > 0 && staffId.length > 0 && !suggestedUsername) {
         try {
-          const res = await apiClient.get('/auth/suggest-username', { first_name: firstName, id_seed: staffId });
+          const params = new URLSearchParams({ first_name: firstName, id_seed: staffId }).toString();
+          const res = await apiClient.get(`/auth/suggest-username?${params}`);
           if (res?.data?.username) {
             setSuggestedUsername(res.data.username);
             setValue('username', res.data.username, { shouldValidate: true });
@@ -58,7 +59,8 @@ export function StaffForm({ onClose, onSubmit, submitting, submitError, initialD
     if (!username) return;
     setUsernameStatus('checking');
     try {
-      const res = await apiClient.get('/auth/check-username', { username });
+      const params = new URLSearchParams({ username }).toString();
+      const res = await apiClient.get(`/auth/check-username?${params}`);
       if (res?.data?.available) {
         setUsernameStatus('available');
         setValue('username', res.data.formattedUsername);
