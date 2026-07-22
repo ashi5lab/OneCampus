@@ -9,6 +9,18 @@ export function LandingPage() {
   const [contactStatus, setContactStatus] = useState({ loading: false, success: false, error: null });
   const scrollContainerRef = useRef(null);
 
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+  if (isPWA) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 p-4 sm:p-6 overflow-y-auto">
+        <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl my-auto">
+          <LoginPage />
+        </div>
+      </div>
+    );
+  }
+
   const scroll = (direction) => {
     if (scrollContainerRef.current) {
       const scrollAmount = 350; // amount to scroll per click
@@ -283,11 +295,11 @@ export function LandingPage() {
 
       {/* Login Modal */}
       {isLoginModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-[380px] bg-white shadow-2xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm sm:p-6 overflow-y-auto">
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl my-auto">
             <button 
               onClick={() => setIsLoginModalOpen(false)}
-              className="absolute top-3 right-3 text-ink-500 hover:text-ink-900 font-bold text-xl leading-none z-10 p-2"
+              className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-ink-500 transition-colors hover:bg-gray-200 hover:text-ink-900 focus:outline-none focus:ring-2 focus:ring-microsoft-blue"
               aria-label="Close"
             >
               &times;
@@ -339,52 +351,52 @@ function RequestDemoModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="relative w-full max-w-md bg-white shadow-2xl p-6 rounded my-8">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl my-auto">
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-ink-500 hover:text-ink-900 font-bold text-xl leading-none z-10"
+          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-ink-500 transition-colors hover:bg-gray-200 hover:text-ink-900 focus:outline-none focus:ring-2 focus:ring-microsoft-blue"
         >
           &times;
         </button>
-        <h2 className="text-2xl font-bold mb-4 text-ink-900">Request Demo</h2>
+        <h2 className="mb-4 text-2xl font-bold text-ink-900">Request Demo</h2>
         
         {status.success ? (
           <div className="py-8 text-center">
-            <div className="text-green-500 text-5xl mb-4">✓</div>
-            <h3 className="text-xl font-bold text-ink-900 mb-2">Request Received!</h3>
+            <div className="mb-4 text-5xl text-green-500">✓</div>
+            <h3 className="mb-2 text-xl font-bold text-ink-900">Request Received!</h3>
             <p className="text-ink-500">Our team will contact you shortly to schedule your demo.</p>
-            <button onClick={onClose} className="mt-6 bg-microsoft-blue text-white px-6 py-2 rounded font-semibold text-sm hover:bg-microsoft-hover">Close</button>
+            <button onClick={onClose} className="mt-6 rounded bg-microsoft-blue px-6 py-2 text-sm font-semibold text-white hover:bg-microsoft-hover">Close</button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-ink-900 mb-1">Institution Name</label>
-              <input required name="institution_name" className="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm outline-none focus:border-microsoft-blue" />
+              <label className="mb-1 block text-sm font-semibold text-ink-900">Institution Name</label>
+              <input required name="institution_name" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-ink-900 mb-1">Institution Type</label>
-              <input name="institution_type" className="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm outline-none focus:border-microsoft-blue" placeholder="e.g. School, College" />
+              <label className="mb-1 block text-sm font-semibold text-ink-900">Institution Type</label>
+              <input name="institution_type" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" placeholder="e.g. School, College" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-ink-900 mb-1">Contact Person Name</label>
-              <input required name="name" className="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm outline-none focus:border-microsoft-blue" />
+              <label className="mb-1 block text-sm font-semibold text-ink-900">Contact Person Name</label>
+              <input required name="name" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-ink-900 mb-1">Contact Number</label>
-              <input required name="phone" className="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm outline-none focus:border-microsoft-blue" placeholder="+1..." />
+              <label className="mb-1 block text-sm font-semibold text-ink-900">Contact Number</label>
+              <input required name="phone" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" placeholder="+1..." />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-ink-900 mb-1">Email Address</label>
-              <input required type="email" name="email" className="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm outline-none focus:border-microsoft-blue" />
+              <label className="mb-1 block text-sm font-semibold text-ink-900">Email Address</label>
+              <input required type="email" name="email" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-ink-900 mb-1">Address</label>
-              <input name="address" className="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm outline-none focus:border-microsoft-blue" />
+              <label className="mb-1 block text-sm font-semibold text-ink-900">Address</label>
+              <input name="address" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-ink-900 mb-1">How did you hear about us?</label>
-              <select value={source} onChange={(e) => setSource(e.target.value)} className="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm outline-none focus:border-microsoft-blue">
+              <label className="mb-1 block text-sm font-semibold text-ink-900">How did you hear about us?</label>
+              <select value={source} onChange={(e) => setSource(e.target.value)} className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue">
                 <option value="Website">Website</option>
                 <option value="Social media">Social media</option>
                 <option value="Linkedin">Linkedin</option>
@@ -393,13 +405,13 @@ function RequestDemoModal({ onClose }) {
             </div>
             {source === 'Other' && (
               <div>
-                <input required name="otherSource" className="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm outline-none focus:border-microsoft-blue" placeholder="Please specify" />
+                <input required name="otherSource" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" placeholder="Please specify" />
               </div>
             )}
             
-            {status.error && <div className="text-red-500 text-sm">{status.error}</div>}
+            {status.error && <div className="text-sm text-red-500">{status.error}</div>}
             
-            <button disabled={status.loading} className="w-full bg-microsoft-blue text-white font-bold py-3 mt-4 rounded hover:bg-microsoft-hover transition-colors text-sm disabled:opacity-50">
+            <button disabled={status.loading} className="mt-4 w-full rounded bg-microsoft-blue py-3 text-sm font-bold text-white transition-colors hover:bg-microsoft-hover disabled:opacity-50">
               {status.loading ? 'Submitting...' : 'Submit Request'}
             </button>
           </form>

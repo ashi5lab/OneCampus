@@ -64,44 +64,72 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center font-body">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-[380px] bg-white p-8 shadow-lg"
-      >
-        <div className="mb-1 text-lg font-bold text-ink-900">
-          OneCampus
-        </div>
-        <div className="mb-6 text-sm text-ink-500">Sign in to your institution</div>
-
-        <label className="mb-1 block text-xs font-semibold text-ink-700">Username</label>
-        <input
-          className="input mb-4"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoFocus
-        />
-
-        <label className="mb-1 block text-xs font-semibold text-ink-700">Password</label>
-        <input
-          type="password"
-          className="input mb-5"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        {error && <div className="mb-4 text-xs font-semibold text-danger">{error}</div>}
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-microsoft-blue py-2.5 text-sm font-semibold text-white hover:bg-microsoft-hover disabled:opacity-60"
+  return (
+    <div className="flex w-full flex-col items-center justify-center font-body">
+      <div className="w-full">
+        <form
+          onSubmit={handleSubmit}
+          className="w-full bg-white px-8 py-10 sm:px-10"
         >
-          {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
+          <div className="mb-2 flex justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-microsoft-blue/10 text-microsoft-blue">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+                <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-2.625 6c-.54 0-.828.419-.936.634a1.96 1.96 0 00-.189.866c0 .298.059.605.189.866.108.215.395.634.936.634.54 0 .828-.419.936-.634.13-.26.189-.568.189-.866 0-.298-.059-.605-.189-.866-.108-.215-.395-.634-.936-.634zm4.314.634c.108-.215.395-.634.936-.634.54 0 .828.419.936.634.13.26.189.568.189.866 0 .298-.059.605-.189.866-.108.215-.395.634-.936.634-.54 0-.828-.419-.936-.634a1.96 1.96 0 01-.189-.866c0-.298.059-.605.189-.866zm-4.328 4.46a.75.75 0 00-1.488.192 4.986 4.986 0 005.112 4.103 4.986 4.986 0 005.112-4.103.75.75 0 10-1.488-.192 3.486 3.486 0 01-3.624 2.795 3.486 3.486 0 01-3.624-2.795z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+          <div className="mb-1 text-center text-2xl font-extrabold tracking-tight text-ink-900">
+            Welcome Back
+          </div>
+          <div className="mb-8 text-center text-sm font-medium text-ink-500">
+            Sign in to your OneCampus account
+          </div>
 
-        <InstallAppPrompt className="mt-3" />
-      </form>
+          <div className="space-y-5">
+            <div>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-ink-700">Username</label>
+              <input
+                className="w-full rounded-lg border border-border bg-surface-muted px-4 py-3 text-[14px] text-ink-900 placeholder-ink-400 outline-none transition-colors focus:border-microsoft-blue focus:bg-white focus:ring-1 focus:ring-microsoft-blue"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-ink-700">Password</label>
+              <input
+                type="password"
+                className="w-full rounded-lg border border-border bg-surface-muted px-4 py-3 text-[14px] text-ink-900 placeholder-ink-400 outline-none transition-colors focus:border-microsoft-blue focus:bg-white focus:ring-1 focus:ring-microsoft-blue"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="mt-5 rounded-md bg-danger/10 p-3 text-center text-[13px] font-semibold text-danger">
+              {error}
+            </div>
+          )}
+
+          <div className="mt-8">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full rounded-lg bg-microsoft-blue py-3.5 text-[14.5px] font-bold text-white shadow-md transition-all hover:bg-microsoft-hover hover:shadow-lg disabled:pointer-events-none disabled:opacity-70"
+            >
+              {submitting ? 'Signing in...' : 'Sign In'}
+            </button>
+          </div>
+
+          <div className="mt-6 flex justify-center">
+            <InstallAppPrompt />
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
