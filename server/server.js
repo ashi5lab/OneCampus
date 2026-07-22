@@ -60,7 +60,7 @@ const storageRoutes = require('./modules/storage/routes');
 app.use('/api/v1/storage', storageRoutes);
 
 const whatsappWebhook = require('./modules/webhooks/whatsapp');
-app.use('/webhooks/whatsapp', whatsappWebhook);
+app.use('/api/webhooks/whastapp', whatsappWebhook);
 
 // Resolve the tenant, then pin a dedicated DB connection to that tenant's schema.
 // Scoped to /api/v1 only — mounting this with no path (as it originally was)
