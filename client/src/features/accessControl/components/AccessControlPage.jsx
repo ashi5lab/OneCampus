@@ -1,15 +1,13 @@
-import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { PageHeader } from '../../../components/PageHeader';
 import { useAccessGroups, useDeleteAccessGroup } from '../hooks/useAccessControl';
-import { AccessGroupFormModal } from './AccessGroupFormModal';
 
 export function AccessControlPage() {
   const { data: groups, isLoading, error } = useAccessGroups();
   const deleteGroup = useDeleteAccessGroup();
-  const [showForm, setShowForm] = useState(false);
-  const [editingGroup, setEditingGroup] = useState(null);
+  const navigate = useNavigate();
 
   const columns = [
     {
@@ -44,9 +42,9 @@ export function AccessControlPage() {
       header: '',
       render: (row) => (
         <div className="flex justify-end gap-3">
-          <button onClick={() => setEditingGroup(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
+          <Link to={`/app/access-control/${row.id}`} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
             Edit
-          </button>
+          </Link>
           <button
             onClick={() => {
               if (window.confirm(`Delete access group "${row.name}"?`)) deleteGroup.mutate(row.id);
@@ -61,17 +59,17 @@ export function AccessControlPage() {
   ];
 
   return (
-    <div>
+    <div className="max-w-[1000px]">
       <PageHeader
-        eyebrow="Access Control"
+        eyebrow="Settings"
         title="Access Control"
         actions={
-          <button
-            onClick={() => setShowForm(true)}
+          <Link
+            to="/app/access-control/new"
             className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
           >
             + Create Access Group
-          </button>
+          </Link>
         }
       />
       <p className="mb-4 text-[13px] text-ink-500">
@@ -85,9 +83,6 @@ export function AccessControlPage() {
           <DataTable columns={columns} rows={groups} rowKey={(row) => row.id} emptyMessage="No access groups yet — every role uses just its default permissions." />
         )}
       </div>
-
-      {showForm && <AccessGroupFormModal onClose={() => setShowForm(false)} />}
-      {editingGroup && <AccessGroupFormModal initialData={editingGroup} onClose={() => setEditingGroup(null)} />}
     </div>
   );
 }

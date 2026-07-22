@@ -40,6 +40,7 @@ export const NAV_LINK_DEFS = [
   { key: 'calendar', to: '/app/calendar', label: () => 'Calendar', description: () => 'School calendar & events', gate: (can) => can('calendar.view') },
   { key: 'timetable', to: '/app/timetable', label: () => 'Timetable', description: () => 'Class schedules', gate: (can) => can('timetable.view') },
   { key: 'reports', to: '/app/reports', label: () => 'Reports', description: () => 'Attendance & performance analytics', gate: (can) => can('reports.view') },
+  { key: 'app-management', to: '/app/app-management', label: () => 'App Management', description: () => 'Enable/disable modules & rules', gate: (can) => can('users.manage_passwords') },
   { key: 'access-control', to: '/app/access-control', label: () => 'Access Control', description: () => 'Roles & permissions', gate: (can) => can('access_control.manage') },
   { key: 'bulk-upload', to: '/app/bulk-upload', label: () => 'Bulk Upload', description: () => 'Import records in bulk', gate: (can) => can('bulk_upload.manage') },
   { key: 'staff-attendance', to: '/app/staff-attendance', label: () => 'Staff Attendance', description: () => 'Teacher attendance tracking', gate: (can) => can('staff_attendance.view_own') },

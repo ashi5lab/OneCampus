@@ -89,4 +89,25 @@ async function updateRules(req, res) {
   }
 }
 
-module.exports = { getConfig, updateDashboardApps, updateRules };
+const updateActiveModulesSchema = z.object({
+  active_modules: z.array(z.string())
+});
+
+async function updateActiveModules(req, res) {
+  try {
+    const parsed = updateActiveModulesSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+
+    const result = await db.query(
+      `UPDATE public.onec_tenants SET config = jsonb_set(COALESCE(config, '{}'::jsonb), '{active_modules}', $1::jsonb) WHERE id = $2 RETURNING config`,
+      [JSON.stringify(parsed.data.active_modules), req.tenantConfig.id]
+    );
+
+    res.json({ data: { active_modules: result.rows[0].config.active_modules } });
+  } catch (err) {
+    console.error('Update active_modules error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getConfig, updateDashboardApps, updateRules, updateActiveModules };

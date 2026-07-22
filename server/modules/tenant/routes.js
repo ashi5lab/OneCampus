@@ -15,5 +15,6 @@ router.get('/config', controller.getConfig);
 // one page.
 router.patch('/config/dashboard-apps', auth, requirePermission('users.manage_passwords'), controller.updateDashboardApps);
 router.patch('/config/rules', auth, requirePermission('users.manage_passwords'), controller.updateRules);
+router.patch('/config/active-modules', auth, requirePermission('users.manage_passwords'), controller.updateActiveModules);
 
 module.exports = router;

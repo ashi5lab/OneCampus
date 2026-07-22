@@ -37,6 +37,8 @@ import { ManageDashboardAppsPage } from './features/sidebarSettings/components/M
 import { MorePage } from './features/more/components/MorePage';
 import { BroadcastPage } from './features/broadcast/components/BroadcastPage';
 import { AccessControlPage } from './features/accessControl/components/AccessControlPage';
+import { AccessControlDetailPage } from './features/accessControl/components/AccessControlDetailPage';
+import { AppManagementPage } from './features/appManagement/components/AppManagementPage';
 import { LeavePage } from './features/leave/components/LeavePage';
 import { CalendarPage } from './features/calendar/components/CalendarPage';
 import { TimetablePage } from './features/timetable/components/TimetablePage';
@@ -231,6 +233,22 @@ export default function App() {
           element={
             <RequirePermission permission="access_control.manage">
               <AccessControlPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="access-control/:id"
+          element={
+            <RequirePermission permission="access_control.manage">
+              <AccessControlDetailPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="app-management"
+          element={
+            <RequirePermission permission="users.manage_passwords">
+              <AppManagementPage />
             </RequirePermission>
           }
         />

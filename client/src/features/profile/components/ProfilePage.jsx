@@ -9,9 +9,6 @@ import { getHomeCardsForRole, isCardVisible } from '../../../lib/homeCardKeys';
 import {
   useMyProfile,
   useChangePassword,
-  useAllUsers,
-  useAdminChangePassword,
-  useForceLogoutUser,
   useNotificationPreferences,
   useUpdateNotificationPreferences,
   useHomeCardPrefs,
@@ -24,13 +21,10 @@ import {
 // begin with, so this tab is meaningless (and hidden) for anyone else.
 const HOME_CARDS_ROLES = ['learner', 'instructor', 'staff'];
 
-const TABS = [
   { key: 'notifications', label: 'Notification Preferences' },
   { key: 'home-cards', label: 'Home Screen', roleGated: true },
   { key: 'password', label: 'Change Password' },
-  { key: 'display', label: 'Display' },
-  { key: 'rules', label: 'Rules', adminOnly: true },
-  { key: 'admin', label: 'Admin', adminOnly: true }
+  { key: 'display', label: 'Display' }
 ];
 
 // Every authenticated user's own account screen (reached by clicking the
@@ -47,10 +41,7 @@ const MOBILE_ROWS = [
   { key: 'notifications', label: 'Notification Preferences' },
   { key: 'home-cards', label: 'Home Screen', roleGated: true },
   { key: 'password', label: 'Change Password' },
-  { key: 'display', label: 'Display' },
-  { key: 'rules', label: 'Rules', adminOnly: true },
-  { key: 'dashboard-apps', label: 'Manage Dashboard Apps', adminOnly: true, to: '/app/manage-dashboard-apps' },
-  { key: 'admin-tools', label: 'Admin Tools', adminOnly: true }
+  { key: 'display', label: 'Display' }
 ];
 
 export function ProfilePage() {
@@ -155,13 +146,6 @@ export function ProfilePage() {
             {mobileSection === 'home-cards' && showHomeCardsTab && <HomeCardsCard />}
             {mobileSection === 'password' && <ChangePasswordCard />}
             {mobileSection === 'display' && <DisplayCard />}
-            {mobileSection === 'rules' && canManagePasswords && <RulesCard />}
-            {mobileSection === 'admin-tools' && canManagePasswords && (
-              <div className="space-y-5">
-                <AdminPasswordResetCard />
-                <ForceLogoutCard />
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -188,14 +172,6 @@ export function ProfilePage() {
           {activeTab === 'home-cards' && showHomeCardsTab && <HomeCardsCard />}
           {activeTab === 'password' && <ChangePasswordCard />}
           {activeTab === 'display' && <DisplayCard />}
-          {activeTab === 'rules' && canManagePasswords && <RulesCard />}
-          {activeTab === 'admin' && canManagePasswords && (
-            <div className="space-y-5">
-              <ManageSidebarCard />
-              <AdminPasswordResetCard />
-              <ForceLogoutCard />
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -423,196 +399,7 @@ function DisplayCard() {
   );
 }
 
-// Tenant-wide dashboard customization lives on its own page (the picker
-// over every optional module doesn't fit this card-stack layout) — this is
-// just the entry point into it, grouped with the other admin-only actions.
-function ManageSidebarCard() {
-  return (
-    <div className="rounded border border-border bg-surface p-5">
-      <div className="mb-1 text-[15px] font-bold text-ink-900">Manage Dashboard Apps</div>
-      <div className="mb-3 text-[12px] text-ink-500">
-        Admin only — choose which modules appear on the Home dashboard for everyone in your organisation.
-      </div>
-      <Link
-        to="/app/manage-dashboard-apps"
-        className="inline-block rounded-full bg-accent px-4 py-2 text-xs font-semibold text-accent-ink"
-      >
-        Manage Dashboard Apps
-      </Link>
-    </div>
-  );
-}
 
-function RulesCard() {
-  const { config, reloadConfig } = useConfig();
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-
-  const isGlobalVisible = config?.rules?.global_teacher_visibility || false;
-
-  async function handleToggle(checked) {
-    setIsUpdating(true);
-    setErrorMsg('');
-    try {
-      const { apiClient } = await import('../../../lib/apiClient');
-      await apiClient.patch('/tenant/config/rules', { rules: { global_teacher_visibility: checked } });
-      await reloadConfig();
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to update rules');
-    } finally {
-      setIsUpdating(false);
-    }
-  }
-
-  return (
-    <div className="rounded border border-border bg-surface p-5">
-      <div className="mb-1 text-[15px] font-bold text-ink-900">Tenant Rules</div>
-      <div className="mb-5 text-[12px] text-ink-500">
-        Admin only — configure global access overrides for your institution.
-      </div>
-
-      <div className="flex items-center justify-between gap-3 border-t border-surface-muted py-3.5">
-        <div>
-          <div className="text-[13px] font-semibold text-ink-900">Global Teacher Visibility</div>
-          <div className="mt-0.5 text-[11.5px] text-ink-500 max-w-sm">
-            If enabled, teachers can view classes, assignments, and exams for cohorts they do not teach. If disabled, teachers only see content for their assigned cohorts.
-          </div>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isGlobalVisible}
-          disabled={isUpdating}
-          onClick={() => handleToggle(!isGlobalVisible)}
-          className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${isGlobalVisible ? 'bg-accent' : 'bg-surface-muted'}`}
-        >
-          <span
-            className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${
-              isGlobalVisible ? 'translate-x-[18px]' : 'translate-x-0.5'
-            }`}
-          />
-        </button>
-      </div>
-      
-      {errorMsg && <div className="mt-3 text-xs font-semibold text-danger">{errorMsg}</div>}
-    </div>
-  );
-}
-
-function AdminPasswordResetCard() {
-  const { data: users } = useAllUsers({ enabled: true });
-  const adminChangePassword = useAdminChangePassword();
-  const [userId, setUserId] = useState(null);
-  const [next, setNext] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [formError, setFormError] = useState('');
-  const [savedFor, setSavedFor] = useState(null);
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    setFormError('');
-    setSavedFor(null);
-    if (!userId) return setFormError('Choose a user.');
-    if (next.length < 8) return setFormError('New password must be at least 8 characters.');
-    if (next !== confirm) return setFormError('Passwords do not match.');
-
-    adminChangePassword.mutate(
-      { userId, payload: { new_password: next } },
-      {
-        onSuccess: (data) => {
-          setSavedFor(data.username);
-          setUserId(null);
-          setNext('');
-          setConfirm('');
-        }
-      }
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="rounded border border-border bg-surface p-5">
-      <div className="mb-1 text-[15px] font-bold text-ink-900">Reset a User's Password</div>
-      <div className="mb-3 text-[12px] text-ink-500">
-        Admin only — sets a new password for any user in this organisation without needing their current one.
-      </div>
-
-      <Field label="User">
-        <UserSearchSelect users={users || []} value={userId} onChange={setUserId} placeholder="Search users…" />
-      </Field>
-      <Field label="New Password">
-        <input type="password" className="input" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
-      </Field>
-      <Field label="Confirm New Password">
-        <input type="password" className="input" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
-      </Field>
-
-      {(formError || adminChangePassword.error) && (
-        <div className="mb-3 text-xs font-semibold text-danger">{formError || adminChangePassword.error.message}</div>
-      )}
-      {savedFor && <div className="mb-3 text-xs font-semibold text-success">Password reset for {savedFor}.</div>}
-
-      <button
-        type="submit"
-        disabled={adminChangePassword.isPending || !userId || !next || !confirm}
-        className="rounded bg-accent px-4 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
-      >
-        {adminChangePassword.isPending ? 'Saving…' : 'Reset Password'}
-      </button>
-    </form>
-  );
-}
-
-// A logged-in session now lasts effectively indefinitely (see server/
-// config/env.js's REFRESH_TOKEN_TTL_DAYS) — it only ends when the
-// password changes or someone force-logs-out the account here. This is
-// the "someone force-logs-out the account" half: doesn't touch the
-// password, just ends every device that user is currently logged in on
-// (lost/stolen device, suspicious activity, offboarding).
-function ForceLogoutCard() {
-  const { data: users } = useAllUsers({ enabled: true });
-  const forceLogout = useForceLogoutUser();
-  const [userId, setUserId] = useState(null);
-  const [doneFor, setDoneFor] = useState(null);
-
-  function handleClick() {
-    if (!userId) return;
-    const target = (users || []).find((u) => u.id === userId);
-    if (!window.confirm(`Log out ${target?.username || 'this user'} everywhere? They'll need to sign in again on every device.`)) return;
-
-    setDoneFor(null);
-    forceLogout.mutate(userId, {
-      onSuccess: (data) => {
-        setDoneFor(data.username);
-        setUserId(null);
-      }
-    });
-  }
-
-  return (
-    <div className="rounded border border-border bg-surface p-5">
-      <div className="mb-1 text-[15px] font-bold text-ink-900">Force Logout</div>
-      <div className="mb-3 text-[12px] text-ink-500">
-        Admin only — ends a user's session on every device immediately, without changing their password.
-      </div>
-
-      <Field label="User">
-        <UserSearchSelect users={users || []} value={userId} onChange={setUserId} placeholder="Search users…" />
-      </Field>
-
-      {forceLogout.error && <div className="mb-3 text-xs font-semibold text-danger">{forceLogout.error.message}</div>}
-      {doneFor && <div className="mb-3 text-xs font-semibold text-success">{doneFor} has been logged out everywhere.</div>}
-
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={forceLogout.isPending || !userId}
-        className="rounded border border-danger px-4 py-2 text-xs font-semibold text-danger disabled:opacity-60"
-      >
-        {forceLogout.isPending ? 'Logging out…' : 'Force Logout'}
-      </button>
-    </div>
-  );
-}
 
 function Field({ label, children }) {
   return (

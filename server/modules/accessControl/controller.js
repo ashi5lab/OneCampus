@@ -73,6 +73,23 @@ async function createGroup(req, res) {
 
     await req.db.query('BEGIN');
     try {
+      if (target_type === 'role') {
+        const existingRoleGroup = await req.db.query('SELECT id FROM onec_access_groups WHERE target_type = $1 AND target_role = $2', ['role', target_role]);
+        if (existingRoleGroup.rows.length > 0) {
+          await req.db.query('ROLLBACK');
+          return res.status(400).json({ error: `An access group already exists for the role '${target_role}'. Please edit the existing group.` });
+        }
+      } else if (target_type === 'users' && user_ids.length > 0) {
+        const existingUsers = await req.db.query(
+          `SELECT user_id FROM onec_access_group_members WHERE user_id = ANY($1::int[])`,
+          [user_ids]
+        );
+        if (existingUsers.rows.length > 0) {
+          await req.db.query('ROLLBACK');
+          return res.status(400).json({ error: `User ID ${existingUsers.rows[0].user_id} already belongs to an access group. A user can only belong to one specific access group.` });
+        }
+      }
+
       const result = await req.db.query(
         `INSERT INTO onec_access_groups (name, description, permissions, target_type, target_role, created_by)
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
@@ -108,6 +125,23 @@ async function updateGroup(req, res) {
 
     await req.db.query('BEGIN');
     try {
+      if (target_type === 'role') {
+        const existingRoleGroup = await req.db.query('SELECT id FROM onec_access_groups WHERE target_type = $1 AND target_role = $2 AND id != $3', ['role', target_role, id]);
+        if (existingRoleGroup.rows.length > 0) {
+          await req.db.query('ROLLBACK');
+          return res.status(400).json({ error: `An access group already exists for the role '${target_role}'.` });
+        }
+      } else if (target_type === 'users' && user_ids.length > 0) {
+        const existingUsers = await req.db.query(
+          `SELECT user_id FROM onec_access_group_members WHERE user_id = ANY($1::int[]) AND group_id != $2`,
+          [user_ids, id]
+        );
+        if (existingUsers.rows.length > 0) {
+          await req.db.query('ROLLBACK');
+          return res.status(400).json({ error: `User ID ${existingUsers.rows[0].user_id} already belongs to another access group.` });
+        }
+      }
+
       const result = await req.db.query(
         `UPDATE onec_access_groups SET name = $1, description = $2, permissions = $3, target_type = $4, target_role = $5
          WHERE id = $6 RETURNING *`,
