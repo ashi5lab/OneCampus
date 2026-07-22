@@ -6,6 +6,7 @@ const { getPermissionsForRole } = require('../../lib/permissions');
 const { getCallerDesignation } = require('../../lib/designation');
 const { issueRefreshToken, rotateRefreshToken, revokeRefreshToken } = require('../../lib/refreshTokens');
 const { setAuthCookies, clearAuthCookies, REFRESH_COOKIE_NAME } = require('../../lib/authCookies');
+const { generateUniqueUsername, withTenantPrefix } = require('../../lib/credentials');
 
 // Lets the frontend link to "my profile" (see learners/instructors
 // getProfile) without a separate lookup — a learner/instructor/guardian's
@@ -158,9 +159,36 @@ async function me(req, res) {
   }
 }
 
+async function suggestUsername(req, res) {
+  try {
+    const { first_name, id_seed } = req.query;
+    if (!first_name || !id_seed) return res.status(400).json({ error: 'first_name and id_seed are required' });
+    const username = await generateUniqueUsername(req.db, req.tenantConfig.prefix, first_name, id_seed);
+    res.json({ data: { username } });
+  } catch (err) {
+    console.error('Suggest username error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function checkUsername(req, res) {
+  try {
+    const { username } = req.query;
+    if (!username) return res.status(400).json({ error: 'username is required' });
+    const formattedUsername = withTenantPrefix(req.tenantConfig.prefix, username);
+    const result = await req.db.query('SELECT 1 FROM onec_users WHERE username = $1', [formattedUsername]);
+    res.json({ data: { available: result.rows.length === 0, formattedUsername } });
+  } catch (err) {
+    console.error('Check username error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   login,
   refresh,
   logout,
-  me
+  me,
+  suggestUsername,
+  checkUsername
 };

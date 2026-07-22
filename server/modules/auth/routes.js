@@ -18,4 +18,7 @@ router.post('/logout', requireCsrfMatch, controller.logout);
 
 router.get('/me', auth, controller.me);
 
+router.get('/suggest-username', auth, controller.suggestUsername);
+router.get('/check-username', auth, controller.checkUsername);
+
 module.exports = router;
