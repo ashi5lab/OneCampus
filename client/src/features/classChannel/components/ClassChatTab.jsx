@@ -110,7 +110,7 @@ export function ClassChatTab({ cohortId }) {
         </button>
       )}
 
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-3">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3">
         {isLoading && <div className="py-6 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="py-6 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {posts.length === 0 && !isLoading && (

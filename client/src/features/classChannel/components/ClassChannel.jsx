@@ -50,10 +50,13 @@ export function ClassChannel({ cohort, showBack }) {
   const subtitle = `${cohort.advisor_first_name ? `${cohort.advisor_first_name} ${cohort.advisor_last_name} · ` : ''}${cohort.learner_count} students`;
 
   return (
-    // Chat gets the fixed-viewport-height flex treatment so its own scroll
-    // container can fill the screen; the other tabs are ordinary tables/
-    // forms that scroll with the page like every other management screen,
-    // so they don't want to be squeezed into that same fixed height.
+    // The whole channel is a fixed-viewport-height flex column on every
+    // tab: the title + tab strip stay pinned, and only each tab's own
+    // content scrolls (the chat manages its own scroll internally; every
+    // other tab gets the overflow-y-auto wrapper below). The page itself
+    // never scrolls here — overscroll-contain on the inner scrollers keeps
+    // a scroll that hits the top/bottom of the content from chaining out
+    // to the document.
     //
     // The mobile height is derived from the real chrome around this
     // container rather than one magic constant, because that chrome varies
@@ -63,16 +66,10 @@ export function ClassChannel({ cohort, showBack }) {
     // area padding. A fixed offset tuned for one phone leaves a dead band
     // above the tab bar on every other one. The negative bottom margin
     // swallows the layout's scroll-clearance bottom padding (Layout.jsx's
-    // inline paddingBottom), which chat doesn't need since it manages its
-    // own height — without it the page scrolls by that padding's worth
-    // even though the chat already fits.
-    <div
-      className={
-        isChat
-          ? 'flex h-[calc(100dvh_-_env(safe-area-inset-top)_-_68px_-_max(0.25rem,env(safe-area-inset-bottom)))] flex-col mb-[calc(0px_-_max(4.5rem,3.75rem_+_env(safe-area-inset-bottom)))] md:h-[calc(100dvh-40px)] md:-mb-[60px]'
-          : ''
-      }
-    >
+    // inline paddingBottom), which this page doesn't need since it manages
+    // its own height — without it the page scrolls by that padding's worth
+    // even though the content already fits.
+    <div className="flex h-[calc(100dvh_-_env(safe-area-inset-top)_-_68px_-_max(0.25rem,env(safe-area-inset-bottom)))] flex-col mb-[calc(0px_-_max(4.5rem,3.75rem_+_env(safe-area-inset-bottom)))] md:h-[calc(100dvh-40px)] md:-mb-[60px]">
       <div className="flex-shrink-0">
         <PageHeader
           title={cohort.name}
@@ -109,13 +106,13 @@ export function ClassChannel({ cohort, showBack }) {
           <ClassChatTab cohortId={cohort.id} />
         </div>
       ) : (
-        <>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3">
           {activeTab === 'assignments' && <ClassAssignmentsTab cohortId={cohort.id} />}
           {activeTab === 'exams' && <ClassExamsTab cohortId={cohort.id} />}
           {activeTab === 'timetable' && <ClassTimetableTab cohortId={cohort.id} cohortTimeBlock={cohort.time_block} />}
           {activeTab === 'attendance' && <ClassAttendanceTab cohortId={cohort.id} />}
           {activeTab === 'members' && <ClassMembersTab cohortId={cohort.id} cohort={cohort} />}
-        </>
+        </div>
       )}
     </div>
   );
