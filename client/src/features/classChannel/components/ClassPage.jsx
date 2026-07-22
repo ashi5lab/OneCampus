@@ -1,8 +1,8 @@
-import { useParams, Link } from 'react-router-dom';
-import { ModuleBadge } from '../../../components/ModuleBadge';
+import { useParams } from 'react-router-dom';
 import { PageHeader } from '../../../components/PageHeader';
 import { useMyCohorts } from '../hooks/useClassChannel';
 import { ClassChannel } from './ClassChannel';
+import { ClassCard } from './ClassCard';
 
 // Handles both /app/class (no id) and /app/class/:cohortId. A caller with
 // exactly one class skips straight to its channel; more than one shows a
@@ -44,23 +44,10 @@ export function ClassPage() {
 function ClassPicker({ cohorts }) {
   return (
     <div>
-      <PageHeader eyebrow="Class" title="Your Classes" />
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {cohorts.map((c) => (
-          <Link
-            key={c.id}
-            to={`/app/class/${c.id}`}
-            className="flex flex-col items-start gap-2 rounded border border-border bg-surface p-3 transition hover:border-accent active:scale-[0.99]"
-          >
-            <ModuleBadge moduleKey="cohorts" label={c.name} />
-            <div className="min-w-0">
-              <div className="text-[14px] font-semibold text-ink-900 leading-tight">{c.name}</div>
-              <div className="mt-1 text-[11.5px] text-ink-500 leading-tight">
-                {c.learner_count} students
-                {c.advisor_first_name ? <><br/>{c.advisor_first_name} {c.advisor_last_name}</> : ''}
-              </div>
-            </div>
-          </Link>
+      <PageHeader eyebrow="Class" title="Your Classes" subtitle={`${cohorts.length} classes`} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {cohorts.map((c, i) => (
+          <ClassCard key={c.id} cohort={c} to={`/app/class/${c.id}`} index={i} />
         ))}
       </div>
     </div>

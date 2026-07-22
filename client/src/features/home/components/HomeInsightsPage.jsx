@@ -6,6 +6,7 @@ import { useInbox } from '../../messages/hooks/useMessages';
 import { useActivities } from '../../activities/hooks/useActivities';
 import { useHomeCardPrefs } from '../../profile/hooks/useProfile';
 import { getHomeCardsForRole, isCardVisible } from '../../../lib/homeCardKeys';
+import { ProfileMenu } from '../../../components/ProfileMenu';
 
 const ACTIVITY_DOT_COLOR = {
   notice: 'var(--accent)',
@@ -58,9 +59,7 @@ function Greeting() {
         <div className="text-[13.5px] text-ink-500">{greeting}</div>
         <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">{user?.username}</h1>
       </div>
-      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent text-[13px] font-bold text-accent-ink">
-        {(user?.username || '?').slice(0, 2).toUpperCase()}
-      </div>
+      <ProfileMenu />
     </div>
   );
 }

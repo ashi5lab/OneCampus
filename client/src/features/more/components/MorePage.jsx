@@ -15,13 +15,19 @@ export function MorePage() {
   const [search, setSearch] = useState('');
   const canManagePasswords = can('users.manage_passwords');
 
-  const filtered = search.trim()
+  const query = search.trim().toLowerCase();
+  const filtered = query
     ? links.filter(
         (link) =>
-          link.label.toLowerCase().includes(search.trim().toLowerCase()) ||
-          link.description.toLowerCase().includes(search.trim().toLowerCase())
+          link.label.toLowerCase().includes(query) ||
+          link.description.toLowerCase().includes(query)
       )
     : links;
+
+  // Settings lives on this directory too (mobile's bottom tab bar has no
+  // Settings destination of its own) — always the last card, and it joins
+  // the search like any feature would.
+  const showSettings = !query || 'settings'.includes(query) || 'account preferences'.includes(query);
 
   return (
     <div className="max-w-[860px]">
@@ -36,13 +42,13 @@ export function MorePage() {
         />
       </div>
 
-      {filtered.length === 0 && (
+      {filtered.length === 0 && !showSettings && (
         <div className="rounded border border-border bg-surface p-8 text-center text-sm text-ink-500">
           No matching features.
         </div>
       )}
 
-      {filtered.length > 0 && (
+      {(filtered.length > 0 || showSettings) && (
         <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
           {filtered.map((link) => (
             <Link
@@ -60,6 +66,25 @@ export function MorePage() {
               </svg>
             </Link>
           ))}
+          {showSettings && (
+            <Link
+              to="/app/profile"
+              className="flex items-center gap-3 rounded border border-border bg-surface p-3.5 transition hover:border-accent"
+            >
+              <div className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded bg-ink-900 text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6zM4.5 12a7.5 7.5 0 01.2-1.7l-2-1.5 2-3.4 2.3.9a7.6 7.6 0 011.5-.9l.3-2.4h4l.3 2.4a7.6 7.6 0 011.5.9l2.3-.9 2 3.4-2 1.5c.1.5.2 1.1.2 1.7s-.1 1.2-.2 1.7l2 1.5-2 3.4-2.3-.9a7.6 7.6 0 01-1.5.9l-.3 2.4h-4l-.3-2.4a7.6 7.6 0 01-1.5-.9l-2.3.9-2-3.4 2-1.5A7.5 7.5 0 014.5 12z" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[13.5px] font-semibold text-ink-900">Settings</div>
+                <div className="truncate text-[12px] text-ink-500">Account, notifications, password & display</div>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="flex-shrink-0 text-ink-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+              </svg>
+            </Link>
+          )}
         </div>
       )}
 
