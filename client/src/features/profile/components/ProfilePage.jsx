@@ -21,6 +21,7 @@ import {
 // begin with, so this tab is meaningless (and hidden) for anyone else.
 const HOME_CARDS_ROLES = ['learner', 'instructor', 'staff'];
 
+const TABS = [
   { key: 'notifications', label: 'Notification Preferences' },
   { key: 'home-cards', label: 'Home Screen', roleGated: true },
   { key: 'password', label: 'Change Password' },

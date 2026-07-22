@@ -54,7 +54,25 @@ export function ClassChannel({ cohort, showBack }) {
     // container can fill the screen; the other tabs are ordinary tables/
     // forms that scroll with the page like every other management screen,
     // so they don't want to be squeezed into that same fixed height.
-    <div className={isChat ? 'flex h-[calc(100dvh-185px)] flex-col md:h-[calc(100dvh-40px)] md:-mb-[60px]' : ''}>
+    //
+    // The mobile height is derived from the real chrome around this
+    // container rather than one magic constant, because that chrome varies
+    // per device: env(safe-area-inset-top) (0 on most Androids, ~59px on
+    // notched iPhones) + the layout's 20px top padding + the 48px bottom
+    // tab bar + the bar's max(0.25rem, env(safe-area-inset-bottom)) safe-
+    // area padding. A fixed offset tuned for one phone leaves a dead band
+    // above the tab bar on every other one. The negative bottom margin
+    // swallows the layout's scroll-clearance bottom padding (Layout.jsx's
+    // inline paddingBottom), which chat doesn't need since it manages its
+    // own height — without it the page scrolls by that padding's worth
+    // even though the chat already fits.
+    <div
+      className={
+        isChat
+          ? 'flex h-[calc(100dvh_-_env(safe-area-inset-top)_-_68px_-_max(0.25rem,env(safe-area-inset-bottom)))] flex-col mb-[calc(0px_-_max(4.5rem,3.75rem_+_env(safe-area-inset-bottom)))] md:h-[calc(100dvh-40px)] md:-mb-[60px]'
+          : ''
+      }
+    >
       <div className="flex-shrink-0">
         <PageHeader
           title={cohort.name}

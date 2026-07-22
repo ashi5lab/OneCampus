@@ -171,7 +171,9 @@ export function ClassChatTab({ cohortId }) {
         </div>
       </div>
 
-      <MessageComposer members={members || []} onSubmit={handleNewPost} />
+      <div className="flex-shrink-0 border-t border-surface-muted px-2 py-2 sm:px-3">
+        <MessageComposer members={members || []} onSubmit={handleNewPost} />
+      </div>
 
       {historyTarget && (
         <EditHistoryModal kind={historyTarget.kind} id={historyTarget.id} onClose={() => setHistoryTarget(null)} />
