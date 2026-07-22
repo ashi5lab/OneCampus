@@ -124,7 +124,14 @@ export function ClassMembersTab({ cohortId, cohort }) {
   ];
 
   return (
-    <div className="flex h-full flex-col">
+    // Natural height on purpose — the scrolling happens in ClassChannel's
+    // shared overflow-y-auto content wrapper, so this tab must be allowed
+    // to grow taller than the visible area. h-full here would pin it to
+    // the wrapper's client height (percentages resolve against a scroll
+    // container's visible box, not its scrollable extent), which both
+    // kept the wrapper from ever scrolling and let the old flex-1
+    // overflow-hidden table box clip rows beyond the fold entirely.
+    <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <div className="flex gap-2 mr-2">
@@ -173,7 +180,7 @@ export function ClassMembersTab({ cohortId, cohort }) {
         )}
       </div>
 
-      <div className="flex-1 overflow-hidden rounded border border-border bg-surface">
+      <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message || 'Error loading members'}</div>}
         {data && (
