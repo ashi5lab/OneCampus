@@ -5,6 +5,8 @@ import { instructorFormSchema, instructorUpdateSchema } from '../types';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useModules } from '../../modules/hooks/useModules';
 import { useInstructorModules, useCreateInstructorModule, useRemoveInstructorModule } from '../hooks/useInstructorModules';
+import { useCohorts } from '../../cohorts/hooks/useCohorts';
+import { useInstructorCohorts, useCreateInstructorCohort, useRemoveInstructorCohort } from '../hooks/useInstructorCohorts';
 import { apiClient } from '../../../lib/apiClient';
 
 export function InstructorForm({ onClose, onSubmit, submitting, submitError, initialData = null }) {
@@ -89,9 +91,29 @@ export function InstructorForm({ onClose, onSubmit, submitting, submitError, ini
     );
   }, [isEdit, moduleLinks, initialData?.id]);
 
+  // Instructor-specific cohorts linkage
+  const { data: cohorts } = useCohorts();
+  const { data: cohortLinks } = useInstructorCohorts({ enabled: isEdit });
+  const createCohortLink = useCreateInstructorCohort();
+  const removeCohortLink = useRemoveInstructorCohort();
+  const [selectedCohortIds, setSelectedCohortIds] = useState([]);
+
+  useEffect(() => {
+    if (!isEdit || !cohortLinks) return;
+    setSelectedCohortIds(
+      cohortLinks.filter((link) => link.instructor_id === initialData.id).map((link) => link.cohort_id)
+    );
+  }, [isEdit, cohortLinks, initialData?.id]);
+
   function toggleModule(moduleId) {
     setSelectedModuleIds((current) =>
       current.includes(moduleId) ? current.filter((id) => id !== moduleId) : [...current, moduleId]
+    );
+  }
+
+  function toggleCohort(cohortId) {
+    setSelectedCohortIds((current) =>
+      current.includes(cohortId) ? current.filter((id) => id !== cohortId) : [...current, cohortId]
     );
   }
 
@@ -102,9 +124,18 @@ export function InstructorForm({ onClose, onSubmit, submitting, submitError, ini
         .map((link) => link.module_id);
       const toAdd = selectedModuleIds.filter((id) => !currentLinkedIds.includes(id));
       const toRemove = currentLinkedIds.filter((id) => !selectedModuleIds.includes(id));
+
+      const currentLinkedCohortIds = (cohortLinks || [])
+        .filter((link) => link.instructor_id === initialData.id)
+        .map((link) => link.cohort_id);
+      const toAddCohorts = selectedCohortIds.filter((id) => !currentLinkedCohortIds.includes(id));
+      const toRemoveCohorts = currentLinkedCohortIds.filter((id) => !selectedCohortIds.includes(id));
+
       await Promise.all([
         ...toAdd.map((module_id) => createModuleLink.mutateAsync({ instructor_id: initialData.id, module_id })),
-        ...toRemove.map((module_id) => removeModuleLink.mutateAsync({ instructorId: initialData.id, moduleId: module_id }))
+        ...toRemove.map((module_id) => removeModuleLink.mutateAsync({ instructorId: initialData.id, moduleId: module_id })),
+        ...toAddCohorts.map((cohort_id) => createCohortLink.mutateAsync({ instructor_id: initialData.id, cohort_id })),
+        ...toRemoveCohorts.map((cohort_id) => removeCohortLink.mutateAsync({ instructorId: initialData.id, cohortId: cohort_id }))
       ]);
     }
 
@@ -112,7 +143,7 @@ export function InstructorForm({ onClose, onSubmit, submitting, submitError, ini
       ...values,
       username: submittedUsername || undefined,
       meta: { ...(initialData?.meta || {}), gender: gender || undefined },
-      ...(isEdit ? {} : { module_ids: selectedModuleIds })
+      ...(isEdit ? {} : { module_ids: selectedModuleIds, cohort_ids: selectedCohortIds })
     });
   }
 
@@ -160,22 +191,42 @@ export function InstructorForm({ onClose, onSubmit, submitting, submitError, ini
           </Field>
         </div>
 
-        <div className="mt-4 mb-4">
-          <div className="mb-1.5 text-xs font-semibold text-ink-700">{t('topics')} (optional)</div>
-          <div className="max-h-[160px] overflow-y-auto rounded border border-border p-2">
-            {(modules || []).length === 0 && (
-              <div className="px-2 py-1.5 text-[12.5px] text-ink-500">No {t('topics').toLowerCase()} set up yet.</div>
-            )}
-            {(modules || []).map((module) => (
-              <label key={module.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-ink-900 hover:bg-surface-muted cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedModuleIds.includes(module.id)}
-                  onChange={() => toggleModule(module.id)}
-                />
-                {module.name}
-              </label>
-            ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mb-4">
+          <div>
+            <div className="mb-1.5 text-xs font-semibold text-ink-700">{t('topics')} (optional)</div>
+            <div className="max-h-[160px] overflow-y-auto rounded border border-border p-2">
+              {(modules || []).length === 0 && (
+                <div className="px-2 py-1.5 text-[12.5px] text-ink-500">No {t('topics').toLowerCase()} set up yet.</div>
+              )}
+              {(modules || []).map((module) => (
+                <label key={module.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-ink-900 hover:bg-surface-muted cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedModuleIds.includes(module.id)}
+                    onChange={() => toggleModule(module.id)}
+                  />
+                  {module.name}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="mb-1.5 text-xs font-semibold text-ink-700">{t('cohort')} Assignment (optional)</div>
+            <div className="max-h-[160px] overflow-y-auto rounded border border-border p-2">
+              {(cohorts || []).length === 0 && (
+                <div className="px-2 py-1.5 text-[12.5px] text-ink-500">No {t('cohort').toLowerCase()}s set up yet.</div>
+              )}
+              {(cohorts || []).map((cohort) => (
+                <label key={cohort.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-[13px] text-ink-900 hover:bg-surface-muted cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedCohortIds.includes(cohort.id)}
+                    onChange={() => toggleCohort(cohort.id)}
+                  />
+                  {cohort.name}
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
