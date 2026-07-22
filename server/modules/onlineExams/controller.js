@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
 const { getOwnLearnerId } = require('../../lib/ownLearner');
+const { hasPermission } = require('../../lib/permissions');
 
 const questionSchema = z.object({
   question_text: z.string().min(1, 'Question text is required'),
@@ -91,7 +92,13 @@ async function listExams(req, res) {
                    (SELECT COUNT(*) FROM onec_exam_questions q WHERE q.exam_id = e.id) AS question_count`;
     const params = [];
 
-    if (req.user.role === 'learner') {
+    const hasClassView = await hasPermission(req, 'class.view');
+
+    if (req.user.role === 'admin' || hasClassView) {
+      query += ` FROM onec_online_exams e
+                 JOIN onec_modules m ON e.module_id = m.id
+                 JOIN onec_cohorts c ON e.cohort_id = c.id`;
+    } else if (req.user.role === 'learner') {
       const ownLearnerId = await getOwnLearnerId(req);
       const cohortResult = ownLearnerId
         ? await req.db.query('SELECT cohort_id FROM onec_learners WHERE id = $1', [ownLearnerId])
@@ -113,10 +120,6 @@ async function listExams(req, res) {
                    JOIN onec_instructors i ON ic.instructor_id = i.id
                    WHERE i.user_id = $1
                  )`;
-    } else {
-      query += ` FROM onec_online_exams e
-                 JOIN onec_modules m ON e.module_id = m.id
-                 JOIN onec_cohorts c ON e.cohort_id = c.id`;
     }
     query += ' ORDER BY e.created_at DESC';
 

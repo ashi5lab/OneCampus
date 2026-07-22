@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
 const { getOwnLearnerId } = require('../../lib/ownLearner');
+const { hasPermission } = require('../../lib/permissions');
 
 const assignmentSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -35,7 +36,11 @@ async function listAssignments(req, res) {
                  JOIN onec_cohorts c ON a.cohort_id = c.id`;
     const params = [];
 
-    if (req.user.role === 'learner') {
+    const hasClassView = await hasPermission(req, 'class.view');
+
+    if (req.user.role === 'admin' || hasClassView) {
+      // Admin or explicit class.view sees all assignments
+    } else if (req.user.role === 'learner') {
       const ownLearnerId = await getOwnLearnerId(req);
       const cohortResult = ownLearnerId
         ? await req.db.query('SELECT cohort_id FROM onec_learners WHERE id = $1', [ownLearnerId])
