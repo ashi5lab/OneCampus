@@ -8,6 +8,7 @@ import { ModuleBadge } from '../../components/ModuleBadge';
 import { HorizontalBarChart } from '../../components/charts/HorizontalBarChart';
 import { useDashboardReport } from '../reports/hooks/useReports';
 import { HomeInsightsPage } from '../home/components/HomeInsightsPage';
+import { ProfileMenu } from '../../components/ProfileMenu';
 
 // Learner/instructor/staff get the redesigned personal-insights Home (see
 // HomeInsightsPage) instead of this file's card-grid/reports-toggle view —
@@ -47,22 +48,25 @@ export function DashboardPage() {
           </h1>
         </div>
 
-        <label className="flex items-center gap-2 text-xs font-semibold text-ink-700">
-          Reports View
-          <button
-            type="button"
-            role="switch"
-            aria-checked={view === 'reports'}
-            onClick={toggleView}
-            className={`relative h-5 w-9 rounded-full transition-colors ${view === 'reports' ? 'bg-accent' : 'bg-surface-muted'}`}
-          >
-            <span
-              className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${
-                view === 'reports' ? 'translate-x-[18px]' : 'translate-x-0.5'
-              }`}
-            />
-          </button>
-        </label>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-xs font-semibold text-ink-700">
+            Reports View
+            <button
+              type="button"
+              role="switch"
+              aria-checked={view === 'reports'}
+              onClick={toggleView}
+              className={`relative h-5 w-9 rounded-full transition-colors ${view === 'reports' ? 'bg-accent' : 'bg-surface-muted'}`}
+            >
+              <span
+                className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${
+                  view === 'reports' ? 'translate-x-[18px]' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </label>
+          <ProfileMenu />
+        </div>
       </div>
 
       {view === 'cards' ? <FeatureCardsView /> : <ReportsView />}
