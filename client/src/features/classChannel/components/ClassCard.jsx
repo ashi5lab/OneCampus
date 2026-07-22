@@ -32,6 +32,18 @@ export function ClassCard({ cohort, to, index = 0 }) {
   const palette = PALETTES[index % PALETTES.length];
   const advisor = cohort.advisor_first_name ? `${cohort.advisor_first_name} ${cohort.advisor_last_name}` : null;
 
+  // Stat chips per the mock — attendance % (class-wide, 30 days) and, for
+  // teachers, how many submissions await grading. Only the my-cohorts
+  // endpoint computes these; lists that don't (e.g. the admin Class
+  // Channels directory, built on the plain cohorts list) fall back to the
+  // term/time-block chip so a card never renders chipless for no reason.
+  const attendanceRate = cohort.attendance_rate_30d != null ? Number(cohort.attendance_rate_30d) : null;
+  const toGrade = cohort.to_grade != null ? Number(cohort.to_grade) : null;
+  const chips = [];
+  if (attendanceRate != null) chips.push(`${attendanceRate}% attendance`);
+  if (toGrade != null && toGrade > 0) chips.push(`${toGrade} to grade`);
+  if (chips.length === 0 && cohort.time_block) chips.push(cohort.time_block);
+
   return (
     <Link
       to={to}
@@ -56,9 +68,11 @@ export function ClassCard({ cohort, to, index = 0 }) {
         <div className="mt-0.5 text-[13px] text-ink-500">{cohort.learner_count} students</div>
         {advisor && <div className="mt-0.5 truncate text-[13.5px] font-medium text-ink-900">{advisor}</div>}
 
-        {cohort.time_block && (
+        {chips.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
-            <Chip palette={palette}>{cohort.time_block}</Chip>
+            {chips.map((chip) => (
+              <Chip key={chip} palette={palette}>{chip}</Chip>
+            ))}
           </div>
         )}
       </div>

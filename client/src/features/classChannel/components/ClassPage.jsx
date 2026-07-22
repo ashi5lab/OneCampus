@@ -44,7 +44,7 @@ export function ClassPage() {
 function ClassPicker({ cohorts }) {
   return (
     <div>
-      <PageHeader eyebrow="Class" title="Your Classes" />
+      <PageHeader eyebrow="Class" title="Your Classes" subtitle={`${cohorts.length} classes`} />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {cohorts.map((c, i) => (
           <ClassCard key={c.id} cohort={c} to={`/app/class/${c.id}`} index={i} />
