@@ -67,6 +67,9 @@ function listPermissions(req, res) {
 
 async function createGroup(req, res) {
   try {
+    if (Array.isArray(req.body.permissions)) {
+      req.body.permissions = req.body.permissions.filter(p => ALL_PERMISSIONS.includes(p));
+    }
     const parsed = groupSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
     const { name, description, permissions, target_type, target_role, user_ids } = parsed.data;
@@ -119,6 +122,9 @@ async function createGroup(req, res) {
 async function updateGroup(req, res) {
   try {
     const { id } = req.params;
+    if (Array.isArray(req.body.permissions)) {
+      req.body.permissions = req.body.permissions.filter(p => ALL_PERMISSIONS.includes(p));
+    }
     const parsed = groupSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
     const { name, description, permissions, target_type, target_role, user_ids } = parsed.data;
