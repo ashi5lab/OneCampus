@@ -58,7 +58,7 @@ export function BottomTabBar() {
         Dashboard
       </NavLink>
 
-      {user?.role !== 'guardian' && (
+      {user?.role !== 'guardian' && (user?.role === 'admin' || can('class.view')) && (
         <NavLink to={user?.role === 'admin' ? '/app/class-channels' : '/app/class'} className={tabClass}>
           <TabIcon name="classes" />
           Class

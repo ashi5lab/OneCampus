@@ -99,8 +99,22 @@ export default function App() {
             REDESIGNED_ROLES), not permission-gated like the roster routes
             above: access is cohort-membership-scoped inside the endpoints
             themselves (see server/lib/cohortAccess.js). */}
-        <Route path="class" element={<ClassPage />} />
-        <Route path="class/:cohortId" element={<ClassPage />} />
+        <Route
+          path="class"
+          element={
+            <RequirePermission permission="class.view">
+              <ClassPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="class/:cohortId"
+          element={
+            <RequirePermission permission="class.view">
+              <ClassPage />
+            </RequirePermission>
+          }
+        />
         <Route path="activities" element={<ActivitiesPage />} />
         <Route
           path="manage-dashboard-apps"

@@ -119,10 +119,10 @@ export function InstructorProfilePage() {
         <div className="max-w-[760px] space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
             <div>
-              <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">{t('topics')}</div>
+              <div className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">Subjects of Teachers</div>
               {subjectNames.length === 0 ? (
                 <div className="rounded border border-border bg-surface-muted p-3.5 text-[13px] text-ink-500">
-                  No {t('topics').toLowerCase()} assigned yet.
+                  No subjects assigned yet.
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
