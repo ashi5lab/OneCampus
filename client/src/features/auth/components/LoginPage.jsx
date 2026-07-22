@@ -64,7 +64,6 @@ export function LoginPage() {
   }
 
   return (
-  return (
     <div className="flex w-full flex-col items-center justify-center font-body">
       <div className="w-full">
         <form

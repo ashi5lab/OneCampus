@@ -329,7 +329,7 @@ export function MessageComposer({
           data-placeholder={placeholder}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
-          className="rich-editor input max-h-24 min-h-[36px] flex-1 overflow-y-auto !rounded-2xl py-2 text-[12.5px] leading-relaxed"
+          className="rich-editor input max-h-36 min-h-[44px] flex-1 overflow-y-auto !rounded-2xl py-2.5 text-[13.5px] leading-relaxed"
         />
 
         {onCancel && (
