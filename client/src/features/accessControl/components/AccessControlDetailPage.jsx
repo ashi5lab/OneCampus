@@ -13,7 +13,8 @@ const MODULE_LABELS = {
   'instructor_modules': 'Subjects of Teachers',
   'instructor_cohorts': 'Add teacher to class',
   'cohorts': 'Manage Class',
-  'class': 'Class Channel'
+  'class': 'Class Channel',
+  'messages': 'Messages'
 };
 
 function groupByModule(permissions) {

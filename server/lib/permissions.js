@@ -54,10 +54,10 @@ const ALL_PERMISSIONS = [
 // one permission pair with no row-scoping concern at all.
 const DEFAULT_ROLE_PERMISSIONS = {
   admin: ALL_PERMISSIONS,
-  staff: ['calendar.view', 'notices.view', 'messages.view', 'messages.send'],
-  instructor: ['calendar.view', 'notices.view', 'messages.view', 'messages.send'],
-  learner: ['calendar.view', 'notices.view', 'messages.view', 'messages.send'],
-  guardian: ['calendar.view', 'notices.view', 'messages.view', 'messages.send']
+  staff: ['calendar.view', 'notices.view'],
+  instructor: ['calendar.view', 'notices.view'],
+  learner: ['calendar.view', 'notices.view'],
+  guardian: ['calendar.view', 'notices.view']
 };
 
 async function seedDefaultPermissions(client) {
