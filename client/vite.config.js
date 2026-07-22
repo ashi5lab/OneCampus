@@ -11,7 +11,10 @@ export default defineConfig({
       // list (favicon.ico, apple-touch-icon.png, masked-icon.svg) named
       // three files that were never added, so vite-plugin-pwa silently
       // dropped them rather than precaching/serving anything for iOS.
-      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'apple-splash-1284x2778.png'],
+      // apple-splash-*: one startup image per iPhone/iPad screen size — iOS
+      // only shows the one whose pixel size exactly matches the device, so
+      // the whole set has to ship (see index.html's media-queried links).
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'apple-splash-*.png'],
       manifest: {
         name: 'OneCampus',
         short_name: 'OneCampus',
