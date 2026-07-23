@@ -83,10 +83,13 @@ export function ClassMembersTab({ cohortId, cohort }) {
       header: 'Name',
       render: (row) => {
         const link = row.role === 'learner' ? `/app/learners/${row.role_id}` : `/app/instructors/${row.role_id}`;
-        return (
+        const canView = can('learners.view') && row.role === 'learner' || can('instructors.view') && row.role === 'instructor';
+        return canView ? (
           <Link to={link} className="font-semibold text-accent-dark hover:underline">
             {row.first_name} {row.last_name}
           </Link>
+        ) : (
+          <span className="font-semibold text-ink-500">{row.first_name} {row.last_name}</span>
         );
       }
     },
