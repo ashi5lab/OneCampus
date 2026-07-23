@@ -9,8 +9,9 @@ import { Avatar } from '../../../components/Avatar';
 import { BackButton, useAutoBack } from '../../../components/PageHeader';
 import { ProfilePictureUploader } from '../../profile/components/ProfilePictureUploader';
 import { useLearnerProfile, useUpdateLearner, useDeleteLearner } from '../hooks/useLearners';
-import { LearnerFormModal } from './LearnerFormModal';
+import { LearnerForm } from './LearnerForm';
 import { certificatesApi } from '../../certificates/services/certificatesApi';
+import toast from 'react-hot-toast';
 import { evaluationsApi } from '../../evaluations/services/evaluationsApi';
 import { ReportCardModal } from '../../evaluations/components/ReportCardModal';
 import { idCardsApi } from '../../idCards/services/idCardsApi';
@@ -78,12 +79,41 @@ export function LearnerProfilePage() {
 
   return (
     <div>
-      <div className="mb-1 flex items-center gap-1.5 text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-        {showBack && <BackButton onClick={goBack} />}
-        Management / {t('learners')}
-      </div>
+      <PageHeader
+        eyebrow={`Management / ${t('learners')}`}
+        title={`${learner.first_name} ${learner.last_name}`}
+        actions={
+          can('learners.manage') && (
+            <button
+              onClick={() => setShowEdit(true)}
+              className="rounded border border-border bg-surface px-4 py-2 text-[13.5px] font-semibold text-ink-700 hover:bg-surface-muted"
+            >
+              Edit Profile
+            </button>
+          )
+        }
+      />
 
-      <div className="mb-5 flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left">
+      {showEdit ? (
+        <div className="py-4">
+          <LearnerForm
+            initialData={learner}
+            onClose={() => setShowEdit(false)}
+            submitting={updateLearner.isPending}
+            submitError={updateLearner.error?.message}
+            onSubmit={(values) =>
+              updateLearner.mutate({ id: learnerId, payload: values }, { 
+                onSuccess: () => {
+                  setShowEdit(false);
+                  toast.success(`${t('learner')} updated successfully!`);
+                } 
+              })
+            }
+          />
+        </div>
+      ) : (
+        <>
+          <div className="mb-5 flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left">
         <div className="mb-3 sm:mb-0 sm:mr-4">
           {isOwnProfile ? (
             <ProfilePictureUploader
@@ -348,22 +378,14 @@ export function LearnerProfilePage() {
         </div>
       )}
 
+        </>
+      )}
+
       {viewingEvaluationId && (
         <ReportCardModal evaluationId={viewingEvaluationId} learnerId={learnerId} onClose={() => setViewingEvaluationId(null)} />
       )}
       {showMarkAlumni && <MarkAlumniModal learner={learner} onClose={() => setShowMarkAlumni(false)} />}
       {showGuardianLinks && <LearnerGuardianLinksModal learner={learner} onClose={() => setShowGuardianLinks(false)} />}
-      {showEdit && (
-        <LearnerFormModal
-          initialData={learner}
-          onClose={() => setShowEdit(false)}
-          submitting={updateLearner.isPending}
-          submitError={updateLearner.error?.message}
-          onSubmit={(values) =>
-            updateLearner.mutate({ id: learnerId, payload: values }, { onSuccess: () => setShowEdit(false) })
-          }
-        />
-      )}
     </div>
   );
 }

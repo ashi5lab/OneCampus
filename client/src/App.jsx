@@ -1,4 +1,5 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequirePermission } from './components/RequirePermission';
@@ -54,8 +55,10 @@ import { ActivitiesPage } from './features/activities/components/ActivitiesPage'
 
 export default function App() {
   return (
-    <Routes>
-      {/* Public landing page (includes login modal) — no tenant session needed */}
+    <>
+      <Toaster position="top-right" />
+      <Routes>
+        {/* Public landing page (includes login modal) — no tenant session needed */}
       <Route path="/" element={<LandingPage />} />
 
       {/* Super admin area — its own auth context, scoped to this subtree only */}
@@ -99,8 +102,14 @@ export default function App() {
             REDESIGNED_ROLES), not permission-gated like the roster routes
             above: access is cohort-membership-scoped inside the endpoints
             themselves (see server/lib/cohortAccess.js). */}
-        <Route path="class" element={<ClassPage />} />
-        <Route path="class/:cohortId" element={<ClassPage />} />
+        <Route
+          path="class"
+          element={<ClassPage />}
+        />
+        <Route
+          path="class/:cohortId"
+          element={<ClassPage />}
+        />
         <Route path="activities" element={<ActivitiesPage />} />
         <Route
           path="manage-dashboard-apps"
@@ -325,6 +334,7 @@ export default function App() {
           }
         />
       </Route>
-    </Routes>
+      </Routes>
+    </>
   );
 }

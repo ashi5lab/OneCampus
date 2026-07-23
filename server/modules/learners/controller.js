@@ -11,8 +11,8 @@ const classHeadSchema = z.object({ is_class_head: z.boolean() });
 const schoolHeadSchema = z.object({ is_school_head: z.boolean() });
 
 const learnerCreateSchema = z.object({
-  // No username/password here anymore — both are auto-generated (see
-  // create() below) from first_name + registry_no, same as bulk upload.
+  // username is optional; if not provided, it will be auto-generated.
+  username: z.string().optional().nullable(),
   email: z.string().email("A valid email is required").optional().or(z.literal('')),
   registry_no: z.string().min(1, "Registry number is required"),
   first_name: z.string().min(1, "First name is required"),
@@ -110,9 +110,12 @@ async function create(req, res) {
     const parsed = learnerCreateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { email, registry_no, first_name, last_name, cohort_id, status, meta } = parsed.data;
+    const { username: providedUsername, email, registry_no, first_name, last_name, cohort_id, status, meta } = parsed.data;
+    const { withTenantPrefix } = require('../../lib/credentials');
 
-    const username = await generateUniqueUsername(req.db, req.tenantConfig.prefix, first_name, registry_no);
+    const username = providedUsername 
+      ? withTenantPrefix(req.tenantConfig.prefix, providedUsername)
+      : await generateUniqueUsername(req.db, req.tenantConfig.prefix, first_name, registry_no);
     const password = generatePassword();
     const password_hash = await bcrypt.hash(password, 10);
     const finalEmail = email || placeholderEmail(username, req.tenantConfig.domain);

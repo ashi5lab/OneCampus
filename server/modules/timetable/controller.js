@@ -2,6 +2,7 @@ const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
 const { getOwnLearnerId } = require('../../lib/ownLearner');
 const { getOwnGuardianLearnerIds } = require('../../lib/ownGuardianLearners');
+const { hasPermission } = require('../../lib/permissions');
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const HOUR_RE = /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
@@ -97,7 +98,11 @@ async function getAll(req, res) {
     const cohortId = req.query.cohort_id ? Number(req.query.cohort_id) : null;
     if (!cohortId) return res.status(400).json({ error: 'cohort_id is required' });
 
-    if (req.user.role === 'learner') {
+    const hasClassView = await hasPermission(req, 'class.view');
+
+    if (req.user.role === 'admin' || req.user.role === 'staff' || hasClassView) {
+      // Admins, staff, or users explicitly granted class.view bypass strict scoping
+    } else if (req.user.role === 'learner') {
       const ownLearnerId = await getOwnLearnerId(req);
       const learner = await req.db.query('SELECT cohort_id FROM onec_learners WHERE id = $1', [ownLearnerId]);
       if (learner.rows[0]?.cohort_id !== cohortId) return res.status(403).json({ error: 'Not your class timetable' });

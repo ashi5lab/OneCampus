@@ -3,8 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 import { PageHeader, BackButton } from '../../../components/PageHeader';
 import { useAllPermissions, useAccessControlUsers, useCreateAccessGroup, useUpdateAccessGroup, useAccessGroups } from '../hooks/useAccessControl';
+import { useConfig } from '../../../contexts/ConfigContext';
 
 const ROLES = ['admin', 'staff', 'instructor', 'learner', 'guardian'];
+
+const MODULE_LABELS = {
+  'modules': 'Subjects / Courses',
+  'guardian_links': 'Guardians',
+  'instructor_modules': 'Subjects of Teachers',
+  'instructor_cohorts': 'Add teacher to class',
+  'cohorts': 'Manage Class',
+  'class': 'Class Channel',
+  'messages': 'Messages'
+};
 
 function groupByModule(permissions) {
   const groups = new Map();
@@ -20,6 +31,7 @@ export function AccessControlDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = id !== 'new';
+  const { config } = useConfig();
 
   const { data: groups, isLoading: groupsLoading } = useAccessGroups();
   const { data: allPermissions } = useAllPermissions();
@@ -52,7 +64,15 @@ export function AccessControlDetailPage() {
   }, [id, isEdit, groups]);
 
   const usersById = new Map((users || []).map((u) => [u.id, u]));
-  const permissionGroups = groupByModule(allPermissions || []);
+  
+  // Filter out kindergarten_activity if the tenant doesn't have it enabled
+  const isKindergartenActive = config?.active_modules?.includes('kindergarten_activity');
+  const filteredPermissions = (allPermissions || []).filter(p => {
+    if (p.startsWith('kindergarten_activity') && !isKindergartenActive) return false;
+    return true;
+  });
+
+  const permissionGroups = groupByModule(filteredPermissions);
 
   function togglePermission(permission) {
     setPermissions((prev) => {
@@ -202,7 +222,9 @@ export function AccessControlDetailPage() {
               return (
                 <div key={module} className="rounded-lg border border-border bg-surface-muted p-4 shadow-sm">
                   <label className="mb-3 flex items-center justify-between border-b border-border pb-2">
-                    <span className="text-[13px] font-bold uppercase tracking-wide text-ink-900">{module.replace(/_/g, ' ')}</span>
+                    <span className="text-[13px] font-bold uppercase tracking-wide text-ink-900">
+                      {MODULE_LABELS[module] || module.replace(/_/g, ' ')}
+                    </span>
                     <input 
                       type="checkbox" 
                       className="accent-accent"

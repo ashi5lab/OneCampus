@@ -1,3 +1,5 @@
+const { hasPermission } = require('./permissions');
+
 // Resolves which cohorts (classes) the caller belongs to for the "Class"
 // tab — a learner's own single class, or every class an instructor advises
 // (onec_cohorts.advisor_id) or co-teaches (onec_instructor_cohorts). Staff
@@ -14,6 +16,21 @@ async function getMyCohorts(req) {
     (SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE a.status = 'present') / NULLIF(COUNT(*), 0))
        FROM onec_attendance a
       WHERE a.cohort_id = c.id AND a.date >= CURRENT_DATE - 30) AS attendance_rate_30d`;
+
+  if (await hasPermission(req, 'class.view') && role !== 'admin') {
+    // If explicitly granted class.view, they can see ALL cohorts (acting as a skeleton key)
+    const result = await req.db.query(
+      `SELECT c.id, c.name, c.time_block,
+              (SELECT COUNT(*) FROM onec_learners l2 WHERE l2.cohort_id = c.id AND l2.status = 'active') AS learner_count,
+              adv.first_name AS advisor_first_name, adv.last_name AS advisor_last_name,
+              ${attendanceRateSql},
+              true AS is_advisor
+       FROM onec_cohorts c
+       LEFT JOIN onec_instructors adv ON adv.user_id = c.advisor_id
+       ORDER BY c.name`
+    );
+    return result.rows;
+  }
 
   if (role === 'learner') {
     const result = await req.db.query(

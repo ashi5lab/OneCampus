@@ -5,9 +5,10 @@ import { DataTable } from '../../../components/DataTable';
 import { Avatar } from '../../../components/Avatar';
 import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
 import { useStaffPage, useCreateStaff, useUpdateStaff, useDeleteStaff, useSetStaffDesignation } from '../hooks/useStaff';
-import { StaffFormModal } from './StaffFormModal';
+import { StaffForm } from './StaffForm';
 import { DesignationPicker } from '../../../components/DesignationPicker';
 import { idCardsApi } from '../../idCards/services/idCardsApi';
+import toast from 'react-hot-toast';
 
 const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
 
@@ -107,6 +108,45 @@ export function StaffPage() {
     });
   }
 
+  if (showForm || editingStaff) {
+    return (
+      <div className="py-4">
+        {showForm && (
+          <StaffForm
+            onClose={() => setShowForm(false)}
+            submitting={createStaff.isPending}
+            submitError={createStaff.error?.message}
+            onSubmit={(values) =>
+              createStaff.mutate(values, {
+                onSuccess: (created) => {
+                  setShowForm(false);
+                  setNewCredentials({ username: created.username, password: created.password });
+                  toast.success('Staff member added successfully!');
+                }
+              })
+            }
+          />
+        )}
+        {editingStaff && (
+          <StaffForm
+            initialData={editingStaff}
+            onClose={() => setEditingStaff(null)}
+            submitting={updateStaff.isPending}
+            submitError={updateStaff.error?.message}
+            onSubmit={(values) =>
+              updateStaff.mutate({ id: editingStaff.id, payload: values }, { 
+                onSuccess: () => {
+                  setEditingStaff(null);
+                  toast.success('Staff member updated successfully!');
+                } 
+              })
+            }
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       {can('staff.manage') && (
@@ -173,39 +213,11 @@ export function StaffPage() {
         )}
       </div>
 
-      {showForm && (
-        <StaffFormModal
-          onClose={() => setShowForm(false)}
-          submitting={createStaff.isPending}
-          submitError={createStaff.error?.message}
-          onSubmit={(values) =>
-            createStaff.mutate(values, {
-              onSuccess: (created) => {
-                setShowForm(false);
-                setNewCredentials({ username: created.username, password: created.password });
-              }
-            })
-          }
-        />
-      )}
-
       {newCredentials && (
         <GeneratedCredentialsModal
           username={newCredentials.username}
           password={newCredentials.password}
           onClose={() => setNewCredentials(null)}
-        />
-      )}
-
-      {editingStaff && (
-        <StaffFormModal
-          initialData={editingStaff}
-          onClose={() => setEditingStaff(null)}
-          submitting={updateStaff.isPending}
-          submitError={updateStaff.error?.message}
-          onSubmit={(values) =>
-            updateStaff.mutate({ id: editingStaff.id, payload: values }, { onSuccess: () => setEditingStaff(null) })
-          }
         />
       )}
     </div>

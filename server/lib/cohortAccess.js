@@ -1,4 +1,5 @@
 const { getMyCohorts } = require('./myCohorts');
+const { hasPermission } = require('./permissions');
 
 // Whether the caller may view/post in this cohort's class channel.
 // admin/staff already have tenant-wide messaging reach (messages.view/.send
@@ -8,6 +9,8 @@ const { getMyCohorts } = require('./myCohorts');
 async function canAccessCohort(req, cohortId) {
   const role = req.user?.role;
   if (role === 'admin' || role === 'staff') return true;
+
+  if (await hasPermission(req, 'class.view')) return true;
 
   const mine = await getMyCohorts(req);
   return mine.some((c) => c.id === Number(cohortId));

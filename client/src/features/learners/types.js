@@ -6,9 +6,7 @@ import { z } from 'zod';
 // so the form has something to register/validate; LearnerFormModal folds it
 // into `meta` before submitting.
 export const learnerFormSchema = z.object({
-  // No username/password here — both are auto-generated server-side (see
-  // server/modules/learners/controller.js's create()) from first_name +
-  // registry_no.
+  username: z.string().optional(),
   email: z.string().email('A valid email is required').optional().or(z.literal('')),
   registry_no: z.string().min(1, 'Registry number is required'),
   first_name: z.string().min(1, 'First name is required'),

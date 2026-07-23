@@ -8,8 +8,8 @@ const { generateUniqueUsername, generatePassword, placeholderEmail } = require('
 const designationSchema = z.object({ designation: z.enum(['principal', 'vice_principal']).nullable() });
 
 const staffCreateSchema = z.object({
-  // No username/password here anymore — both are auto-generated (see
-  // create() below) from first_name + staff_id, same as bulk upload.
+  // username is optional; if not provided, it will be auto-generated.
+  username: z.string().optional().nullable(),
   email: z.string().email('A valid email is required').optional().or(z.literal('')),
   staff_id: z.string().min(1, 'Staff ID is required'),
   first_name: z.string().min(1, 'First name is required'),
@@ -75,9 +75,12 @@ async function create(req, res) {
     const parsed = staffCreateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { email, staff_id, first_name, last_name, phone, meta } = parsed.data;
+    const { username: providedUsername, email, staff_id, first_name, last_name, phone, meta } = parsed.data;
+    const { withTenantPrefix } = require('../../lib/credentials');
 
-    const username = await generateUniqueUsername(req.db, req.tenantConfig.prefix, first_name, staff_id);
+    const username = providedUsername 
+      ? withTenantPrefix(req.tenantConfig.prefix, providedUsername)
+      : await generateUniqueUsername(req.db, req.tenantConfig.prefix, first_name, staff_id);
     const password = generatePassword();
     const password_hash = await bcrypt.hash(password, 10);
     const finalEmail = email || placeholderEmail(username, req.tenantConfig.domain);

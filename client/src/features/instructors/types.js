@@ -2,9 +2,7 @@ import { z } from 'zod';
 
 // Mirrors server/modules/instructors/controller.js's instructorCreateSchema.
 export const instructorFormSchema = z.object({
-  // No username/password here — both are auto-generated server-side (see
-  // server/modules/instructors/controller.js's create()) from first_name +
-  // staff_id.
+  username: z.string().optional(),
   email: z.string().email('A valid email is required').optional().or(z.literal('')),
   staff_id: z.string().min(1, 'Staff ID is required'),
   first_name: z.string().min(1, 'First name is required'),

@@ -11,7 +11,8 @@ import { GeneratedCredentialsModal } from '../../../components/GeneratedCredenti
 import { PageHeader } from '../../../components/PageHeader';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearnersPage, useCreateLearner, useUpdateLearner, useDeleteLearner, useSetClassHead, useSetSchoolHead } from '../hooks/useLearners';
-import { LearnerFormModal } from './LearnerFormModal';
+import { LearnerForm } from './LearnerForm';
+import toast from 'react-hot-toast';
 
 const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive', alumni: 'pending' };
 const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
@@ -131,6 +132,45 @@ export function LearnersPage() {
     });
   }
 
+  if (showForm || editingLearner) {
+    return (
+      <div className="py-4">
+        {showForm && (
+          <LearnerForm
+            onClose={() => setShowForm(false)}
+            submitting={createLearner.isPending}
+            submitError={createLearner.error?.message}
+            onSubmit={(values) =>
+              createLearner.mutate(values, {
+                onSuccess: (created) => {
+                  setShowForm(false);
+                  setNewCredentials({ username: created.username, password: created.password });
+                  toast.success(`${t('learner')} added successfully!`);
+                }
+              })
+            }
+          />
+        )}
+        {editingLearner && (
+          <LearnerForm
+            initialData={editingLearner}
+            onClose={() => setEditingLearner(null)}
+            submitting={updateLearner.isPending}
+            submitError={updateLearner.error?.message}
+            onSubmit={(values) =>
+              updateLearner.mutate({ id: editingLearner.id, payload: values }, { 
+                onSuccess: () => {
+                  setEditingLearner(null);
+                  toast.success(`${t('learner')} updated successfully!`);
+                } 
+              })
+            }
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader
@@ -225,39 +265,11 @@ export function LearnersPage() {
         )}
       </div>
 
-      {showForm && (
-        <LearnerFormModal
-          onClose={() => setShowForm(false)}
-          submitting={createLearner.isPending}
-          submitError={createLearner.error?.message}
-          onSubmit={(values) =>
-            createLearner.mutate(values, {
-              onSuccess: (created) => {
-                setShowForm(false);
-                setNewCredentials({ username: created.username, password: created.password });
-              }
-            })
-          }
-        />
-      )}
-
       {newCredentials && (
         <GeneratedCredentialsModal
           username={newCredentials.username}
           password={newCredentials.password}
           onClose={() => setNewCredentials(null)}
-        />
-      )}
-
-      {editingLearner && (
-        <LearnerFormModal
-          initialData={editingLearner}
-          onClose={() => setEditingLearner(null)}
-          submitting={updateLearner.isPending}
-          submitError={updateLearner.error?.message}
-          onSubmit={(values) =>
-            updateLearner.mutate({ id: editingLearner.id, payload: values }, { onSuccess: () => setEditingLearner(null) })
-          }
         />
       )}
     </div>

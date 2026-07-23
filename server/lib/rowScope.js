@@ -1,5 +1,6 @@
 const { getOwnLearnerId } = require('./ownLearner');
 const { getOwnGuardianLearnerIds } = require('./ownGuardianLearners');
+const { hasPermission } = require('./permissions');
 
 // Combines the two row-level self-scoping resolvers into the one thing a
 // controller actually needs: the set of learner_ids this caller's role
@@ -9,6 +10,10 @@ const { getOwnGuardianLearnerIds } = require('./ownGuardianLearners');
 // length, including 0 if none are linked yet — see
 // server/modules/guardianLinks).
 async function getScopedLearnerIds(req) {
+  if (await hasPermission(req, 'class.view') && req.user?.role !== 'admin') {
+    return null; // explicit class.view skeleton key bypasses scoping
+  }
+
   const ownLearnerId = await getOwnLearnerId(req);
   if (ownLearnerId !== null) return [ownLearnerId];
 

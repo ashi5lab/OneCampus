@@ -9,9 +9,10 @@ import { GeneratedCredentialsModal } from '../../../components/GeneratedCredenti
 import { useInstructors, useInstructorsPage, useCreateInstructor, useUpdateInstructor, useDeleteInstructor, useSetInstructorDesignation } from '../hooks/useInstructors';
 import { useModules } from '../../modules/hooks/useModules';
 import { useInstructorModules } from '../hooks/useInstructorModules';
-import { InstructorFormModal } from './InstructorFormModal';
+import { InstructorForm } from './InstructorForm';
 import { InstructorModulesModal } from './InstructorModulesModal';
 import { StaffPage } from '../../staff/components/StaffPage';
+import toast from 'react-hot-toast';
 import { DesignationPicker } from '../../../components/DesignationPicker';
 import { PageHeader } from '../../../components/PageHeader';
 
@@ -235,6 +236,45 @@ function TeachersTab() {
     });
   }
 
+  if (showForm || editingInstructor) {
+    return (
+      <div className="py-4">
+        {showForm && (
+          <InstructorForm
+            onClose={() => setShowForm(false)}
+            submitting={createInstructor.isPending}
+            submitError={createInstructor.error?.message}
+            onSubmit={(values) =>
+              createInstructor.mutate(values, {
+                onSuccess: (created) => {
+                  setShowForm(false);
+                  setNewCredentials({ username: created.username, password: created.password });
+                  toast.success(`${t('instructor')} added successfully!`);
+                }
+              })
+            }
+          />
+        )}
+        {editingInstructor && (
+          <InstructorForm
+            initialData={editingInstructor}
+            onClose={() => setEditingInstructor(null)}
+            submitting={updateInstructor.isPending}
+            submitError={updateInstructor.error?.message}
+            onSubmit={(values) =>
+              updateInstructor.mutate({ id: editingInstructor.id, payload: values }, { 
+                onSuccess: () => {
+                  setEditingInstructor(null);
+                  toast.success(`${t('instructor')} updated successfully!`);
+                } 
+              })
+            }
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       {can('instructors.manage') && (
@@ -302,39 +342,11 @@ function TeachersTab() {
         )}
       </div>
 
-      {showForm && (
-        <InstructorFormModal
-          onClose={() => setShowForm(false)}
-          submitting={createInstructor.isPending}
-          submitError={createInstructor.error?.message}
-          onSubmit={(values) =>
-            createInstructor.mutate(values, {
-              onSuccess: (created) => {
-                setShowForm(false);
-                setNewCredentials({ username: created.username, password: created.password });
-              }
-            })
-          }
-        />
-      )}
-
       {newCredentials && (
         <GeneratedCredentialsModal
           username={newCredentials.username}
           password={newCredentials.password}
           onClose={() => setNewCredentials(null)}
-        />
-      )}
-
-      {editingInstructor && (
-        <InstructorFormModal
-          initialData={editingInstructor}
-          onClose={() => setEditingInstructor(null)}
-          submitting={updateInstructor.isPending}
-          submitError={updateInstructor.error?.message}
-          onSubmit={(values) =>
-            updateInstructor.mutate({ id: editingInstructor.id, payload: values }, { onSuccess: () => setEditingInstructor(null) })
-          }
         />
       )}
     </div>
