@@ -188,10 +188,13 @@ function Greeting() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
+  // prioritize profile display name (me.name or user.name) over username
+  const displayName = me?.name || user?.name || user?.username;
+
   return (
     <div>
       <h1 className="text-3xl font-bold text-gray-900">
-        {greeting}, {me?.name || user?.username}! 👋
+        {greeting}, {displayName}! 👋
       </h1>
       <p className="mt-1 text-sm text-gray-600">Here's what's happening in your classes today.</p>
     </div>
