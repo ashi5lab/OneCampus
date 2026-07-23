@@ -6,7 +6,7 @@ import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { useOnlineExams, useOnlineExam, useCreateOnlineExam, useUpdateOnlineExam, useDeleteOnlineExam } from '../hooks/useOnlineExams';
 import { useMarkActivityContextViewed } from '../../activities/hooks/useActivities';
-import { ExamFormModal } from './ExamFormModal';
+import { CreateExamPage } from '../../exams/components/CreateExamPage';
 import { ExamCalendar } from './ExamCalendar';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 
@@ -27,9 +27,8 @@ export function ClassExamsTab({ cohortId }) {
   
   useMarkActivityContextViewed(`exams_${cohortId}`);
 
-  const [showForm, setShowForm] = useState(false);
   const [editingExamId, setEditingExamId] = useState(null);
-  const [view, setView] = useState('list'); // 'list' or 'calendar'
+  const [view, setView] = useState('list'); // 'list', 'calendar', or 'create'
 
   const scoped = useMemo(() => (exams || []).filter((e) => e.cohort_id === cohortId), [exams, cohortId]);
 
@@ -108,9 +107,9 @@ export function ClassExamsTab({ cohortId }) {
             Calendar View
           </button>
         </div>
-        {canCreate && (
+        {canCreate && view !== 'create' && (
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => setView('create')}
             className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
           >
             + Create Exam
@@ -142,13 +141,19 @@ export function ClassExamsTab({ cohortId }) {
         </Link>
       )}
 
-      {showForm && (
-        <ExamFormModal
-          initialData={{ cohort_id: cohortId }}
-          onClose={() => setShowForm(false)}
+      {view === 'create' && (
+        <CreateExamPage
+          onCancel={() => setView('list')}
+          onSubmit={(values) =>
+            createExam.mutate(values, {
+              onSuccess: () => {
+                setView('list');
+              },
+            })
+          }
           submitting={createExam.isPending}
           submitError={createExam.error?.message}
-          onSubmit={(values) => createExam.mutate(values, { onSuccess: () => setShowForm(false) })}
+          initialCohortId={cohortId}
         />
       )}
 

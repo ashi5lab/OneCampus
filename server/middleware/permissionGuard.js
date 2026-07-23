@@ -5,6 +5,14 @@ const { logAudit } = require('../lib/audit');
 // and after tenantDb (needs req.db). Mirrors moduleGuard.js's shape.
 module.exports = (permission) => async (req, res, next) => {
   try {
+    // Override/allow read-only lookups for active instructors creating exams
+    const isInstructor = req.user?.role === 'instructor';
+    const isReadOnlyLookup = ['modules.view', 'cohorts.view', 'instructors.view'].includes(permission);
+    
+    if (isInstructor && isReadOnlyLookup) {
+      return next();
+    }
+
     if (!(await hasPermission(req, permission))) {
       logAudit(req, 'permission.denied', { permission, path: req.originalUrl, method: req.method });
       return res.status(403).json({ error: `Missing permission: ${permission}` });
