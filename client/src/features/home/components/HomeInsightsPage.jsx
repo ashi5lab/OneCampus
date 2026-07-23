@@ -36,12 +36,16 @@ export function HomeInsightsPage() {
     <div className="space-y-6">
       <Greeting />
       <SummaryCards role={role} report={report} inbox={inbox} />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <TodaySchedule role={role} timetable={timetable} />
-          <RecentActivity activities={activities} />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column */}
         <div className="space-y-6">
+          <TodaySchedule role={role} timetable={timetable} />
+          <RecentMessages inbox={inbox} />
+          <DueAssignments report={report} />
+        </div>
+        {/* Right Column */}
+        <div className="space-y-6">
+          <RecentActivity activities={activities} />
           <CalendarWidget />
           <NoticesSection notices={notices} />
         </div>
@@ -247,6 +251,72 @@ function NoticesSection({ notices }) {
   );
 }
 
+// Recent Messages Section
+function RecentMessages({ inbox }) {
+  const items = (inbox || []).slice(0, 3);
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-ink-900">Recent Messages</h2>
+        <Link to="/app/messages" className="text-sm font-semibold text-accent hover:text-accent-dark">
+          View all →
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-center py-8 text-ink-500">No messages yet</p>
+      ) : (
+        <div className="divide-y divide-border">
+          {items.map((msg) => (
+            <div key={msg.id} className="py-3 first:pt-0 last:pb-0 flex items-start gap-3">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
+                {msg.sender_username?.slice(0, 2).toUpperCase() || 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-ink-900 text-sm">{msg.sender_username}</p>
+                  {!msg.is_read && <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent" />}
+                </div>
+                <p className="text-sm text-ink-500 truncate">{msg.subject || msg.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Due Assignments Section
+function DueAssignments({ report }) {
+  const items = report?.pendingActions?.filter(a => a.type === 'assignment') || [];
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-ink-900">Due Assignments</h2>
+        <Link to="/app/assignments" className="text-sm font-semibold text-accent hover:text-accent-dark">
+          View all →
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-center py-8 text-ink-500">No pending assignments</p>
+      ) : (
+        <div className="divide-y divide-border">
+          {items.slice(0, 3).map((item, idx) => (
+            <div key={idx} className="py-3 first:pt-0 last:pb-0">
+              <p className="font-medium text-ink-900 text-sm">{item.title}</p>
+              {item.subtitle && <p className="text-xs text-danger mt-1">{item.subtitle}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Quick Actions
 function QuickActions({ role }) {
   const actions = [
@@ -254,6 +324,9 @@ function QuickActions({ role }) {
     { label: 'View Timetable', icon: '📅', to: '/app/timetable', roles: ['learner', 'instructor'] },
     { label: 'Submit Assignment', icon: '📝', to: '/app/assignments', roles: ['learner'] },
     { label: 'View Exams', icon: '📚', to: '/app/exams', roles: ['learner', 'instructor'] },
+    { label: 'Check Results', icon: '📊', to: '/app/results', roles: ['learner'] },
+    { label: 'Ask Doubt', icon: '❓', to: '/app/messages', roles: ['learner'] },
+    { label: 'School Library', icon: '📚', to: '/app/library', roles: ['learner'] },
   ];
 
   const filtered = actions.filter(a => a.roles.includes(role));
@@ -261,7 +334,7 @@ function QuickActions({ role }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-6">
       <h2 className="text-lg font-semibold text-ink-900 mb-4">Quick Actions</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {filtered.map((action) => (
           <Link
             key={action.to}
