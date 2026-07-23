@@ -4,11 +4,27 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useAllFeatureLinks } from '../../../hooks/useNavLinks';
 import { ModuleBadge } from '../../../components/ModuleBadge';
 import { PageHeader } from '../../../components/PageHeader';
-import { UserSearchSelect } from '../../../components/UserSearchSelect';
-import { useAllUsers, useAdminChangePassword, useForceLogoutUser } from '../../profile/hooks/useProfile';
 
-// Full feature directory — every module this user can access, regardless
-// of whether it's pinned to the Dashboard's "Your Modules" grid.
+// Grouping mapping based on the module keys
+const CATEGORIES = [
+  {
+    name: 'People',
+    keys: ['learners', 'instructors', 'guardians', 'alumni']
+  },
+  {
+    name: 'Academics',
+    keys: ['cohorts', 'class-channels', 'units', 'modules', 'exams', 'timetable', 'kindergarten-activity', 'library']
+  },
+  {
+    name: 'Management',
+    keys: ['attendance', 'staff-attendance', 'assignments', 'messages', 'broadcast', 'leave', 'calendar', 'reports', 'discipline', 'ptm', 'visitors']
+  },
+  {
+    name: 'System & Admin',
+    keys: ['app-management', 'access-control', 'bulk-upload']
+  }
+];
+
 export function MorePage() {
   const { can } = useAuth();
   const links = useAllFeatureLinks();
@@ -18,22 +34,34 @@ export function MorePage() {
   const query = search.trim().toLowerCase();
   const filtered = query
     ? links.filter(
-        (link) =>
-          link.label.toLowerCase().includes(query) ||
-          link.description.toLowerCase().includes(query)
-      )
+      (link) =>
+        link.label.toLowerCase().includes(query) ||
+        link.description.toLowerCase().includes(query)
+    )
     : links;
 
-  // Settings lives on this directory too (mobile's bottom tab bar has no
-  // Settings destination of its own) — always the last card, and it joins
-  // the search like any feature would.
   const showSettings = !query || 'settings'.includes(query) || 'account preferences'.includes(query);
+  const showAdminTools = canManagePasswords && (!query || 'admin tools password reset force logout'.includes(query));
+
+  // Settings & Custom Admin Link structures to group them easily
+  const settingsLink = { key: 'settings', to: '/app/profile', label: 'Settings', description: 'Account preferences' };
+  const adminToolsLink = { key: 'admin-tools', to: '/app/admin-tools', label: 'Admin Tools', description: 'Reset credentials' };
+
+  // Prepare grouped features for mobile categorized list view
+  const categorizedData = CATEGORIES.map(category => {
+    let catLinks = filtered.filter(link => category.keys.includes(link.key));
+    if (category.name === 'System & Admin') {
+      if (showAdminTools) catLinks.push(adminToolsLink);
+      if (showSettings) catLinks.push(settingsLink);
+    }
+    return { name: category.name, items: catLinks };
+  }).filter(cat => cat.items.length > 0);
 
   return (
-    <div className="max-w-[860px]">
+    <div className="w-full">
       <PageHeader title="More Apps" />
 
-      <div className="mb-5">
+      <div className="mb-6">
         <input
           className="input w-full"
           placeholder="Search all features…"
@@ -48,170 +76,92 @@ export function MorePage() {
         </div>
       )}
 
-      {(filtered.length > 0 || showSettings) && (
-        <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-          {filtered.map((link) => (
-            <Link
-              key={link.key}
-              to={link.to}
-              className="flex items-center gap-3 rounded border border-border bg-surface p-3.5 transition hover:border-accent"
-            >
-              <ModuleBadge moduleKey={link.key} label={link.label} />
-              <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-semibold text-ink-900">{link.label}</div>
-                <div className="truncate text-[12px] text-ink-500">{link.description}</div>
-              </div>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="flex-shrink-0 text-ink-500">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+      {/* Desktop Layout: Premium Responsive Grid Cards */}
+      <div className="hidden md:grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+        {filtered.map((link) => (
+          <Link
+            key={link.key}
+            to={link.to}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3.5 transition hover:border-accent hover:shadow-sm"
+          >
+            <ModuleBadge moduleKey={link.key} label={link.label} />
+            <div className="min-w-0 flex-1">
+              <div className="text-[13.5px] font-bold text-ink-900 leading-tight truncate">{link.label}</div>
+              <div className="truncate text-[12.5px] text-ink-500 mt-0.5">{link.description}</div>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="flex-shrink-0 text-ink-500">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+            </svg>
+          </Link>
+        ))}
+        {showSettings && (
+          <Link
+            to="/app/profile"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3.5 transition hover:border-accent hover:shadow-sm"
+          >
+            <div className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-xl bg-ink-900 text-white font-bold transition-transform duration-200 group-hover:scale-105">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6zM4.5 12a7.5 7.5 0 01.2-1.7l-2-1.5 2-3.4 2.3.9a7.6 7.6 0 011.5-.9l.3-2.4h4l.3 2.4a7.6 7.6 0 011.5.9l2.3-.9 2 3.4-2 1.5c.1.5.2 1.1.2 1.7s-.1 1.2-.2 1.7l2 1.5-2 3.4-2.3-.9a7.6 7.6 0 01-1.5.9l-.3 2.4h-4l-.3-2.4a7.6 7.6 0 01-1.5-.9l-2.3.9-2-3.4 2-1.5A7.5 7.5 0 014.5 12z" />
               </svg>
-            </Link>
-          ))}
-          {showSettings && (
-            <Link
-              to="/app/profile"
-              className="flex items-center gap-3 rounded border border-border bg-surface p-3.5 transition hover:border-accent"
-            >
-              <div className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded bg-ink-900 text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6zM4.5 12a7.5 7.5 0 01.2-1.7l-2-1.5 2-3.4 2.3.9a7.6 7.6 0 011.5-.9l.3-2.4h4l.3 2.4a7.6 7.6 0 011.5.9l2.3-.9 2 3.4-2 1.5c.1.5.2 1.1.2 1.7s-.1 1.2-.2 1.7l2 1.5-2 3.4-2.3-.9a7.6 7.6 0 01-1.5.9l-.3 2.4h-4l-.3-2.4a7.6 7.6 0 01-1.5-.9l-2.3.9-2-3.4 2-1.5A7.5 7.5 0 014.5 12z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-semibold text-ink-900">Settings</div>
-                <div className="truncate text-[12px] text-ink-500">Account, notifications, password & display</div>
-              </div>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="flex-shrink-0 text-ink-500">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
-              </svg>
-            </Link>
-          )}
-        </div>
-      )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[13.5px] font-bold text-ink-900 leading-tight">Settings</div>
+              <div className="truncate text-[12.5px] text-ink-500 mt-0.5">Account & preference settings</div>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="flex-shrink-0 text-ink-500">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+            </svg>
+          </Link>
+        )}
+        {showAdminTools && (
+          <Link
+            to="/app/admin-tools"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3.5 transition hover:border-accent hover:shadow-sm"
+          >
+            <div className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold transition-transform duration-200 group-hover:scale-105">
+              <span className="text-lg">🛡️</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[13.5px] font-bold text-ink-900 leading-tight">Admin Tools</div>
+              <div className="truncate text-[12.5px] text-ink-500 mt-0.5">Reset credentials & logouts</div>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="flex-shrink-0 text-ink-500">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+            </svg>
+          </Link>
+        )}
+      </div>
 
-      {canManagePasswords && !search.trim() && (
-        <div className="mt-8">
-          <PageHeader title="Admin Tools" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <AdminPasswordResetCard />
-            <ForceLogoutCard />
+      {/* Mobile Layout: Categorized Lists */}
+      <div className="md:hidden space-y-6">
+        {categorizedData.map((category, catIdx) => (
+          <div key={catIdx} className="space-y-2">
+            <h3 className="text-xs font-bold text-ink-400 uppercase tracking-wider px-1">
+              {category.name}
+            </h3>
+            <div className="rounded-2xl border border-border bg-surface divide-y divide-border overflow-hidden">
+              {category.items.map((item) => (
+                <Link
+                  key={item.key}
+                  to={item.to}
+                  className="flex items-center gap-4 p-4 active:bg-gray-50/50 transition-colors"
+                >
+                  <ModuleBadge moduleKey={item.key} label={item.label} size={36} />
+                  <span className="flex-1 min-w-0 text-[14px] font-semibold text-ink-900">
+                    {item.label}
+                  </span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="text-ink-400 flex-shrink-0">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+                  </svg>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AdminPasswordResetCard() {
-  const { data: users } = useAllUsers({ enabled: true });
-  const adminChangePassword = useAdminChangePassword();
-  const [userId, setUserId] = useState(null);
-  const [next, setNext] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [formError, setFormError] = useState('');
-  const [savedFor, setSavedFor] = useState(null);
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    setFormError('');
-    setSavedFor(null);
-    if (!userId) return setFormError('Choose a user.');
-    if (next.length < 8) return setFormError('New password must be at least 8 characters.');
-    if (next !== confirm) return setFormError('Passwords do not match.');
-
-    adminChangePassword.mutate(
-      { userId, payload: { new_password: next } },
-      {
-        onSuccess: (data) => {
-          setSavedFor(data.username);
-          setUserId(null);
-          setNext('');
-          setConfirm('');
-        }
-      }
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="rounded border border-border bg-surface p-5">
-      <div className="mb-1 text-[15px] font-bold text-ink-900">Reset Password</div>
-      <div className="mb-4 text-[12px] text-ink-500">
-        Sets a new password for any user without needing their current one.
-      </div>
-
-      <label className="mb-3 block">
-        <div className="mb-1 text-xs font-semibold text-ink-700">User</div>
-        <UserSearchSelect users={users || []} value={userId} onChange={setUserId} placeholder="Search users…" />
-      </label>
-      <label className="mb-3 block">
-        <div className="mb-1 text-xs font-semibold text-ink-700">New Password</div>
-        <input type="password" className="input" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
-      </label>
-      <label className="mb-4 block">
-        <div className="mb-1 text-xs font-semibold text-ink-700">Confirm Password</div>
-        <input type="password" className="input" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
-      </label>
-
-      {(formError || adminChangePassword.error) && (
-        <div className="mb-3 text-xs font-semibold text-danger">{formError || adminChangePassword.error.message}</div>
-      )}
-      {savedFor && <div className="mb-3 text-xs font-semibold text-success">Password reset for {savedFor}.</div>}
-
-      <button
-        type="submit"
-        disabled={adminChangePassword.isPending || !userId || !next || !confirm}
-        className="rounded bg-accent px-4 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60 w-full"
-      >
-        {adminChangePassword.isPending ? 'Saving…' : 'Reset Password'}
-      </button>
-    </form>
-  );
-}
-
-function ForceLogoutCard() {
-  const { data: users } = useAllUsers({ enabled: true });
-  const forceLogout = useForceLogoutUser();
-  const [userId, setUserId] = useState(null);
-  const [doneFor, setDoneFor] = useState(null);
-
-  function handleClick() {
-    if (!userId) return;
-    const target = (users || []).find((u) => u.id === userId);
-    if (!window.confirm(`Log out ${target?.username || 'this user'} everywhere?`)) return;
-
-    setDoneFor(null);
-    forceLogout.mutate(userId, {
-      onSuccess: (data) => {
-        setDoneFor(data.username);
-        setUserId(null);
-      }
-    });
-  }
-
-  return (
-    <div className="rounded border border-border bg-surface p-5 flex flex-col">
-      <div className="mb-1 text-[15px] font-bold text-ink-900">Force Logout</div>
-      <div className="mb-4 text-[12px] text-ink-500">
-        Ends a user's session on every device immediately.
-      </div>
-
-      <label className="mb-4 block">
-        <div className="mb-1 text-xs font-semibold text-ink-700">User</div>
-        <UserSearchSelect users={users || []} value={userId} onChange={setUserId} placeholder="Search users…" />
-      </label>
-
-      <div className="mt-auto">
-        {forceLogout.error && <div className="mb-3 text-xs font-semibold text-danger">{forceLogout.error.message}</div>}
-        {doneFor && <div className="mb-3 text-xs font-semibold text-success">{doneFor} logged out.</div>}
-
-        <button
-          type="button"
-          onClick={handleClick}
-          disabled={forceLogout.isPending || !userId}
-          className="rounded border border-danger px-4 py-2 text-xs font-semibold text-danger disabled:opacity-60 w-full hover:bg-danger hover:text-white transition"
-        >
-          {forceLogout.isPending ? 'Logging out…' : 'Force Logout'}
-        </button>
+        ))}
       </div>
     </div>
   );
 }
+
+
+

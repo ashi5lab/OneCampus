@@ -36,6 +36,7 @@ import { ReportsPage } from './features/reports/components/ReportsPage';
 import { ProfilePage } from './features/profile/components/ProfilePage';
 import { ManageDashboardAppsPage } from './features/sidebarSettings/components/ManageDashboardAppsPage';
 import { MorePage } from './features/more/components/MorePage';
+import { AdminToolsPage } from './features/more/components/AdminToolsPage';
 import { BroadcastPage } from './features/broadcast/components/BroadcastPage';
 import { AccessControlPage } from './features/accessControl/components/AccessControlPage';
 import { AccessControlDetailPage } from './features/accessControl/components/AccessControlDetailPage';
@@ -97,6 +98,14 @@ export default function App() {
             admin reset section hides itself without users.manage_passwords). */}
         <Route path="profile" element={<ProfilePage />} />
         <Route path="more" element={<MorePage />} />
+        <Route
+          path="admin-tools"
+          element={
+            <RequirePermission permission="users.manage_passwords">
+              <AdminToolsPage />
+            </RequirePermission>
+          }
+        />
         {/* Learner/instructor/staff redesign — Class/Activities are new,
             fixed nav destinations (see BottomTabBar/Sidebar's
             REDESIGNED_ROLES), not permission-gated like the roster routes

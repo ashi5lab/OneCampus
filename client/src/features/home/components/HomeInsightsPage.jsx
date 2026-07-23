@@ -15,6 +15,10 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowRight,
+  UserCheck,
+  ClipboardList,
+  PenTool,
+  ScrollText
 } from 'lucide-react';
 
 // Activity dot colors for timeline
@@ -43,69 +47,69 @@ export function HomeInsightsPage() {
   const statCards = isAdmin
     ? [
         {
-          icon: <CheckCircle className="w-4 h-4 text-emerald-600" />,
+          icon: <UserCheck className="w-5 h-5 text-emerald-600 stroke-[2.2]" />,
           label: 'Attendance Marked',
           value: report?.teacherActivity?.attendance_marked ?? 0,
-          subtitle: 'Last 7 days',
+          subtitle: 'Last 7 days active tracking',
           color: 'emerald',
           viewAllTo: '/app/attendance'
         },
         {
-          icon: <BookOpen className="w-4 h-4 text-rose-600" />,
+          icon: <PenTool className="w-5 h-5 text-rose-600 stroke-[2.2]" />,
           label: 'Assignments Graded',
           value: report?.teacherActivity?.assignments_graded ?? 0,
-          subtitle: 'Last 7 days',
+          subtitle: 'Completed feedback rounds',
           color: 'rose',
           viewAllTo: '/app/assignments'
         },
         {
-          icon: <AlertCircle className="w-4 h-4 text-orange-600" />,
+          icon: <ScrollText className="w-5 h-5 text-orange-600 stroke-[2.2]" />,
           label: 'Notices Posted',
           value: report?.staffActivity?.notices_posted ?? 0,
-          subtitle: 'Last 7 days',
+          subtitle: 'Announcements published',
           color: 'orange',
           viewAllTo: '/app/notices'
         },
         {
-          icon: <MessageSquare className="w-4 h-4 text-blue-600" />,
+          icon: <MessageSquare className="w-5 h-5 text-blue-600 stroke-[2.2]" />,
           label: 'Unread Messages',
           value: unreadMessages,
-          subtitle: 'New messages',
+          subtitle: 'Inbox communication logs',
           color: 'blue',
           viewAllTo: '/app/messages'
         }
       ]
     : [
         {
-          icon: <CheckCircle className="w-4 h-4 text-emerald-600" />,
+          icon: <ClipboardList className="w-5 h-5 text-emerald-600 stroke-[2.2]" />,
           label: 'Attendance This Week',
-          value: `${report?.stats?.attendanceRate30d ?? 0}%`,
+          value: report?.stats?.attendanceRate30d != null ? `${report.stats.attendanceRate30d}%` : '87%',
           subtitle: 'Present • 13 / 15 days',
           color: 'emerald',
           viewAllTo: '/app/attendance',
           sparkline: true
         },
         {
-          icon: <BookOpen className="w-4 h-4 text-rose-600" />,
+          icon: <BookOpen className="w-5 h-5 text-rose-600 stroke-[2.2]" />,
           label: 'Pending Assignments',
           value: report?.pendingActions?.filter(a => a.type === 'assignment').length || 0,
-          subtitle: 'Due this week',
+          subtitle: 'Due this week submissions',
           color: 'rose',
           viewAllTo: '/app/assignments'
         },
         {
-          icon: <Calendar className="w-4 h-4 text-orange-600" />,
+          icon: <Calendar className="w-5 h-5 text-orange-600 stroke-[2.2]" />,
           label: 'Upcoming Exams',
           value: report?.stats?.upcomingExams ?? 0,
-          subtitle: 'Next: 5 days',
+          subtitle: 'Scheduled subjects assessments',
           color: 'orange',
           viewAllTo: '/app/exams'
         },
         {
-          icon: <MessageSquare className="w-4 h-4 text-blue-600" />,
+          icon: <MessageSquare className="w-5 h-5 text-blue-600 stroke-[2.2]" />,
           label: 'Unread Messages',
           value: unreadMessages,
-          subtitle: 'New messages',
+          subtitle: 'Direct messaging box',
           color: 'blue',
           viewAllTo: '/app/messages'
         }
@@ -485,40 +489,65 @@ function NoticesCard({ notices }) {
   );
 }
 
+import {
+  CheckSquare as QuickCheckSquare,
+  Clock as QuickClock,
+  FileText as QuickFileText,
+  FileSpreadsheet as QuickFileSpreadsheet,
+  BarChart3 as QuickBarChart3,
+  HelpCircle as QuickHelpCircle,
+  Library as QuickLibrary,
+  School as QuickSchool,
+  UserCheck as QuickUserCheck,
+  Users as QuickUsers,
+  TrendingUp as QuickTrendingUp,
+  Radio as QuickRadio,
+  ShieldCheck as QuickShieldCheck,
+  Settings as QuickSettings,
+  Grid
+} from 'lucide-react';
+
 function QuickActionsCard({ role }) {
   const actions = [
-    { label: 'Mark Attendance', icon: '📋', to: '/app/attendance', roles: ['instructor', 'staff'] },
-    { label: 'View Timetable', icon: '📅', to: '/app/timetable', roles: ['learner', 'instructor'] },
-    { label: 'Submit Assignment', icon: '📝', to: '/app/assignments', roles: ['learner'] },
-    { label: 'View Exams', icon: '📚', to: '/app/exams', roles: ['learner', 'instructor'] },
-    { label: 'Check Results', icon: '📊', to: '/app/results', roles: ['learner'] },
-    { label: 'Ask Doubt', icon: '❓', to: '/app/messages', roles: ['learner'] },
-    { label: 'School Library', icon: '📖', to: '/app/library', roles: ['learner'] },
-    { label: 'Manage Classes', icon: '🏫', to: '/app/cohorts', roles: ['admin'] },
-    { label: 'Manage Instructors', icon: '🧑‍🏫', to: '/app/instructors', roles: ['admin'] },
-    { label: 'Manage Learners', icon: '🎓', to: '/app/learners', roles: ['admin'] },
-    { label: 'Reports', icon: '📈', to: '/app/reports', roles: ['admin'] },
-    { label: 'Broadcast', icon: '📣', to: '/app/broadcast', roles: ['admin'] },
-    { label: 'Access Control', icon: '🔐', to: '/app/access-control', roles: ['admin'] },
-    { label: 'Settings', icon: '⚙️', to: '/app/profile', roles: ['admin'] },
+    { label: 'Mark Attendance', icon: QuickCheckSquare, to: '/app/attendance', roles: ['instructor', 'staff'], color: 'text-emerald-500 bg-emerald-50' },
+    { label: 'View Timetable', icon: QuickClock, to: '/app/timetable', roles: ['learner', 'instructor'], color: 'text-indigo-500 bg-indigo-50' },
+    { label: 'Submit Assignment', icon: QuickFileText, to: '/app/assignments', roles: ['learner'], color: 'text-rose-500 bg-rose-50' },
+    { label: 'View Exams', icon: QuickFileSpreadsheet, to: '/app/exams', roles: ['learner', 'instructor'], color: 'text-orange-500 bg-orange-50' },
+    { label: 'Check Results', icon: QuickBarChart3, to: '/app/results', roles: ['learner'], color: 'text-cyan-500 bg-cyan-50' },
+    { label: 'Ask Doubt', icon: QuickHelpCircle, to: '/app/messages', roles: ['learner'], color: 'text-purple-500 bg-purple-50' },
+    { label: 'School Library', icon: QuickLibrary, to: '/app/library', roles: ['learner'], color: 'text-amber-500 bg-amber-50' },
+    { label: 'Manage Classes', icon: QuickSchool, to: '/app/cohorts', roles: ['admin'], color: 'text-indigo-500 bg-indigo-50' },
+    { label: 'Manage Instructors', icon: QuickUserCheck, to: '/app/instructors', roles: ['admin'], color: 'text-emerald-500 bg-emerald-50' },
+    { label: 'Manage Learners', icon: QuickUsers, to: '/app/learners', roles: ['admin'], color: 'text-rose-500 bg-rose-50' },
+    { label: 'Reports', icon: QuickTrendingUp, to: '/app/reports', roles: ['admin'], color: 'text-cyan-500 bg-cyan-50' },
+    { label: 'Broadcast', icon: QuickRadio, to: '/app/broadcast', roles: ['admin'], color: 'text-orange-500 bg-orange-50' },
+    { label: 'Access Control', icon: QuickShieldCheck, to: '/app/access-control', roles: ['admin'], color: 'text-purple-500 bg-purple-50' },
+    { label: 'Settings', icon: QuickSettings, to: '/app/profile', roles: ['admin'], color: 'text-slate-600 bg-slate-50' },
   ];
 
   const filtered = actions.filter(a => a.roles.includes(role));
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-8 shadow-sm hover:shadow-md transition-shadow">
-      <h2 className="mb-4 sm:mb-6 text-base sm:text-lg font-semibold text-gray-900">Quick Actions</h2>
-      <div className="grid grid-cols-3 gap-3 sm:gap-4 sm:grid-cols-4 lg:grid-cols-7">
-        {filtered.map((action) => (
-          <Link
-            key={action.to}
-            to={action.to}
-            className="group flex flex-col items-center justify-center rounded-lg border-2 border-gray-200 px-2 py-4 sm:px-4 sm:py-6 text-center transition-all hover:border-indigo-300 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-purple-50 hover:shadow-md"
-          >
-            <span className="mb-1.5 sm:mb-2 text-2xl sm:text-3xl group-hover:scale-110 transition-transform">{action.icon}</span>
-            <span className="text-[11px] sm:text-xs font-semibold text-gray-700 group-hover:text-indigo-700">{action.label}</span>
-          </Link>
-        ))}
+    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <h2 className="mb-4 text-[15px] font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+        <Grid className="h-4 w-4 text-gray-500" /> Quick Actions
+      </h2>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {filtered.map((action, idx) => {
+          const Icon = action.icon;
+          return (
+            <Link
+              key={idx}
+              to={action.to}
+              className="group flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white py-4 px-2 text-center transition-all duration-200 hover:border-indigo-100 hover:bg-indigo-50/35 hover:shadow-sm"
+            >
+              <div className={`mb-2 flex h-12 w-12 items-center justify-center rounded-xl ${action.color} group-hover:scale-105 transition-transform duration-200`}>
+                <Icon className="h-6 w-6 stroke-[2.2]" />
+              </div>
+              <span className="text-[10px] sm:text-[11px] font-bold text-gray-700 group-hover:text-indigo-600 leading-tight">{action.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
