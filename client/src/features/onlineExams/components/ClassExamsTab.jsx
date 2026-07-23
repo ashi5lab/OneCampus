@@ -7,6 +7,7 @@ import { Badge } from '../../../components/Badge';
 import { useOnlineExams, useOnlineExam, useCreateOnlineExam, useUpdateOnlineExam, useDeleteOnlineExam } from '../hooks/useOnlineExams';
 import { useMarkActivityContextViewed } from '../../activities/hooks/useActivities';
 import { ExamFormModal } from './ExamFormModal';
+import { ExamCalendar } from './ExamCalendar';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 
 const STATUS_LABEL = { in_progress: 'In progress', submitted: 'Submitted', graded: 'Graded' };
@@ -28,6 +29,7 @@ export function ClassExamsTab({ cohortId }) {
 
   const [showForm, setShowForm] = useState(false);
   const [editingExamId, setEditingExamId] = useState(null);
+  const [view, setView] = useState('list'); // 'list' or 'calendar'
 
   const scoped = useMemo(() => (exams || []).filter((e) => e.cohort_id === cohortId), [exams, cohortId]);
 
@@ -82,22 +84,57 @@ export function ClassExamsTab({ cohortId }) {
 
   return (
     <div>
-      {canCreate && (
-        <div className="mb-4 flex justify-end">
+      {/* Header with view toggle and create button */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex gap-2 border border-border rounded-lg p-1 bg-surface">
+          <button
+            onClick={() => setView('list')}
+            className={`px-3 py-1.5 text-xs font-semibold rounded transition-colors ${
+              view === 'list'
+                ? 'bg-accent text-accent-ink'
+                : 'text-ink-700 hover:bg-surface-muted'
+            }`}
+          >
+            List View
+          </button>
+          <button
+            onClick={() => setView('calendar')}
+            className={`px-3 py-1.5 text-xs font-semibold rounded transition-colors ${
+              view === 'calendar'
+                ? 'bg-accent text-accent-ink'
+                : 'text-ink-700 hover:bg-surface-muted'
+            }`}
+          >
+            Calendar View
+          </button>
+        </div>
+        {canCreate && (
           <button
             onClick={() => setShowForm(true)}
             className="rounded-full bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink"
           >
             + Create Exam
           </button>
+        )}
+      </div>
+
+      {/* List View */}
+      {view === 'list' && (
+        <div className="overflow-hidden rounded border border-border bg-surface">
+          {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
+          {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
+          {!isLoading && !error && <DataTable columns={columns} rows={scoped} rowKey={(row) => row.id} emptyMessage="No exams yet." />}
         </div>
       )}
 
-      <div className="overflow-hidden rounded border border-border bg-surface">
-        {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
-        {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
-        {!isLoading && !error && <DataTable columns={columns} rows={scoped} rowKey={(row) => row.id} emptyMessage="No exams yet." />}
-      </div>
+      {/* Calendar View */}
+      {view === 'calendar' && (
+        <div className="max-w-2xl">
+          {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
+          {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
+          {!isLoading && !error && <ExamCalendar exams={scoped} />}
+        </div>
+      )}
 
       {canCreate && (
         <Link to="/app/exams" className="mt-3 inline-block text-xs font-semibold text-ink-500 hover:text-ink-900">

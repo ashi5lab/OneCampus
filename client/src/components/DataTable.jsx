@@ -122,32 +122,54 @@ export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records fo
       </div>
 
       {/* Pagination Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-surface-muted bg-surface px-5 py-3.5">
-        <div className="text-[12px] text-ink-500">
-          Showing <span className="font-semibold text-ink-700">{Math.min(startIndex + 1, totalCount)}</span>–<span className="font-semibold text-ink-700">{Math.min(startIndex + effectivePageSize, totalCount)}</span> of <span className="font-semibold text-ink-700">{totalCount}</span>
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrev}
-              disabled={currentPage === 1}
-              className="rounded border border-border bg-surface px-3 py-1.5 text-[12px] font-semibold text-ink-700 hover:bg-surface-muted disabled:opacity-40 disabled:hover:bg-surface"
-            >
-              ← Previous
-            </button>
-            <span className="px-1 text-[12px] font-semibold text-ink-500">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={handleNext}
-              disabled={currentPage === totalPages}
-              className="rounded border border-border bg-surface px-3 py-1.5 text-[12px] font-semibold text-ink-700 hover:bg-surface-muted disabled:opacity-40 disabled:hover:bg-surface"
-            >
-              Next →
-            </button>
+      {totalPages > 1 && (
+        <div className="border-t border-surface-muted bg-surface px-5 py-3.5">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <div className="text-[12px] text-ink-500">
+              Showing <span className="font-semibold text-ink-700">{Math.min(startIndex + 1, totalCount)}</span>–
+              <span className="font-semibold text-ink-700">{Math.min(startIndex + effectivePageSize, totalCount)}</span> of{' '}
+              <span className="font-semibold text-ink-700">{totalCount}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePrev}
+                disabled={currentPage === 1}
+                className="rounded border border-border bg-surface px-3 py-1.5 text-[12px] font-semibold text-ink-700 hover:bg-surface-muted disabled:opacity-40 disabled:hover:bg-surface transition-colors"
+              >
+                ← Previous
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const pageNum = i + 1;
+                  const isActive = pageNum === currentPage;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() =>
+                        serverPagination ? serverPagination.onPageChange(pageNum) : setInternalPage(pageNum)
+                      }
+                      className={`h-8 w-8 rounded text-[12px] font-semibold transition-colors ${
+                        isActive
+                          ? 'bg-accent text-accent-ink hover:bg-accent-dark'
+                          : 'border border-border bg-surface text-ink-700 hover:bg-surface-muted'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={handleNext}
+                disabled={currentPage === totalPages}
+                className="rounded border border-border bg-surface px-3 py-1.5 text-[12px] font-semibold text-ink-700 hover:bg-surface-muted disabled:opacity-40 disabled:hover:bg-surface transition-colors"
+              >
+                Next →
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </>
   );
 }

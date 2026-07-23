@@ -10,6 +10,7 @@ import { ClassExamsTab } from '../../onlineExams/components/ClassExamsTab';
 import { ClassTimetableTab } from '../../timetable/components/ClassTimetableTab';
 import { ClassAttendanceTab } from '../../attendance/components/ClassAttendanceTab';
 import { ClassMembersTab } from './ClassMembersTab';
+import { ClassDocumentsTab } from './ClassDocumentsTab';
 
 // The Class tab's main view for one cohort — a Microsoft Teams-style
 // channel: Chat/Assignments/Exams/Timetable/Attendance all live as tabs
@@ -27,7 +28,8 @@ const TAB_DEFS = [
   { key: 'assignments', label: 'Assignments', moduleKey: 'assignments', gate: (can) => can('assignments.view') },
   { key: 'exams', label: 'Exams', moduleKey: 'exams', gate: (can) => can('online_exams.view') },
   { key: 'timetable', label: 'Timetable', moduleKey: 'timetable', gate: (can) => can('timetable.view') },
-  { key: 'attendance', label: 'Attendance', moduleKey: 'attendance', gate: (can, hasModule) => hasModule('attendance') && can('attendance.view') }
+  { key: 'attendance', label: 'Attendance', moduleKey: 'attendance', gate: (can, hasModule) => hasModule('attendance') && can('attendance.view') },
+  { key: 'documents', label: 'Documents', moduleKey: 'messages' }
 ];
 
 export function ClassChannel({ cohort, showBack }) {
@@ -112,6 +114,7 @@ export function ClassChannel({ cohort, showBack }) {
           {activeTab === 'timetable' && <ClassTimetableTab cohortId={cohort.id} cohortTimeBlock={cohort.time_block} />}
           {activeTab === 'attendance' && <ClassAttendanceTab cohortId={cohort.id} />}
           {activeTab === 'members' && <ClassMembersTab cohortId={cohort.id} cohort={cohort} />}
+          {activeTab === 'documents' && <ClassDocumentsTab cohortId={cohort.id} />}
         </div>
       )}
     </div>

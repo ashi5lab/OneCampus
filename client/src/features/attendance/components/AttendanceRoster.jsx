@@ -44,6 +44,8 @@ export function AttendanceRoster({ lockedCohortId } = {}) {
   const [cohortId, setCohortId] = useState(lockedCohortId || '');
   const [date, setDate] = useState(todayIso());
   const [statuses, setStatuses] = useState({});
+  const [remarks, setRemarks] = useState({});
+  const [editingRemarksFor, setEditingRemarksFor] = useState(null);
   const [saveError, setSaveError] = useState(null);
   const [savedAt, setSavedAt] = useState(null);
 
@@ -58,12 +60,15 @@ export function AttendanceRoster({ lockedCohortId } = {}) {
   // records change, defaulting anyone not yet marked to "present".
   useEffect(() => {
     if (!cohortId || !date) return;
-    const next = {};
+    const nextStatuses = {};
+    const nextRemarks = {};
     for (const learner of roster) {
       const existing = (existingRecords || []).find((r) => r.learner_id === learner.id);
-      next[learner.id] = existing?.status || 'present';
+      nextStatuses[learner.id] = existing?.status || 'present';
+      nextRemarks[learner.id] = existing?.remarks || '';
     }
-    setStatuses(next);
+    setStatuses(nextStatuses);
+    setRemarks(nextRemarks);
     setSavedAt(null);
   }, [cohortId, date, roster, existingRecords]);
 
@@ -76,14 +81,48 @@ export function AttendanceRoster({ lockedCohortId } = {}) {
             learner_id: learner.id,
             cohort_id: Number(cohortId),
             date,
-            status: statuses[learner.id] || 'present'
+            status: statuses[learner.id] || 'present',
+            remarks: remarks[learner.id] || null
           })
         )
       );
       setSavedAt(new Date());
+      setEditingRemarksFor(null);
     } catch (err) {
       setSaveError(err.message || 'Failed to save attendance');
     }
+  }
+
+  function handleExport() {
+    // Create CSV data
+    const headers = ['Student Name', 'Roll No.', 'Status', 'Remarks'];
+    const rows = roster.map((learner) => [
+      `${learner.first_name} ${learner.last_name}`,
+      learner.registry_no,
+      statuses[learner.id] || 'present',
+      remarks[learner.id] || ''
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row
+          .map((cell) => `"${cell}"`) // Wrap in quotes to handle commas
+          .join(',')
+      )
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `attendance-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   }
 
   return (
@@ -117,13 +156,23 @@ export function AttendanceRoster({ lockedCohortId } = {}) {
           />
         </label>
         {canMark && (
-          <button
-            onClick={handleSaveAll}
-            disabled={!cohortId || roster.length === 0 || markAttendance.isPending}
-            className="rounded bg-accent px-4 py-2 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60"
-          >
-            {markAttendance.isPending ? 'Saving…' : 'Save All'}
-          </button>
+          <>
+            <button
+              onClick={handleSaveAll}
+              disabled={!cohortId || roster.length === 0 || markAttendance.isPending}
+              className="rounded bg-accent px-4 py-2 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60"
+            >
+              {markAttendance.isPending ? 'Saving…' : 'Save All'}
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={!cohortId || roster.length === 0}
+              className="rounded border border-border bg-surface px-4 py-2 text-[13.5px] font-semibold text-ink-700 hover:bg-surface-muted disabled:opacity-60 transition-colors"
+              title="Export attendance report as CSV"
+            >
+              ↓ Export Report
+            </button>
+          </>
         )}
         {savedAt && <span className="text-xs font-semibold text-success">Saved</span>}
         {saveError && <span className="text-xs font-semibold text-danger">{saveError}</span>}
@@ -143,32 +192,78 @@ export function AttendanceRoster({ lockedCohortId } = {}) {
         </div>
       )}
       {cohortId && !loadingRoster && roster.length > 0 && (
-        <table className="w-full border-collapse">
-          <tbody>
-            {roster.map((learner) => (
-              <tr key={learner.id}>
-                <td className="border-b border-surface-muted px-5 py-2.5 text-[13.5px] last:border-b-0">
-                  <div className="font-semibold text-ink-900">{learner.first_name} {learner.last_name}</div>
-                  <div className="font-mono text-[11.5px] text-ink-500">{learner.registry_no}</div>
-                </td>
-                <td className="border-b border-surface-muted px-5 py-2.5 text-right last:border-b-0">
-                  <select
-                    className={`input w-auto disabled:opacity-60 ${STATUS_COLORS[statuses[learner.id] || 'present']}`}
-                    value={statuses[learner.id] || 'present'}
-                    disabled={!canMark}
-                    onChange={(e) =>
-                      setStatuses((prev) => ({ ...prev, [learner.id]: e.target.value }))
-                    }
-                  >
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="bg-surface-muted border-b border-surface-muted px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-ink-500">Student Name</th>
+                <th className="bg-surface-muted border-b border-surface-muted px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-ink-500">Status</th>
+                <th className="bg-surface-muted border-b border-surface-muted px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-ink-500">Remarks</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {roster.map((learner) => (
+                <tr key={learner.id} className="hover:bg-surface-muted/40 transition-colors">
+                  <td className="border-b border-surface-muted px-5 py-2.5 text-[13.5px]">
+                    <div className="font-semibold text-ink-900">{learner.first_name} {learner.last_name}</div>
+                    <div className="font-mono text-[11.5px] text-ink-500">{learner.registry_no}</div>
+                  </td>
+                  <td className="border-b border-surface-muted px-5 py-2.5">
+                    <select
+                      className={`input w-auto disabled:opacity-60 ${STATUS_COLORS[statuses[learner.id] || 'present']}`}
+                      value={statuses[learner.id] || 'present'}
+                      disabled={!canMark}
+                      onChange={(e) =>
+                        setStatuses((prev) => ({ ...prev, [learner.id]: e.target.value }))
+                      }
+                    >
+                      {STATUS_OPTIONS.map((status) => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="border-b border-surface-muted px-5 py-2.5">
+                    {editingRemarksFor === learner.id ? (
+                      <div className="flex gap-2">
+                        <input
+                          autoFocus
+                          type="text"
+                          className="input text-sm flex-1"
+                          value={remarks[learner.id] || ''}
+                          onChange={(e) =>
+                            setRemarks((prev) => ({ ...prev, [learner.id]: e.target.value }))
+                          }
+                          onBlur={() => setEditingRemarksFor(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setEditingRemarksFor(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingRemarksFor(null);
+                            }
+                          }}
+                          placeholder="Add remarks..."
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        className="group flex items-center gap-1 text-[13.5px] text-ink-500 hover:text-ink-700"
+                        onClick={() => canMark && setEditingRemarksFor(learner.id)}
+                        disabled={!canMark}
+                      >
+                        <span>{remarks[learner.id] || '–'}</span>
+                        {canMark && (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7m-6-4l6-6m0 0v5m0-5h-5" />
+                          </svg>
+                        )}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
