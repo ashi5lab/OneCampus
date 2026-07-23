@@ -79,22 +79,26 @@ function SummaryCards({ role, report, inbox }) {
   const unrereadCount = (inbox || []).filter(m => !m.is_read).length;
 
   const cards = [
-    { label: 'Attendance This Week', value: `${stats.attendanceRate30d ?? 0}%`, icon: '📍' },
-    { label: 'Pending Assignments', value: pendingCount, icon: '📝' },
-    { label: 'Upcoming Exams', value: stats.upcomingExams ?? 0, icon: '📚' },
-    { label: 'Unread Messages', value: unrereadCount, icon: '💬' },
+    { label: 'Attendance This Week', value: `${stats.attendanceRate30d ?? 0}%`, icon: '📍', bgColor: 'bg-green-50', iconColor: 'text-green-600' },
+    { label: 'Pending Assignments', value: pendingCount, icon: '📝', bgColor: 'bg-pink-50', iconColor: 'text-pink-600' },
+    { label: 'Upcoming Exams', value: stats.upcomingExams ?? 0, icon: '📚', bgColor: 'bg-orange-50', iconColor: 'text-orange-600' },
+    { label: 'Unread Messages', value: unrereadCount, icon: '💬', bgColor: 'bg-blue-50', iconColor: 'text-blue-600' },
   ];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
-        <div key={card.label} className="rounded-2xl border border-border bg-surface p-6">
-          <div className="flex items-center justify-between">
+        <div key={card.label} className={`rounded-lg border border-gray-200 ${card.bgColor} p-4`}>
+          <div className="flex items-start justify-between">
             <div>
-              <div className="text-sm text-ink-500">{card.label}</div>
-              <div className="mt-2 text-3xl font-bold text-ink-900">{card.value}</div>
+              <div className="text-xs text-gray-600 mb-2">{card.label}</div>
+              <div className="text-2xl font-bold text-gray-900">{card.value}</div>
+              {card.label.includes('Attendance') && <div className="text-xs text-gray-500 mt-1">Present • 13 / 15 days</div>}
+              {card.label.includes('Assignments') && <div className="text-xs text-gray-500 mt-1">Due this week</div>}
+              {card.label.includes('Exams') && <div className="text-xs text-gray-500 mt-1">Next: 5 days</div>}
+              {card.label.includes('Messages') && <div className="text-xs text-gray-500 mt-1">New messages</div>}
             </div>
-            <div className="text-4xl">{card.icon}</div>
+            <div className={`text-2xl ${card.iconColor}`}>{card.icon}</div>
           </div>
         </div>
       ))}
@@ -108,29 +112,32 @@ function TodaySchedule({ role, timetable }) {
   const todayClasses = timetable?.filter(t => new Date(t.start_time).toDateString() === new Date().toDateString()) || [];
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
-      <h2 className="text-lg font-semibold text-ink-900 mb-4">Today's Schedule</h2>
-      <p className="text-sm text-ink-500 mb-4">{today}</p>
+    <div className="rounded-lg border border-gray-200 bg-white p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-gray-900">Today's Schedule</h2>
+        <Link to="/app/timetable" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+          View full timetable
+        </Link>
+      </div>
 
       {todayClasses.length === 0 ? (
-        <p className="text-center py-8 text-ink-500">No classes today</p>
+        <p className="text-center py-8 text-gray-500">No classes today</p>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {todayClasses.slice(0, 5).map((cls, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-surface-muted hover:bg-surface-muted/80 transition-colors">
-              <div className="flex-1">
-                <p className="font-medium text-ink-900">{cls.subject || 'Class'}</p>
-                <p className="text-sm text-ink-500">{new Date(cls.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(cls.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+            <div key={idx} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+              <div className="flex-shrink-0 text-sm font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                {new Date(cls.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
               </div>
-              <span className="text-xs font-medium text-accent px-3 py-1 rounded-full bg-accent/10">In Progress</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">{cls.subject || 'Class'}</p>
+                <p className="text-xs text-gray-500">{cls.room || 'Room'} • {cls.instructor || 'Instructor'}</p>
+              </div>
+              <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-50 text-green-700">In Progress</span>
             </div>
           ))}
         </div>
       )}
-
-      <Link to="/app/timetable" className="mt-4 inline-block text-sm font-semibold text-accent hover:text-accent-dark">
-        View full timetable →
-      </Link>
     </div>
   );
 }
@@ -256,29 +263,29 @@ function RecentMessages({ inbox }) {
   const items = (inbox || []).slice(0, 3);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
+    <div className="rounded-lg border border-gray-200 bg-white p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-ink-900">Recent Messages</h2>
-        <Link to="/app/messages" className="text-sm font-semibold text-accent hover:text-accent-dark">
-          View all →
+        <h2 className="text-base font-semibold text-gray-900">Recent Messages</h2>
+        <Link to="/app/messages" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+          View all
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <p className="text-center py-8 text-ink-500">No messages yet</p>
+        <p className="text-center py-8 text-gray-500">No messages yet</p>
       ) : (
-        <div className="divide-y divide-border">
+        <div className="space-y-3">
           {items.map((msg) => (
-            <div key={msg.id} className="py-3 first:pt-0 last:pb-0 flex items-start gap-3">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
+            <div key={msg.id} className="flex items-start gap-3 p-2 rounded hover:bg-gray-50 transition-colors">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-purple-600 text-xs font-bold text-white">
                 {msg.sender_username?.slice(0, 2).toUpperCase() || 'U'}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-ink-900 text-sm">{msg.sender_username}</p>
-                  {!msg.is_read && <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent" />}
+                  <p className="font-medium text-gray-900 text-sm">{msg.sender_username}</p>
+                  {!msg.is_read && <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-600" />}
                 </div>
-                <p className="text-sm text-ink-500 truncate">{msg.subject || msg.body}</p>
+                <p className="text-xs text-gray-500 truncate">{msg.subject || msg.body}</p>
               </div>
             </div>
           ))}
