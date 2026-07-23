@@ -13,6 +13,16 @@ export function useAttendanceForCohortDate(cohortId, date) {
   });
 }
 
+// Class-wise absent/late report for a single day. cohortIds = [] means all
+// classes. Backend row-scopes for non-admins (see attendance controller).
+export function useAbsenteeReport(date, cohortIds = []) {
+  return useQuery({
+    queryKey: ['attendance', 'absentee-report', date, [...cohortIds].sort()],
+    queryFn: () => attendanceApi.absenteeReport(date, cohortIds),
+    enabled: !!date
+  });
+}
+
 // Also invalidates ['learners']/['instructors'] (prefix match, catches
 // ['learners', id, 'profile']/['instructors', id, 'profile']) — a
 // learner's Attendance tab and an instructor's Recent Activity tab both
