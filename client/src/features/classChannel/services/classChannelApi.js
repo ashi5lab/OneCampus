@@ -33,5 +33,15 @@ export const classChannelApi = {
   setReaction: (postId, emoji) => apiClient.put(`/class-channel/posts/${postId}/reaction`, { emoji }).then((res) => res.data),
 
   pinPost: (cohortId, postId) => apiClient.put(`/class-channel/cohorts/${cohortId}/pin`, { postId }).then((res) => res.data),
-  unpinPost: (cohortId) => apiClient.delete(`/class-channel/cohorts/${cohortId}/pin`).then((res) => res.data)
+  unpinPost: (cohortId) => apiClient.delete(`/class-channel/cohorts/${cohortId}/pin`).then((res) => res.data),
+
+  // Documents tab (standalone per-cohort file library, separate from chat
+  // attachments). Upload is multipart with a single 'file' field.
+  documents: (cohortId) => apiClient.get(`/class-channel/cohorts/${cohortId}/documents`).then((res) => res.data),
+  uploadDocument: (cohortId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return uploadFile(`/class-channel/cohorts/${cohortId}/documents`, formData).then((res) => res.data);
+  },
+  deleteDocument: (id) => apiClient.delete(`/class-channel/documents/${id}`).then((res) => res.data)
 };

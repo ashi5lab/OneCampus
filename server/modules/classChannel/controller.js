@@ -524,6 +524,112 @@ async function unpinPost(req, res) {
   }
 }
 
+// --- Documents tab: a per-cohort file library, separate from chat post
+// attachments. Reading is any cohort member; uploading/deleting is
+// moderators (non-learners in the cohort) — "teachers share course
+// materials", per canModerateCohort. ---
+
+async function listDocuments(req, res) {
+  try {
+    const cohortId = Number(req.params.cohortId);
+    if (!(await canAccessCohort(req, cohortId))) {
+      return res.status(403).json({ error: 'Not a member of this class' });
+    }
+    const result = await req.db.query(
+      `SELECT d.id, d.cohort_id, d.name, d.url, d.file_type, d.size_bytes, d.mime_type,
+              d.uploaded_by, d.created_at,
+              u.username AS uploader_username,
+              COALESCE(i.first_name, s.first_name, l.first_name) AS uploader_first_name,
+              COALESCE(i.last_name, s.last_name, l.last_name) AS uploader_last_name
+       FROM onec_class_documents d
+       LEFT JOIN onec_users u ON u.id = d.uploaded_by
+       LEFT JOIN onec_instructors i ON i.user_id = d.uploaded_by
+       LEFT JOIN onec_staff s ON s.user_id = d.uploaded_by
+       LEFT JOIN onec_learners l ON l.user_id = d.uploaded_by
+       WHERE d.cohort_id = $1
+       ORDER BY d.created_at DESC`,
+      [cohortId]
+    );
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function uploadDocument(req, res) {
+  try {
+    const cohortId = Number(req.params.cohortId);
+    if (!(await canModerateCohort(req, cohortId))) {
+      return res.status(403).json({ error: 'Only instructors can upload documents to this class' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'A file is required' });
+    if (!isConfigured) {
+      return res.status(503).json({ error: 'File uploads are not configured for this deployment' });
+    }
+
+    const resourceType = req.file.mimetype.startsWith('image/') ? 'image' : 'raw';
+    const uploaded = await uploadBuffer(req.file.buffer, {
+      folder: `onecampus/${req.tenantSchema}/class-documents/${cohortId}`,
+      resourceType,
+      mimetype: req.file.mimetype
+    });
+
+    const result = await req.db.query(
+      `WITH ins AS (
+         INSERT INTO onec_class_documents (cohort_id, name, url, file_type, size_bytes, mime_type, uploaded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *
+       )
+       SELECT ins.*, u.username AS uploader_username,
+              COALESCE(i.first_name, s.first_name, l.first_name) AS uploader_first_name,
+              COALESCE(i.last_name, s.last_name, l.last_name) AS uploader_last_name
+       FROM ins
+       LEFT JOIN onec_users u ON u.id = ins.uploaded_by
+       LEFT JOIN onec_instructors i ON i.user_id = ins.uploaded_by
+       LEFT JOIN onec_staff s ON s.user_id = ins.uploaded_by
+       LEFT JOIN onec_learners l ON l.user_id = ins.uploaded_by`,
+      [
+        cohortId,
+        req.file.originalname,
+        uploaded.secure_url,
+        attachmentTypeLabel(req.file.mimetype),
+        req.file.size,
+        req.file.mimetype,
+        req.user.userId
+      ]
+    );
+
+    await logAudit(req, 'class_document.upload', { cohortId, documentId: result.rows[0].id, name: req.file.originalname });
+    res.status(201).json({ data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function deleteDocument(req, res) {
+  try {
+    const id = Number(req.params.id);
+    const found = await req.db.query('SELECT id, cohort_id, uploaded_by, name FROM onec_class_documents WHERE id = $1', [id]);
+    const doc = found.rows[0];
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+    const isUploader = doc.uploaded_by === req.user.userId;
+    const isModerator = await canModerateCohort(req, doc.cohort_id);
+    if (!isUploader && !isModerator) {
+      return res.status(403).json({ error: 'Not allowed to delete this document' });
+    }
+
+    await req.db.query('DELETE FROM onec_class_documents WHERE id = $1', [id]);
+    await logAudit(req, 'class_document.delete', { cohortId: doc.cohort_id, documentId: id, name: doc.name });
+    res.json({ data: { id } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   upload,
   listMyCohorts,
@@ -540,5 +646,8 @@ module.exports = {
   deleteReply: (req, res) => deleteMessage('reply', req, res),
   setReaction,
   pinPost,
-  unpinPost
+  unpinPost,
+  listDocuments,
+  uploadDocument,
+  deleteDocument
 };
