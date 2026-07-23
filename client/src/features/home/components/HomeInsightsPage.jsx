@@ -47,7 +47,7 @@ export function HomeInsightsPage() {
           label: 'Attendance Marked',
           value: report?.teacherActivity?.attendance_marked ?? 0,
           subtitle: 'Last 7 days',
-          bgGradient: 'from-emerald-50 to-emerald-100',
+          color: 'emerald',
           viewAllTo: '/app/attendance'
         },
         {
@@ -55,7 +55,7 @@ export function HomeInsightsPage() {
           label: 'Assignments Graded',
           value: report?.teacherActivity?.assignments_graded ?? 0,
           subtitle: 'Last 7 days',
-          bgGradient: 'from-rose-50 to-rose-100',
+          color: 'rose',
           viewAllTo: '/app/assignments'
         },
         {
@@ -63,7 +63,7 @@ export function HomeInsightsPage() {
           label: 'Notices Posted',
           value: report?.staffActivity?.notices_posted ?? 0,
           subtitle: 'Last 7 days',
-          bgGradient: 'from-orange-50 to-orange-100',
+          color: 'orange',
           viewAllTo: '/app/notices'
         },
         {
@@ -71,7 +71,7 @@ export function HomeInsightsPage() {
           label: 'Unread Messages',
           value: unreadMessages,
           subtitle: 'New messages',
-          bgGradient: 'from-blue-50 to-blue-100',
+          color: 'blue',
           viewAllTo: '/app/messages'
         }
       ]
@@ -81,7 +81,7 @@ export function HomeInsightsPage() {
           label: 'Attendance This Week',
           value: `${report?.stats?.attendanceRate30d ?? 0}%`,
           subtitle: 'Present • 13 / 15 days',
-          bgGradient: 'from-emerald-50 to-emerald-100',
+          color: 'emerald',
           viewAllTo: '/app/attendance',
           sparkline: true
         },
@@ -90,7 +90,7 @@ export function HomeInsightsPage() {
           label: 'Pending Assignments',
           value: report?.pendingActions?.filter(a => a.type === 'assignment').length || 0,
           subtitle: 'Due this week',
-          bgGradient: 'from-rose-50 to-rose-100',
+          color: 'rose',
           viewAllTo: '/app/assignments'
         },
         {
@@ -98,7 +98,7 @@ export function HomeInsightsPage() {
           label: 'Upcoming Exams',
           value: report?.stats?.upcomingExams ?? 0,
           subtitle: 'Next: 5 days',
-          bgGradient: 'from-orange-50 to-orange-100',
+          color: 'orange',
           viewAllTo: '/app/exams'
         },
         {
@@ -106,7 +106,7 @@ export function HomeInsightsPage() {
           label: 'Unread Messages',
           value: unreadMessages,
           subtitle: 'New messages',
-          bgGradient: 'from-blue-50 to-blue-100',
+          color: 'blue',
           viewAllTo: '/app/messages'
         }
       ];
@@ -193,12 +193,22 @@ function Greeting() {
 // CARD COMPONENTS
 // ============================================================================
 
-function StatCard({ icon, label, value, subtitle, bgGradient, viewAllTo, sparkline }) {
+// Full literal class strings (not template-interpolated) so Tailwind's
+// content scanner can actually find and generate them.
+const STAT_COLORS = {
+  emerald: { iconBg: 'bg-emerald-50', value: 'text-emerald-600' },
+  rose: { iconBg: 'bg-rose-50', value: 'text-rose-600' },
+  orange: { iconBg: 'bg-orange-50', value: 'text-orange-600' },
+  blue: { iconBg: 'bg-blue-50', value: 'text-blue-600' }
+};
+
+function StatCard({ icon, label, value, subtitle, color, viewAllTo, sparkline }) {
+  const styles = STAT_COLORS[color] || STAT_COLORS.emerald;
   return (
-    <div className={`rounded-xl border border-gray-200 bg-gradient-to-br ${bgGradient} p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow`}>
+    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-2 flex items-start justify-between gap-1.5">
         <div className="flex min-w-0 items-start gap-1.5 sm:gap-2">
-          <div className="flex h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/70">{icon}</div>
+          <div className={`flex h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0 items-center justify-center rounded-lg ${styles.iconBg}`}>{icon}</div>
           <p className="text-[11.5px] sm:text-[13px] font-semibold leading-tight text-gray-800">{label}</p>
         </div>
         {viewAllTo && (
@@ -209,7 +219,7 @@ function StatCard({ icon, label, value, subtitle, bgGradient, viewAllTo, sparkli
       </div>
       <div className="flex items-end justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-2xl sm:text-3xl font-bold text-gray-900">{value}</p>
+          <p className={`text-2xl sm:text-3xl font-bold ${styles.value}`}>{value}</p>
           <p className="mt-1 text-xs text-gray-600">{subtitle}</p>
         </div>
         {sparkline && <Sparkline />}
