@@ -28,6 +28,19 @@ function attachOptional(req, res, next) {
 router.post('/cohorts/:cohortId/posts', attachOptional, controller.createPost);
 router.post('/posts/:postId/replies', attachOptional, controller.createReply);
 
+// Documents tab — a standalone per-cohort file library (not chat
+// attachments). Same manual multer-error-to-400 handling as posts, but the
+// file field is 'file' and it's required (enforced in the controller).
+function attachDocument(req, res, next) {
+  controller.upload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}
+router.get('/cohorts/:cohortId/documents', controller.listDocuments);
+router.post('/cohorts/:cohortId/documents', attachDocument, controller.uploadDocument);
+router.delete('/documents/:id', controller.deleteDocument);
+
 // :id (not :postId/:replyId) — editMessage/getEditHistory/deleteMessage in
 // the controller are shared between posts and replies and read req.params.id.
 router.patch('/posts/:id', controller.editPost);

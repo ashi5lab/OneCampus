@@ -158,3 +158,33 @@ export function useUnpinPost(cohortId) {
     onSuccess: () => invalidatePosts(queryClient, cohortId)
   });
 }
+
+// --- Documents tab ---
+
+export function useClassDocuments(cohortId) {
+  return useQuery({
+    queryKey: ['class-channel', 'documents', cohortId],
+    queryFn: () => classChannelApi.documents(cohortId),
+    enabled: cohortId != null
+  });
+}
+
+function invalidateDocuments(queryClient, cohortId) {
+  return queryClient.invalidateQueries({ queryKey: ['class-channel', 'documents', cohortId] });
+}
+
+export function useUploadClassDocument(cohortId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file) => classChannelApi.uploadDocument(cohortId, file),
+    onSuccess: () => invalidateDocuments(queryClient, cohortId)
+  });
+}
+
+export function useDeleteClassDocument(cohortId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => classChannelApi.deleteDocument(id),
+    onSuccess: () => invalidateDocuments(queryClient, cohortId)
+  });
+}

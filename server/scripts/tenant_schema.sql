@@ -627,6 +627,22 @@ CREATE TABLE onec_class_post_replies (
 CREATE INDEX idx_class_posts_cohort_created ON onec_class_posts(cohort_id, created_at);
 CREATE INDEX idx_class_post_replies_post ON onec_class_post_replies(post_id);
 
+-- Per-cohort document library (Class channel Documents tab). Standalone
+-- files uploaded to R2, separate from chat post attachments above.
+CREATE TABLE onec_class_documents (
+    id SERIAL PRIMARY KEY,
+    cohort_id INT NOT NULL REFERENCES onec_cohorts(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    url TEXT NOT NULL,
+    file_type VARCHAR(20) NOT NULL,
+    size_bytes BIGINT,
+    mime_type VARCHAR(120),
+    uploaded_by INT REFERENCES onec_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_class_documents_cohort_created ON onec_class_documents(cohort_id, created_at DESC);
+
 -- One row per prior version of an edited message — the moderation-log
 -- trail for "what did this used to say" (see the edit-history endpoints,
 -- moderator-only).
