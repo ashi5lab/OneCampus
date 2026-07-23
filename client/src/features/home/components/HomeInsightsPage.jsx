@@ -6,14 +6,14 @@ import { useInbox } from '../../messages/hooks/useMessages';
 import { useActivities } from '../../activities/hooks/useActivities';
 import { useMyTimetable } from '../../timetable/hooks/useTimetable';
 import { useMyProfile } from '../../profile/hooks/useProfile';
+import { NotificationBell } from '../../../components/NotificationBell';
+import { ProfileMenu } from '../../../components/ProfileMenu';
 import {
   Calendar,
-  Clock,
   BookOpen,
   MessageSquare,
   CheckCircle,
   AlertCircle,
-  TrendingUp,
   ArrowRight,
 } from 'lucide-react';
 
@@ -40,100 +40,128 @@ export function HomeInsightsPage() {
   const { data: timetable } = useMyTimetable({ enabled: !isAdmin });
   const unreadMessages = (inbox || []).filter((m) => !m.is_read).length;
 
+  const statCards = isAdmin
+    ? [
+        {
+          icon: <CheckCircle className="w-4 h-4 text-emerald-600" />,
+          label: 'Attendance Marked',
+          value: report?.teacherActivity?.attendance_marked ?? 0,
+          subtitle: 'Last 7 days',
+          color: 'emerald',
+          viewAllTo: '/app/attendance'
+        },
+        {
+          icon: <BookOpen className="w-4 h-4 text-rose-600" />,
+          label: 'Assignments Graded',
+          value: report?.teacherActivity?.assignments_graded ?? 0,
+          subtitle: 'Last 7 days',
+          color: 'rose',
+          viewAllTo: '/app/assignments'
+        },
+        {
+          icon: <AlertCircle className="w-4 h-4 text-orange-600" />,
+          label: 'Notices Posted',
+          value: report?.staffActivity?.notices_posted ?? 0,
+          subtitle: 'Last 7 days',
+          color: 'orange',
+          viewAllTo: '/app/notices'
+        },
+        {
+          icon: <MessageSquare className="w-4 h-4 text-blue-600" />,
+          label: 'Unread Messages',
+          value: unreadMessages,
+          subtitle: 'New messages',
+          color: 'blue',
+          viewAllTo: '/app/messages'
+        }
+      ]
+    : [
+        {
+          icon: <CheckCircle className="w-4 h-4 text-emerald-600" />,
+          label: 'Attendance This Week',
+          value: `${report?.stats?.attendanceRate30d ?? 0}%`,
+          subtitle: 'Present • 13 / 15 days',
+          color: 'emerald',
+          viewAllTo: '/app/attendance',
+          sparkline: true
+        },
+        {
+          icon: <BookOpen className="w-4 h-4 text-rose-600" />,
+          label: 'Pending Assignments',
+          value: report?.pendingActions?.filter(a => a.type === 'assignment').length || 0,
+          subtitle: 'Due this week',
+          color: 'rose',
+          viewAllTo: '/app/assignments'
+        },
+        {
+          icon: <Calendar className="w-4 h-4 text-orange-600" />,
+          label: 'Upcoming Exams',
+          value: report?.stats?.upcomingExams ?? 0,
+          subtitle: 'Next: 5 days',
+          color: 'orange',
+          viewAllTo: '/app/exams'
+        },
+        {
+          icon: <MessageSquare className="w-4 h-4 text-blue-600" />,
+          label: 'Unread Messages',
+          value: unreadMessages,
+          subtitle: 'New messages',
+          color: 'blue',
+          viewAllTo: '/app/messages'
+        }
+      ];
+
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-8 flex items-start justify-between gap-3">
         <Greeting />
+        <div className="flex flex-shrink-0 items-center gap-1 md:hidden">
+          <NotificationBell />
+          <ProfileMenu />
+        </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        {isAdmin ? (
-          <>
-            <StatCard
-              icon={<CheckCircle className="w-6 h-6 text-emerald-600" />}
-              label="Attendance Marked"
-              value={report?.teacherActivity?.attendance_marked ?? 0}
-              subtitle="Last 7 days"
-              bgGradient="from-emerald-50 to-emerald-100"
-            />
-            <StatCard
-              icon={<BookOpen className="w-6 h-6 text-rose-600" />}
-              label="Assignments Graded"
-              value={report?.teacherActivity?.assignments_graded ?? 0}
-              subtitle="Last 7 days"
-              bgGradient="from-rose-50 to-rose-100"
-            />
-            <StatCard
-              icon={<AlertCircle className="w-6 h-6 text-orange-600" />}
-              label="Notices Posted"
-              value={report?.staffActivity?.notices_posted ?? 0}
-              subtitle="Last 7 days"
-              bgGradient="from-orange-50 to-orange-100"
-            />
-            <StatCard
-              icon={<MessageSquare className="w-6 h-6 text-blue-600" />}
-              label="Unread Messages"
-              value={unreadMessages}
-              subtitle="New messages"
-              bgGradient="from-blue-50 to-blue-100"
-            />
-          </>
-        ) : (
-          <>
-            <StatCard
-              icon={<CheckCircle className="w-6 h-6 text-emerald-600" />}
-              label="Attendance This Week"
-              value={`${report?.stats?.attendanceRate30d ?? 0}%`}
-              subtitle="Present • 13 / 15 days"
-              trend="+2.5%"
-              bgGradient="from-emerald-50 to-emerald-100"
-            />
-            <StatCard
-              icon={<BookOpen className="w-6 h-6 text-rose-600" />}
-              label="Pending Assignments"
-              value={report?.pendingActions?.filter(a => a.type === 'assignment').length || 0}
-              subtitle="Due this week"
-              bgGradient="from-rose-50 to-rose-100"
-            />
-            <StatCard
-              icon={<Calendar className="w-6 h-6 text-orange-600" />}
-              label="Upcoming Exams"
-              value={report?.stats?.upcomingExams ?? 0}
-              subtitle="Next: 5 days"
-              bgGradient="from-orange-50 to-orange-100"
-            />
-            <StatCard
-              icon={<MessageSquare className="w-6 h-6 text-blue-600" />}
-              label="Unread Messages"
-              value={unreadMessages}
-              subtitle="New messages"
-              bgGradient="from-blue-50 to-blue-100"
-            />
-          </>
-        )}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mb-8">
+        {statCards.map((card) => (
+          <StatCard key={card.label} {...card} />
+        ))}
       </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Left Column - Today's Schedule & Messages */}
-          <div className="lg:col-span-2 space-y-6">
+      {/* Main content — mobile groups these differently than desktop
+          (Schedule alone, then Activity+Calendar and Messages+Assignments
+          paired side-by-side) to match the compact mobile design; desktop
+          keeps its two-column layout below. */}
+      <div className="lg:hidden space-y-4 mb-8">
+        <TodayScheduleCard timetable={timetable} />
+        <div className="grid grid-cols-2 gap-4">
+          <RecentActivityCard activities={activities} compact />
+          <CalendarWidget compact />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <RecentMessagesCard inbox={inbox} compact />
+          <DueAssignmentsCard report={report} compact />
+        </div>
+        <NoticesCard notices={notices} />
+      </div>
+
+      <div className="hidden lg:block">
+        <div className="grid grid-cols-3 gap-6 mb-8">
+          <div className="col-span-2 space-y-6">
             <TodayScheduleCard timetable={timetable} />
             <RecentMessagesCard inbox={inbox} />
           </div>
-
-          {/* Right Column - Activity & Calendar */}
           <div className="space-y-6">
             <RecentActivityCard activities={activities} />
             <CalendarWidget />
           </div>
         </div>
 
-        {/* Bottom Row - Assignments & Notices */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-2 gap-6 mb-8">
           <DueAssignmentsCard report={report} />
           <NoticesCard notices={notices} />
         </div>
+      </div>
 
       {/* Quick Actions */}
       <QuickActionsCard role={role} />
@@ -165,26 +193,55 @@ function Greeting() {
 // CARD COMPONENTS
 // ============================================================================
 
-function StatCard({ icon, label, value, subtitle, trend, bgGradient }) {
+// Full literal class strings (not template-interpolated) so Tailwind's
+// content scanner can actually find and generate them.
+const STAT_COLORS = {
+  emerald: { iconBg: 'bg-emerald-50', value: 'text-emerald-600' },
+  rose: { iconBg: 'bg-rose-50', value: 'text-rose-600' },
+  orange: { iconBg: 'bg-orange-50', value: 'text-orange-600' },
+  blue: { iconBg: 'bg-blue-50', value: 'text-blue-600' }
+};
+
+function StatCard({ icon, label, value, subtitle, color, viewAllTo, sparkline }) {
+  const styles = STAT_COLORS[color] || STAT_COLORS.emerald;
   return (
-    <div className={`rounded-xl border border-gray-200 bg-gradient-to-br ${bgGradient} p-6 shadow-sm hover:shadow-md transition-shadow`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
+    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="mb-2 flex items-start justify-between gap-1.5">
+        <div className="flex min-w-0 items-start gap-1.5 sm:gap-2">
+          <div className={`flex h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0 items-center justify-center rounded-lg ${styles.iconBg}`}>{icon}</div>
+          <p className="text-[11.5px] sm:text-[13px] font-semibold leading-tight text-gray-800">{label}</p>
+        </div>
+        {viewAllTo && (
+          <Link to={viewAllTo} className="flex-shrink-0 text-[10.5px] sm:text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+            View all
+          </Link>
+        )}
+      </div>
+      <div className="flex items-end justify-between gap-2">
+        <div className="min-w-0">
+          <p className={`text-2xl sm:text-3xl font-bold ${styles.value}`}>{value}</p>
           <p className="mt-1 text-xs text-gray-600">{subtitle}</p>
-          {trend && (
-            <div className="mt-2 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3 text-emerald-600" />
-              <span className="text-xs font-semibold text-emerald-600">{trend}</span>
-            </div>
-          )}
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/60 backdrop-blur">
-          {icon}
-        </div>
+        {sparkline && <Sparkline />}
       </div>
     </div>
+  );
+}
+
+// Decorative weekly-trend sparkline for the Attendance card — the report
+// API doesn't expose a daily-attendance series, so this traces a fixed
+// upward-trending sample path rather than real per-day data.
+function Sparkline() {
+  return (
+    <svg width="64" height="28" viewBox="0 0 64 28" fill="none" className="flex-shrink-0">
+      <polyline
+        points="0,22 10,20 20,16 30,17 40,10 50,8 64,2"
+        stroke="#059669"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -193,14 +250,14 @@ function TodayScheduleCard({ timetable }) {
   const todayClasses = timetable?.filter(t => new Date(t.start_time).toDateString() === new Date().toDateString()) || [];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Today's Schedule</h2>
+    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="mb-4 sm:mb-6 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Today's Schedule</h2>
           <p className="mt-0.5 text-xs text-gray-500">{today}</p>
         </div>
-        <Link to="/app/timetable" className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700">
-          View all <ArrowRight className="w-4 h-4" />
+        <Link to="/app/timetable" className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+          View all <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </Link>
       </div>
 
@@ -210,59 +267,63 @@ function TodayScheduleCard({ timetable }) {
         </div>
       ) : (
         <div className="space-y-2">
-          {todayClasses.slice(0, 5).map((cls, idx) => (
-            <div key={idx} className="flex items-center gap-4 rounded-lg p-3 hover:bg-gray-50 transition-colors">
-              <div className="flex flex-col items-center">
-                <span className="text-xs font-bold text-indigo-600">
-                  {new Date(cls.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {todayClasses.slice(0, 5).map((cls, idx) => {
+            const isFirst = idx === 0;
+            return (
+              <div key={idx} className="flex items-center gap-3 sm:gap-4 rounded-lg p-2.5 sm:p-3 hover:bg-gray-50 transition-colors">
+                <div className="flex flex-shrink-0 flex-col items-center rounded-lg bg-indigo-50 px-2 py-1.5">
+                  <span className="text-[11px] sm:text-xs font-bold text-indigo-600 whitespace-nowrap">
+                    {new Date(cls.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="truncate text-sm sm:text-base font-semibold text-gray-900">{cls.subject || 'Class'}</p>
+                  <p className="mt-0.5 truncate text-xs text-gray-500">
+                    {cls.room || 'Room'} • {cls.instructor || 'Instructor'}
+                  </p>
+                </div>
+                <span
+                  className={`flex-shrink-0 inline-block rounded-full px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-semibold ${
+                    isFirst ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {isFirst ? 'In Progress' : 'Upcoming'}
                 </span>
-                <div className="mt-1 h-2 w-2 rounded-full bg-indigo-600"></div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900">{cls.subject || 'Class'}</p>
-                <p className="mt-0.5 text-xs text-gray-500">
-                  {cls.room || 'Room'} • {cls.instructor || 'Instructor'}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <span className="inline-block rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                  In Progress
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-function RecentMessagesCard({ inbox }) {
-  const items = (inbox || []).slice(0, 3);
+function RecentMessagesCard({ inbox, compact }) {
+  const items = (inbox || []).slice(0, compact ? 2 : 3);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Recent Messages</h2>
-        <Link to="/app/messages" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+    <div className={`rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-6'}`}>
+      <div className={`flex items-center justify-between gap-2 ${compact ? 'mb-3' : 'mb-4'}`}>
+        <h2 className={`font-semibold text-gray-900 ${compact ? 'text-sm' : 'text-lg'}`}>Recent Messages</h2>
+        <Link to="/app/messages" className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
           View all
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-200">
-          <p className="text-sm text-gray-500">No messages</p>
+        <div className={`flex items-center justify-center rounded-lg border-2 border-dashed border-gray-200 ${compact ? 'h-16' : 'h-24'}`}>
+          <p className="text-xs text-gray-500">No messages</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className={compact ? 'space-y-2' : 'space-y-3'}>
           {items.map((msg) => (
-            <div key={msg.id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-gray-50 transition-colors">
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-xs font-bold text-white">
+            <div key={msg.id} className="flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-50 transition-colors">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-[11px] font-bold text-white">
                 {msg.sender_username?.slice(0, 2).toUpperCase() || 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">{msg.sender_username}</p>
-                <p className="truncate text-xs text-gray-500">{msg.subject || msg.body}</p>
+                <p className="truncate text-xs font-medium text-gray-900">{msg.sender_username}</p>
+                <p className="truncate text-[11px] text-gray-500">{msg.subject || msg.body}</p>
               </div>
               {!msg.is_read && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-indigo-600"></div>}
             </div>
@@ -273,33 +334,33 @@ function RecentMessagesCard({ inbox }) {
   );
 }
 
-function RecentActivityCard({ activities }) {
-  const items = (activities?.data || []).slice(0, 4);
+function RecentActivityCard({ activities, compact }) {
+  const items = (activities?.data || []).slice(0, compact ? 3 : 4);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-        <Link to="/app/activities" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+    <div className={`rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-6'}`}>
+      <div className={`flex items-center justify-between gap-2 ${compact ? 'mb-3' : 'mb-4'}`}>
+        <h2 className={`font-semibold text-gray-900 ${compact ? 'text-sm' : 'text-lg'}`}>Recent Activity</h2>
+        <Link to="/app/activities" className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
           View all
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-200">
-          <p className="text-sm text-gray-500">No activities</p>
+        <div className={`flex items-center justify-center rounded-lg border-2 border-dashed border-gray-200 ${compact ? 'h-16' : 'h-24'}`}>
+          <p className="text-xs text-gray-500">No activities</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className={compact ? 'space-y-2' : 'space-y-3'}>
           {items.map((item, idx) => (
-            <div key={idx} className="flex items-start gap-3">
+            <div key={idx} className="flex items-start gap-2">
               <div
-                className="mt-1 flex-shrink-0 w-2.5 h-2.5 rounded-full"
+                className="mt-1 flex-shrink-0 w-2 h-2 rounded-full"
                 style={{ backgroundColor: ACTIVITY_COLORS[item.type] || '#6B7280' }}
               ></div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">{item.title}</p>
-                <p className="text-xs text-gray-500">{relativeTime(item.ts)}</p>
+                <p className="truncate text-xs font-medium text-gray-900">{item.title}</p>
+                <p className="text-[11px] text-gray-500">{relativeTime(item.ts)}</p>
               </div>
             </div>
           ))}
@@ -309,7 +370,7 @@ function RecentActivityCard({ activities }) {
   );
 }
 
-function CalendarWidget() {
+function CalendarWidget({ compact }) {
   const today = new Date();
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const month = monthNames[today.getMonth()];
@@ -320,14 +381,15 @@ function CalendarWidget() {
   const days = [];
   for (let i = 0; i < firstDay; i++) days.push(null);
   for (let i = 1; i <= daysInMonth; i++) days.push(i);
+  const dayLabels = compact ? ['S', 'M', 'T', 'W', 'T', 'F', 'S'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
-      <h3 className="mb-4 text-lg font-semibold text-gray-900">{month} {year}</h3>
+    <div className={`rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-6'}`}>
+      <h3 className={`font-semibold text-gray-900 ${compact ? 'mb-3 text-sm' : 'mb-4 text-lg'}`}>{month} {year}</h3>
 
-      <div className="mb-3 grid grid-cols-7 gap-1">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center text-xs font-semibold text-gray-600 py-2">
+      <div className={`grid grid-cols-7 gap-1 ${compact ? 'mb-1' : 'mb-3'}`}>
+        {dayLabels.map((day, idx) => (
+          <div key={idx} className={`text-center font-semibold text-gray-600 ${compact ? 'text-[9px] py-1' : 'text-xs py-2'}`}>
             {day}
           </div>
         ))}
@@ -339,7 +401,7 @@ function CalendarWidget() {
           return (
             <button
               key={idx}
-              className={`py-1.5 text-xs rounded-lg font-medium transition-all ${
+              className={`rounded-lg font-medium transition-all ${compact ? 'py-1 text-[10px]' : 'py-1.5 text-xs'} ${
                 day === null
                   ? 'invisible'
                   : isToday
@@ -356,33 +418,35 @@ function CalendarWidget() {
   );
 }
 
-function DueAssignmentsCard({ report }) {
-  const items = report?.pendingActions?.filter(a => a.type === 'assignment')?.slice(0, 3) || [];
+function DueAssignmentsCard({ report, compact }) {
+  const items = report?.pendingActions?.filter(a => a.type === 'assignment')?.slice(0, compact ? 2 : 3) || [];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Due Assignments</h2>
-        <Link to="/app/assignments" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+    <div className={`rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-6'}`}>
+      <div className={`flex items-center justify-between gap-2 ${compact ? 'mb-3' : 'mb-4'}`}>
+        <h2 className={`font-semibold text-gray-900 ${compact ? 'text-sm' : 'text-lg'}`}>Due Assignments</h2>
+        <Link to="/app/assignments" className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
           View all
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-200">
-          <p className="text-sm text-gray-500">No pending assignments</p>
+        <div className={`flex items-center justify-center rounded-lg border-2 border-dashed border-gray-200 ${compact ? 'h-16' : 'h-24'}`}>
+          <p className="text-xs text-gray-500">No pending assignments</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className={compact ? 'space-y-2' : 'space-y-3'}>
           {items.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between rounded-lg p-3 hover:bg-gray-50 transition-colors">
-              <div>
-                <p className="text-sm font-medium text-gray-900">{item.title}</p>
-                <p className="text-xs text-gray-500">{item.subtitle}</p>
+            <div key={idx} className={compact ? 'rounded-lg p-2 hover:bg-gray-50 transition-colors' : 'flex items-center justify-between rounded-lg p-3 hover:bg-gray-50 transition-colors'}>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-medium text-gray-900">{item.title}</p>
+                <p className="truncate text-[11px] text-gray-500">{item.subtitle}</p>
               </div>
-              <span className="inline-block rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
-                Due {item.subtitle}
-              </span>
+              {!compact && (
+                <span className="flex-shrink-0 inline-block rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
+                  Due {item.subtitle}
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -395,10 +459,10 @@ function NoticesCard({ notices }) {
   const items = (notices || []).slice(0, 3);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Notices</h2>
-        <Link to="/app/notices" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Notices</h2>
+        <Link to="/app/notices" className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
           View all
         </Link>
       </div>
@@ -442,17 +506,17 @@ function QuickActionsCard({ role }) {
   const filtered = actions.filter(a => a.roles.includes(role));
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm hover:shadow-md transition-shadow">
-      <h2 className="mb-6 text-lg font-semibold text-gray-900">Quick Actions</h2>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-8 shadow-sm hover:shadow-md transition-shadow">
+      <h2 className="mb-4 sm:mb-6 text-base sm:text-lg font-semibold text-gray-900">Quick Actions</h2>
+      <div className="grid grid-cols-3 gap-3 sm:gap-4 sm:grid-cols-4 lg:grid-cols-7">
         {filtered.map((action) => (
           <Link
             key={action.to}
             to={action.to}
-            className="group flex flex-col items-center justify-center rounded-lg border-2 border-gray-200 px-4 py-6 text-center transition-all hover:border-indigo-300 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-purple-50 hover:shadow-md"
+            className="group flex flex-col items-center justify-center rounded-lg border-2 border-gray-200 px-2 py-4 sm:px-4 sm:py-6 text-center transition-all hover:border-indigo-300 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-purple-50 hover:shadow-md"
           >
-            <span className="mb-2 text-3xl group-hover:scale-110 transition-transform">{action.icon}</span>
-            <span className="text-xs font-semibold text-gray-700 group-hover:text-indigo-700">{action.label}</span>
+            <span className="mb-1.5 sm:mb-2 text-2xl sm:text-3xl group-hover:scale-110 transition-transform">{action.icon}</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-gray-700 group-hover:text-indigo-700">{action.label}</span>
           </Link>
         ))}
       </div>

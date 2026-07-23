@@ -1,12 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAllFeatureLinks } from '../hooks/useNavLinks';
-import { useUnreadCount } from '../features/messages/hooks/useMessages';
-import { useActivities } from '../features/activities/hooks/useActivities';
-import { useConfig } from '../contexts/ConfigContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { NotificationBell } from './NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,13 +21,9 @@ import { useMyProfile } from '../features/profile/hooks/useProfile';
 // notifications feed yet), and the account menu. Mobile keeps its own
 // BottomTabBar instead; this only renders at md+ (see Layout.jsx).
 export function Topbar() {
-  const { user, logout, can } = useAuth();
-  const { hasModule } = useConfig();
+  const { user, logout } = useAuth();
   const { data: myProfile } = useMyProfile();
   const links = useAllFeatureLinks();
-  const messagingEnabled = hasModule('messaging') && can('messages.view');
-  const { data: unreadCount } = useUnreadCount({ enabled: messagingEnabled });
-  const { data: activity } = useActivities();
   const navigate = useNavigate();
 
   const [query, setQuery] = useState('');
@@ -41,8 +35,6 @@ export function Topbar() {
     const q = query.trim().toLowerCase();
     return links.filter((l) => l.label.toLowerCase().includes(q)).slice(0, 6);
   }, [links, query]);
-
-  const notifCount = (unreadCount || 0) + (activity?.recentCount || 0);
 
   function goTo(to) {
     setQuery('');
@@ -95,17 +87,7 @@ export function Topbar() {
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={() => navigate('/app/activities')}
-        aria-label="Notifications"
-        className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-ink-700 transition hover:bg-surface-muted"
-      >
-        <Bell className="h-5 w-5" strokeWidth={1.8} />
-        {notifCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-danger ring-2 ring-surface" />
-        )}
-      </button>
+      <NotificationBell />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
