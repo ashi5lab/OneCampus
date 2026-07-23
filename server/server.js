@@ -41,6 +41,13 @@ app.use(
 // httpOnly cookie cross-origin (client :5173, server :3001 in dev), and
 // browsers reject Access-Control-Allow-Origin: * on credentialed requests.
 app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+
+// Meta (WhatsApp Cloud API) webhooks — mounted BEFORE express.json() on
+// purpose: X-Hub-Signature-256 validation needs the raw request bytes, so
+// the router runs its own express.raw parser (see modules/webhooks/whatsapp.js).
+const whatsappWebhookRoutes = require('./modules/webhooks/whatsapp');
+app.use('/webhooks', whatsappWebhookRoutes);
+
 app.use(express.json());
 app.use(cookieParser());
 
