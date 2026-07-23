@@ -91,6 +91,38 @@ export function AttendanceRoster({ lockedCohortId } = {}) {
     }
   }
 
+  function handleExport() {
+    // Create CSV data
+    const headers = ['Student Name', 'Roll No.', 'Status', 'Remarks'];
+    const rows = roster.map((learner) => [
+      `${learner.first_name} ${learner.last_name}`,
+      learner.registry_no,
+      statuses[learner.id] || 'present',
+      remarks[learner.id] || ''
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row
+          .map((cell) => `"${cell}"`) // Wrap in quotes to handle commas
+          .join(',')
+      )
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `attendance-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="mb-6 overflow-hidden rounded border border-border bg-surface">
       <div className="flex flex-wrap items-end gap-3 border-b border-surface-muted p-4">
@@ -119,13 +151,23 @@ export function AttendanceRoster({ lockedCohortId } = {}) {
           />
         </label>
         {canMark && (
-          <button
-            onClick={handleSaveAll}
-            disabled={!cohortId || roster.length === 0 || markAttendance.isPending}
-            className="rounded bg-accent px-4 py-2 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60"
-          >
-            {markAttendance.isPending ? 'Saving…' : 'Save All'}
-          </button>
+          <>
+            <button
+              onClick={handleSaveAll}
+              disabled={!cohortId || roster.length === 0 || markAttendance.isPending}
+              className="rounded bg-accent px-4 py-2 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60"
+            >
+              {markAttendance.isPending ? 'Saving…' : 'Save All'}
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={!cohortId || roster.length === 0}
+              className="rounded border border-border bg-surface px-4 py-2 text-[13.5px] font-semibold text-ink-700 hover:bg-surface-muted disabled:opacity-60 transition-colors"
+              title="Export attendance report as CSV"
+            >
+              ↓ Export Report
+            </button>
+          </>
         )}
         {savedAt && <span className="text-xs font-semibold text-success">Saved</span>}
         {saveError && <span className="text-xs font-semibold text-danger">{saveError}</span>}
