@@ -7,8 +7,16 @@ import { superAdminApi } from '../../superAdmin/services/superAdminApi';
 import { setSuperAdminToken } from '../../../lib/superAdminApiClient';
 
 export function LoginPage() {
-  const { login, isAuthenticated, initializing } = useAuth();
+  const { login, logout, isAuthenticated, initializing } = useAuth();
   const { config, reloadConfig } = useConfig();
+
+  // If a user navigates to the login page while already authenticated,
+  // clear the session to avoid stale data being shown.
+  useEffect(() => {
+    if (isAuthenticated) {
+      logout();
+    }
+  }, [isAuthenticated, logout]);
   const navigate = useNavigate();
   const location = useLocation();
   const [username, setUsername] = useState('');
