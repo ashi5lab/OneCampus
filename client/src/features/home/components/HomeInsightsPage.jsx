@@ -14,8 +14,8 @@ import {
   MessageSquare,
   CheckCircle,
   AlertCircle,
+  UserX,
   ArrowRight,
-  UserCheck,
   ClipboardList,
   PenTool,
   ScrollText
@@ -44,22 +44,27 @@ export function HomeInsightsPage() {
   const { data: timetable } = useMyTimetable({ enabled: !isAdmin });
   const unreadMessages = (inbox || []).filter((m) => !m.is_read).length;
 
+  // Today's attendance breakdown (admin payload only) — [{status, count}].
+  const attendanceToday = report?.attendanceToday || [];
+  const absentToday = attendanceToday.find((r) => r.status === 'absent')?.count ?? 0;
+  const lateToday = attendanceToday.find((r) => r.status === 'late')?.count ?? 0;
+
   const statCards = isAdmin
     ? [
         {
-          icon: <UserCheck className="w-5 h-5 text-emerald-600 stroke-[2.2]" />,
-          label: 'Attendance Marked',
-          value: report?.teacherActivity?.attendance_marked ?? 0,
-          subtitle: 'Last 7 days active tracking',
-          color: 'emerald',
-          viewAllTo: '/app/attendance'
+          icon: <UserX className="w-5 h-5 text-rose-600 stroke-[2.2]" />,
+          label: 'Absentees Today',
+          value: absentToday,
+          subtitle: `${lateToday} late`,
+          color: 'rose',
+          viewAllTo: '/app/attendance/absentees'
         },
         {
-          icon: <PenTool className="w-5 h-5 text-rose-600 stroke-[2.2]" />,
+          icon: <PenTool className="w-5 h-5 text-emerald-600 stroke-[2.2]" />,
           label: 'Assignments Graded',
           value: report?.teacherActivity?.assignments_graded ?? 0,
           subtitle: 'Completed feedback rounds',
-          color: 'rose',
+          color: 'emerald',
           viewAllTo: '/app/assignments'
         },
         {

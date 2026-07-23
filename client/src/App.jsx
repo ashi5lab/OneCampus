@@ -17,6 +17,7 @@ import { InstructorProfilePage } from './features/instructors/components/Instruc
 import { CohortsPage } from './features/cohorts/components/CohortsPage';
 import { CohortDetailPage } from './features/cohorts/components/CohortDetailPage';
 import { AttendancePage } from './features/attendance/components/AttendancePage';
+import { AbsenteeReportPage } from './features/attendance/components/AbsenteeReportPage';
 import { EvaluationDetailPage } from './features/evaluations/components/EvaluationDetailPage';
 import { ScoreEntryPage } from './features/evaluations/components/ScoreEntryPage';
 import { UnitsPage } from './features/units/components/UnitsPage';
@@ -219,6 +220,14 @@ export default function App() {
             server/modules/guardians/controller.js's getProfile). */}
         <Route path="guardians/:id" element={<GuardianProfilePage />} />
         <Route path="attendance" element={<AttendancePage />} />
+        <Route
+          path="attendance/absentees"
+          element={
+            <RequirePermission permission="attendance.view">
+              <AbsenteeReportPage />
+            </RequirePermission>
+          }
+        />
         <Route path="exams" element={<ExamsPage />} />
         <Route path="evaluations/:id" element={<EvaluationDetailPage />} />
         <Route path="evaluations/schedules/:scheduleId/scores" element={<ScoreEntryPage />} />

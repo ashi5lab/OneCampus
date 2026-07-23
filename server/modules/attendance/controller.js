@@ -102,4 +102,99 @@ async function mark(req, res) {
   }
 }
 
-module.exports = { getAll, mark };
+// Class-wise absentee/late report for a single day — powers the admin
+// dashboard "Absentees Today" card and its drill-down page. Returns a
+// per-cohort breakdown listing the absent and late students (with remarks)
+// plus a whole-day summary. Optional cohort_ids (comma-separated) narrows
+// to selected classes; omitted = all classes the caller can see.
+//
+// Row-scoped the same way getAll is: a learner/guardian who somehow reaches
+// this only ever sees their own records, never a full classmate roster.
+async function absenteeReport(req, res) {
+  try {
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+
+    const conditions = ['a.date = $1'];
+    const params = [date];
+
+    const scopedLearnerIds = await getScopedLearnerIds(req);
+    if (scopedLearnerIds !== null) {
+      params.push(scopedLearnerIds);
+      conditions.push(`a.learner_id = ANY($${params.length})`);
+    }
+
+    const cohortIds = (req.query.cohort_ids || '')
+      .split(',')
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => Number.isInteger(n));
+    if (cohortIds.length > 0) {
+      params.push(cohortIds);
+      conditions.push(`a.cohort_id = ANY($${params.length})`);
+    }
+
+    const result = await req.db.query(
+      `SELECT a.cohort_id, c.name AS cohort_name, a.status, a.remarks,
+              l.id AS learner_id, l.first_name, l.last_name
+       FROM onec_attendance a
+       JOIN onec_learners l ON l.id = a.learner_id
+       LEFT JOIN onec_cohorts c ON c.id = a.cohort_id
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY c.name NULLS LAST, l.first_name, l.last_name`,
+      params
+    );
+
+    // A learner can have multiple rows per day (hour-based/allocation
+    // attendance). Collapse to one status per learner-per-cohort, keeping
+    // the most significant one so a single absent hour still counts them
+    // absent for the day. present is only kept if nothing worse exists.
+    const RANK = { absent: 4, late: 3, excused: 2, present: 1 };
+    const perLearner = new Map(); // key: `${cohort_id}:${learner_id}`
+    for (const row of result.rows) {
+      const key = `${row.cohort_id}:${row.learner_id}`;
+      const existing = perLearner.get(key);
+      if (!existing || (RANK[row.status] || 0) > (RANK[existing.status] || 0)) {
+        perLearner.set(key, row);
+      }
+    }
+
+    const summary = { present: 0, absent: 0, late: 0, excused: 0, total: 0 };
+    const cohortMap = new Map();
+    for (const row of perLearner.values()) {
+      if (summary[row.status] !== undefined) summary[row.status] += 1;
+      summary.total += 1;
+
+      if (row.status !== 'absent' && row.status !== 'late') continue;
+
+      if (!cohortMap.has(row.cohort_id)) {
+        cohortMap.set(row.cohort_id, {
+          cohort_id: row.cohort_id,
+          cohort_name: row.cohort_name || 'Unassigned',
+          absent_count: 0,
+          late_count: 0,
+          students: []
+        });
+      }
+      const cohort = cohortMap.get(row.cohort_id);
+      if (row.status === 'absent') cohort.absent_count += 1;
+      else cohort.late_count += 1;
+      cohort.students.push({
+        learner_id: row.learner_id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        status: row.status,
+        remarks: row.remarks || null
+      });
+    }
+
+    const cohorts = [...cohortMap.values()].sort(
+      (a, b) => b.absent_count - a.absent_count || a.cohort_name.localeCompare(b.cohort_name)
+    );
+
+    res.json({ data: { date, summary, cohorts } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getAll, mark, absenteeReport };
