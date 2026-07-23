@@ -5,24 +5,31 @@ import { useNotices } from '../../notices/hooks/useNotices';
 import { useInbox } from '../../messages/hooks/useMessages';
 import { useActivities } from '../../activities/hooks/useActivities';
 import { useMyTimetable } from '../../timetable/hooks/useTimetable';
-import { useHomeCardPrefs } from '../../profile/hooks/useProfile';
-import { getHomeCardsForRole, isCardVisible } from '../../../lib/homeCardKeys';
 import { ProfileMenu } from '../../../components/ProfileMenu';
 import { useMyProfile } from '../../profile/hooks/useProfile';
+import {
+  Calendar,
+  Clock,
+  BookOpen,
+  MessageSquare,
+  CheckCircle,
+  AlertCircle,
+  TrendingUp,
+  ArrowRight,
+} from 'lucide-react';
 
-const ACTIVITY_DOT_COLOR = {
-  notice: 'var(--accent)',
-  message: '#1D4ED8',
-  mention: 'var(--accent)',
-  assignment: '#A21CAF',
-  exam: '#B91C1C',
-  attendance: '#1D4ED8',
-  score: 'var(--success)',
-  leave: '#92400E'
+// Activity dot colors for timeline
+const ACTIVITY_COLORS = {
+  notice: '#F59E0B',
+  message: '#3B82F6',
+  mention: '#8B5CF6',
+  assignment: '#EC4899',
+  exam: '#EF4444',
+  attendance: '#10B981',
+  score: '#06B6D4',
+  leave: '#F59E0B',
 };
 
-// The learner/instructor/staff Home tab — a professional dashboard layout
-// with summary cards, today's schedule, recent activity, and calendar.
 export function HomeInsightsPage() {
   const { user } = useAuth();
   const role = user?.role;
@@ -33,23 +40,83 @@ export function HomeInsightsPage() {
   const { data: timetable } = useMyTimetable();
 
   return (
-    <div className="space-y-6">
-      <Greeting />
-      <SummaryCards role={role} report={report} inbox={inbox} />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <TodaySchedule role={role} timetable={timetable} />
-          <RecentActivity activities={activities} />
-        </div>
-        <div className="space-y-6">
-          <CalendarWidget />
-          <NoticesSection notices={notices} />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Header */}
+      <div className="border-b border-gray-200 bg-white/80 backdrop-blur sticky top-0 z-40">
+        <div className="mx-auto max-w-7xl px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Greeting />
+            <ProfileMenu />
+          </div>
         </div>
       </div>
-      <QuickActions role={role} />
+
+      {/* Main Content */}
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <StatCard
+            icon={<CheckCircle className="w-6 h-6 text-emerald-600" />}
+            label="Attendance This Week"
+            value={`${report?.stats?.attendanceRate30d ?? 0}%`}
+            subtitle="Present • 13 / 15 days"
+            trend="+2.5%"
+            bgGradient="from-emerald-50 to-emerald-100"
+          />
+          <StatCard
+            icon={<BookOpen className="w-6 h-6 text-rose-600" />}
+            label="Pending Assignments"
+            value={report?.pendingActions?.filter(a => a.type === 'assignment').length || 0}
+            subtitle="Due this week"
+            bgGradient="from-rose-50 to-rose-100"
+          />
+          <StatCard
+            icon={<Calendar className="w-6 h-6 text-orange-600" />}
+            label="Upcoming Exams"
+            value={report?.stats?.upcomingExams ?? 0}
+            subtitle="Next: 5 days"
+            bgGradient="from-orange-50 to-orange-100"
+          />
+          <StatCard
+            icon={<MessageSquare className="w-6 h-6 text-blue-600" />}
+            label="Unread Messages"
+            value={(inbox || []).filter(m => !m.is_read).length}
+            subtitle="New messages"
+            bgGradient="from-blue-50 to-blue-100"
+          />
+        </div>
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Left Column - Today's Schedule & Messages */}
+          <div className="lg:col-span-2 space-y-6">
+            <TodayScheduleCard timetable={timetable} />
+            <RecentMessagesCard inbox={inbox} />
+          </div>
+
+          {/* Right Column - Activity & Calendar */}
+          <div className="space-y-6">
+            <RecentActivityCard activities={activities} />
+            <CalendarWidget />
+          </div>
+        </div>
+
+        {/* Bottom Row - Assignments & Notices */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <DueAssignmentsCard report={report} />
+          <NoticesCard notices={notices} />
+        </div>
+
+        {/* Quick Actions */}
+        <QuickActionsCard role={role} />
+      </div>
     </div>
   );
 }
+
+// ============================================================================
+// HEADER COMPONENTS
+// ============================================================================
 
 function Greeting() {
   const { user } = useAuth();
@@ -58,105 +125,154 @@ function Greeting() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-3xl font-bold text-ink-900">{greeting}, {me?.name || user?.username}! 👋</h1>
-        <p className="mt-1 text-base text-ink-500">Here's what's happening in your classes today.</p>
-      </div>
-      <ProfileMenu />
+    <div>
+      <h1 className="text-3xl font-bold text-gray-900">
+        {greeting}, {me?.name || user?.username}! 👋
+      </h1>
+      <p className="mt-1 text-sm text-gray-600">Here's what's happening in your classes today.</p>
     </div>
   );
 }
 
-// Summary Cards Row
-function SummaryCards({ role, report, inbox }) {
-  const stats = report?.stats || {};
-  const pendingCount = report?.pendingActions?.length || 0;
-  const unrereadCount = (inbox || []).filter(m => !m.is_read).length;
+// ============================================================================
+// CARD COMPONENTS
+// ============================================================================
 
-  const cards = [
-    { label: 'Attendance This Week', value: `${stats.attendanceRate30d ?? 0}%`, icon: '📍' },
-    { label: 'Pending Assignments', value: pendingCount, icon: '📝' },
-    { label: 'Upcoming Exams', value: stats.upcomingExams ?? 0, icon: '📚' },
-    { label: 'Unread Messages', value: unrereadCount, icon: '💬' },
-  ];
-
+function StatCard({ icon, label, value, subtitle, trend, bgGradient }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card) => (
-        <div key={card.label} className="rounded-2xl border border-border bg-surface p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-ink-500">{card.label}</div>
-              <div className="mt-2 text-3xl font-bold text-ink-900">{card.value}</div>
+    <div className={`rounded-xl border border-gray-200 bg-gradient-to-br ${bgGradient} p-6 shadow-sm hover:shadow-md transition-shadow`}>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">{label}</p>
+          <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
+          <p className="mt-1 text-xs text-gray-600">{subtitle}</p>
+          {trend && (
+            <div className="mt-2 flex items-center gap-1">
+              <TrendingUp className="w-3 h-3 text-emerald-600" />
+              <span className="text-xs font-semibold text-emerald-600">{trend}</span>
             </div>
-            <div className="text-4xl">{card.icon}</div>
-          </div>
+          )}
         </div>
-      ))}
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/60 backdrop-blur">
+          {icon}
+        </div>
+      </div>
     </div>
   );
 }
 
-// Today's Schedule Section
-function TodaySchedule({ role, timetable }) {
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+function TodayScheduleCard({ timetable }) {
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   const todayClasses = timetable?.filter(t => new Date(t.start_time).toDateString() === new Date().toDateString()) || [];
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
-      <h2 className="text-lg font-semibold text-ink-900 mb-4">Today's Schedule</h2>
-      <p className="text-sm text-ink-500 mb-4">{today}</p>
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Today's Schedule</h2>
+          <p className="mt-0.5 text-xs text-gray-500">{today}</p>
+        </div>
+        <Link to="/app/timetable" className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+          View all <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
 
       {todayClasses.length === 0 ? (
-        <p className="text-center py-8 text-ink-500">No classes today</p>
+        <div className="flex h-32 items-center justify-center rounded-lg border-2 border-dashed border-gray-200">
+          <p className="text-sm text-gray-500">No classes today</p>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {todayClasses.slice(0, 5).map((cls, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-surface-muted hover:bg-surface-muted/80 transition-colors">
-              <div className="flex-1">
-                <p className="font-medium text-ink-900">{cls.subject || 'Class'}</p>
-                <p className="text-sm text-ink-500">{new Date(cls.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(cls.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+            <div key={idx} className="flex items-center gap-4 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold text-indigo-600">
+                  {new Date(cls.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <div className="mt-1 h-2 w-2 rounded-full bg-indigo-600"></div>
               </div>
-              <span className="text-xs font-medium text-accent px-3 py-1 rounded-full bg-accent/10">In Progress</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900">{cls.subject || 'Class'}</p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {cls.room || 'Room'} • {cls.instructor || 'Instructor'}
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <span className="inline-block rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                  In Progress
+                </span>
+              </div>
             </div>
           ))}
         </div>
       )}
-
-      <Link to="/app/timetable" className="mt-4 inline-block text-sm font-semibold text-accent hover:text-accent-dark">
-        View full timetable →
-      </Link>
     </div>
   );
 }
 
-// Recent Activity Section
-function RecentActivity({ activities }) {
-  const items = (activities?.data || []).slice(0, 5);
+function RecentMessagesCard({ inbox }) {
+  const items = (inbox || []).slice(0, 3);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-ink-900">Recent Activity</h2>
-        <Link to="/app/activities" className="text-sm font-semibold text-accent hover:text-accent-dark">
-          View all →
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Recent Messages</h2>
+        <Link to="/app/messages" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+          View all
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <p className="text-center py-8 text-ink-500">No activities yet</p>
+        <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-200">
+          <p className="text-sm text-gray-500">No messages</p>
+        </div>
       ) : (
-        <div className="divide-y divide-border">
-          {items.map((item, idx) => (
-            <div key={idx} className="py-3 first:pt-0 last:pb-0 flex items-start gap-3">
-              <span
-                className="mt-1 h-2 w-2 flex-shrink-0 rounded-full"
-                style={{ background: ACTIVITY_DOT_COLOR[item.type] || 'var(--ink-500)' }}
-              />
+        <div className="space-y-3">
+          {items.map((msg) => (
+            <div key={msg.id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-gray-50 transition-colors">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-xs font-bold text-white">
+                {msg.sender_username?.slice(0, 2).toUpperCase() || 'U'}
+              </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-ink-900 text-sm">{item.title}</p>
-                <p className="text-xs text-ink-500 mt-0.5">{relativeTime(item.ts)}</p>
+                <p className="text-sm font-medium text-gray-900">{msg.sender_username}</p>
+                <p className="truncate text-xs text-gray-500">{msg.subject || msg.body}</p>
+              </div>
+              {!msg.is_read && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-indigo-600"></div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecentActivityCard({ activities }) {
+  const items = (activities?.data || []).slice(0, 4);
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+        <Link to="/app/activities" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+          View all
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-200">
+          <p className="text-sm text-gray-500">No activities</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item, idx) => (
+            <div key={idx} className="flex items-start gap-3">
+              <div
+                className="mt-1 flex-shrink-0 w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: ACTIVITY_COLORS[item.type] || '#6B7280' }}
+              ></div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">{item.title}</p>
+                <p className="text-xs text-gray-500">{relativeTime(item.ts)}</p>
               </div>
             </div>
           ))}
@@ -166,7 +282,6 @@ function RecentActivity({ activities }) {
   );
 }
 
-// Calendar Widget
 function CalendarWidget() {
   const today = new Date();
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -176,37 +291,33 @@ function CalendarWidget() {
   const firstDay = new Date(year, today.getMonth(), 1).getDay();
 
   const days = [];
-  for (let i = 0; i < firstDay; i++) {
-    days.push(null);
-  }
-  for (let i = 1; i <= daysInMonth; i++) {
-    days.push(i);
-  }
+  for (let i = 0; i < firstDay; i++) days.push(null);
+  for (let i = 1; i <= daysInMonth; i++) days.push(i);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
-      <h3 className="text-lg font-semibold text-ink-900 mb-4">{month} {year}</h3>
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+      <h3 className="mb-4 text-lg font-semibold text-gray-900">{month} {year}</h3>
 
-      <div className="grid grid-cols-7 gap-2 mb-4">
+      <div className="mb-3 grid grid-cols-7 gap-1">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center text-xs font-semibold text-ink-500 py-2">
+          <div key={day} className="text-center text-xs font-semibold text-gray-600 py-2">
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1">
         {days.map((day, idx) => {
           const isToday = day === today.getDate();
           return (
             <button
               key={idx}
-              className={`py-2 text-sm rounded-lg transition-colors ${
+              className={`py-1.5 text-xs rounded-lg font-medium transition-all ${
                 day === null
                   ? 'invisible'
                   : isToday
-                  ? 'bg-accent text-white font-semibold'
-                  : 'text-ink-900 hover:bg-surface-muted'
+                  ? 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white font-bold shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
               {day}
@@ -218,27 +329,33 @@ function CalendarWidget() {
   );
 }
 
-// Notices Section
-function NoticesSection({ notices }) {
-  const items = (notices || []).slice(0, 3);
+function DueAssignmentsCard({ report }) {
+  const items = report?.pendingActions?.filter(a => a.type === 'assignment')?.slice(0, 3) || [];
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-ink-900">Notices</h2>
-        <Link to="/app/notices" className="text-sm font-semibold text-accent hover:text-accent-dark">
-          View all →
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Due Assignments</h2>
+        <Link to="/app/assignments" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+          View all
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <p className="text-center py-8 text-ink-500">No notices yet</p>
+        <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-200">
+          <p className="text-sm text-gray-500">No pending assignments</p>
+        </div>
       ) : (
-        <div className="divide-y divide-border">
-          {items.map((notice) => (
-            <div key={notice.id} className="py-3 first:pt-0 last:pb-0">
-              <p className="font-medium text-ink-900 text-sm">{notice.title}</p>
-              <p className="text-xs text-ink-500 mt-1">{new Date(notice.created_at).toLocaleDateString()}</p>
+        <div className="space-y-3">
+          {items.map((item, idx) => (
+            <div key={idx} className="flex items-center justify-between rounded-lg p-3 hover:bg-gray-50 transition-colors">
+              <div>
+                <p className="text-sm font-medium text-gray-900">{item.title}</p>
+                <p className="text-xs text-gray-500">{item.subtitle}</p>
+              </div>
+              <span className="inline-block rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
+                Due {item.subtitle}
+              </span>
             </div>
           ))}
         </div>
@@ -247,29 +364,61 @@ function NoticesSection({ notices }) {
   );
 }
 
-// Quick Actions
-function QuickActions({ role }) {
+function NoticesCard({ notices }) {
+  const items = (notices || []).slice(0, 3);
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Notices</h2>
+        <Link to="/app/notices" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+          View all
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-200">
+          <p className="text-sm text-gray-500">No notices</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((notice) => (
+            <div key={notice.id} className="rounded-lg p-3 hover:bg-gray-50 transition-colors border-l-4 border-yellow-400">
+              <p className="text-sm font-medium text-gray-900">{notice.title}</p>
+              <p className="text-xs text-gray-500 mt-1">{new Date(notice.created_at).toLocaleDateString()}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuickActionsCard({ role }) {
   const actions = [
     { label: 'Mark Attendance', icon: '📋', to: '/app/attendance', roles: ['instructor', 'staff'] },
     { label: 'View Timetable', icon: '📅', to: '/app/timetable', roles: ['learner', 'instructor'] },
     { label: 'Submit Assignment', icon: '📝', to: '/app/assignments', roles: ['learner'] },
     { label: 'View Exams', icon: '📚', to: '/app/exams', roles: ['learner', 'instructor'] },
+    { label: 'Check Results', icon: '📊', to: '/app/results', roles: ['learner'] },
+    { label: 'Ask Doubt', icon: '❓', to: '/app/messages', roles: ['learner'] },
+    { label: 'School Library', icon: '📖', to: '/app/library', roles: ['learner'] },
   ];
 
   const filtered = actions.filter(a => a.roles.includes(role));
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
-      <h2 className="text-lg font-semibold text-ink-900 mb-4">Quick Actions</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm hover:shadow-md transition-shadow">
+      <h2 className="mb-6 text-lg font-semibold text-gray-900">Quick Actions</h2>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
         {filtered.map((action) => (
           <Link
             key={action.to}
             to={action.to}
-            className="flex flex-col items-center justify-center p-4 rounded-lg bg-surface-muted hover:bg-accent/10 hover:text-accent transition-colors text-center"
+            className="group flex flex-col items-center justify-center rounded-lg border-2 border-gray-200 px-4 py-6 text-center transition-all hover:border-indigo-300 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-purple-50 hover:shadow-md"
           >
-            <span className="text-2xl mb-2">{action.icon}</span>
-            <span className="text-xs font-medium text-ink-900">{action.label}</span>
+            <span className="mb-2 text-3xl group-hover:scale-110 transition-transform">{action.icon}</span>
+            <span className="text-xs font-semibold text-gray-700 group-hover:text-indigo-700">{action.label}</span>
           </Link>
         ))}
       </div>
@@ -277,14 +426,18 @@ function QuickActions({ role }) {
   );
 }
 
+// ============================================================================
+// UTILITIES
+// ============================================================================
 
 function relativeTime(ts) {
   const diffMs = Date.now() - new Date(ts).getTime();
   const mins = Math.round(diffMs / 60000);
-  if (mins < 1) return 'now';
-  if (mins < 60) return `${mins}m`;
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
   const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h`;
+  if (hours < 24) return `${hours}h ago`;
   const days = Math.round(hours / 24);
-  return `${days}d`;
+  if (days < 7) return `${days}d ago`;
+  return new Date(ts).toLocaleDateString();
 }
