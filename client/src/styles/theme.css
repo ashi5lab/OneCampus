@@ -1,28 +1,176 @@
 /* client/src/styles/theme.css */
 
 /*
-  Default theme — clean, white-sidebar, indigo-accent design (per the
-  Q School redesign mock). Single theme for now; the CSS-custom-property
-  architecture below is what makes adding more themes later a matter of
-  defining another `.theme-x` block, not touching any component.
+  Design token system supporting multiple themes via CSS custom properties.
+  Light theme is default; dark theme applies via @media query + optional
+  data-theme attribute override. New themes can be added by creating
+  additional property blocks.
 */
-:root, .theme-slate {
+
+/* Light Theme (default) */
+:root {
+  /* Neutral palette */
   --bg: #F8F8FB;
   --surface: #FFFFFF;
+  --surface-secondary: #F5F5FA;
+  --surface-muted: #F1F1F6;
+  --border: #E5E5EC;
+  --border-subtle: #ECECF1;
+
+  /* Text colors */
   --ink-900: #191924;
   --ink-700: #45454F;
   --ink-500: #6B6B78;
-  --border: #E5E5EC;
-  --surface-muted: #F1F1F6;
+  --ink-300: #9D9DA8;
+
+  /* Semantic colors */
   --accent: #4F46E5;
   --accent-dark: #4338CA;
+  --accent-light: #EEF0FD;
   --accent-ink: #FFFFFF;
+
   --success: #15803D;
+  --success-light: #DCFCE7;
+  --success-ink: #FFFFFF;
+
+  --warning: #EA8C55;
+  --warning-light: #FEE7D4;
+  --warning-ink: #FFFFFF;
+
   --danger: #DC2626;
-  --radius: 14px;
+  --danger-light: #FEE2E2;
+  --danger-ink: #FFFFFF;
+
+  --info: #2563EB;
+  --info-light: #DBEAFE;
+  --info-ink: #FFFFFF;
+
+  /* Sidebar */
+  --sidebar-bg: #FFFFFF;
+  --sidebar-bg-hover: #F5F5FA;
+  --sidebar-text: #5B5B68;
+  --sidebar-text-strong: #191924;
+  --sidebar-active-bg: #EEF0FD;
+  --sidebar-active-text: #4F46E5;
+  --sidebar-border: #ECECF1;
+
+  /* Typography */
   --font-display: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "SF Mono", "JetBrains Mono", monospace;
+
+  --text-xl: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-base: 1rem;
+  --text-sm: 0.875rem;
+  --text-xs: 0.75rem;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Border radius */
+  --radius: 14px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  /* Transitions */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+}
+
+/* Dark Theme */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1419;
+    --surface: #1A1E27;
+    --surface-secondary: #242A35;
+    --surface-muted: #2D3139;
+    --border: #3A3F4A;
+    --border-subtle: #2E3238;
+
+    --ink-900: #F5F7FA;
+    --ink-700: #D1D5DB;
+    --ink-500: #9CA3AF;
+    --ink-300: #6B7280;
+
+    --accent: #6366F1;
+    --accent-dark: #818CF8;
+    --accent-light: #1E1B4B;
+
+    --success: #22C55E;
+    --success-light: #14532D;
+
+    --warning: #F97316;
+    --warning-light: #431407;
+
+    --danger: #EF4444;
+    --danger-light: #4C1414;
+
+    --info: #3B82F6;
+    --info-light: #1E3A5F;
+
+    --sidebar-bg: #1A1E27;
+    --sidebar-bg-hover: #242A35;
+    --sidebar-text: #9CA3AF;
+    --sidebar-text-strong: #F5F7FA;
+    --sidebar-active-bg: #1E1B4B;
+    --sidebar-active-text: #6366F1;
+    --sidebar-border: #2E3238;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Light theme override via data-theme attribute */
+:root[data-theme="light"] {
+  --bg: #F8F8FB;
+  --surface: #FFFFFF;
+  --surface-secondary: #F5F5FA;
+  --surface-muted: #F1F1F6;
+  --border: #E5E5EC;
+  --border-subtle: #ECECF1;
+
+  --ink-900: #191924;
+  --ink-700: #45454F;
+  --ink-500: #6B6B78;
+  --ink-300: #9D9DA8;
+
+  --accent: #4F46E5;
+  --accent-dark: #4338CA;
+  --accent-light: #EEF0FD;
+
+  --success: #15803D;
+  --success-light: #DCFCE7;
+
+  --warning: #EA8C55;
+  --warning-light: #FEE7D4;
+
+  --danger: #DC2626;
+  --danger-light: #FEE2E2;
+
+  --info: #2563EB;
+  --info-light: #DBEAFE;
 
   --sidebar-bg: #FFFFFF;
   --sidebar-bg-hover: #F5F5FA;
@@ -32,15 +180,58 @@
   --sidebar-active-text: #4F46E5;
   --sidebar-border: #ECECF1;
 
-  /* Shared structural values mapped to this theme's tokens */
-  --body-bg: var(--bg);
-  --text-primary: var(--ink-900);
-  --border-color: var(--border);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Global utility classes to apply tokens */
+/* Dark theme override via data-theme attribute */
+:root[data-theme="dark"] {
+  --bg: #0F1419;
+  --surface: #1A1E27;
+  --surface-secondary: #242A35;
+  --surface-muted: #2D3139;
+  --border: #3A3F4A;
+  --border-subtle: #2E3238;
+
+  --ink-900: #F5F7FA;
+  --ink-700: #D1D5DB;
+  --ink-500: #9CA3AF;
+  --ink-300: #6B7280;
+
+  --accent: #6366F1;
+  --accent-dark: #818CF8;
+  --accent-light: #1E1B4B;
+
+  --success: #22C55E;
+  --success-light: #14532D;
+
+  --warning: #F97316;
+  --warning-light: #431407;
+
+  --danger: #EF4444;
+  --danger-light: #4C1414;
+
+  --info: #3B82F6;
+  --info-light: #1E3A5F;
+
+  --sidebar-bg: #1A1E27;
+  --sidebar-bg-hover: #242A35;
+  --sidebar-text: #9CA3AF;
+  --sidebar-text-strong: #F5F7FA;
+  --sidebar-active-bg: #1E1B4B;
+  --sidebar-active-text: #6366F1;
+  --sidebar-border: #2E3238;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Global utility classes */
 body {
   background-color: var(--bg);
   color: var(--ink-900);
   font-family: var(--font-body);
+  transition: background-color var(--transition-base), color var(--transition-base);
 }
