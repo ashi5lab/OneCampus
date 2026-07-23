@@ -11,11 +11,11 @@ import { HomeInsightsPage } from '../home/components/HomeInsightsPage';
 import { ProfileMenu } from '../../components/ProfileMenu';
 import { useMyProfile } from '../profile/hooks/useProfile';
 
-// Learner/instructor/staff get the redesigned personal-insights Home (see
-// HomeInsightsPage) instead of this file's card-grid/reports-toggle view —
-// admin and guardian are untouched, since neither role was part of that
-// redesign.
-const REDESIGNED_ROLES = ['learner', 'instructor', 'staff'];
+// Learner/instructor/staff/admin get the redesigned personal-insights Home
+// (see HomeInsightsPage) instead of this file's card-grid/reports-toggle
+// view — guardian is untouched for now, since a guardian's dashboard needs
+// a per-child view HomeInsightsPage doesn't yet support.
+const REDESIGNED_ROLES = ['learner', 'instructor', 'staff', 'admin'];
 
 const DASHBOARD_VIEW_KEY = 'onecampus.dashboardView';
 const STATUS_LABEL = { present: 'Present', absent: 'Absent', late: 'Late', excused: 'Excused' };

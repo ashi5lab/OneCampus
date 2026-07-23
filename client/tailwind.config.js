@@ -2,6 +2,8 @@
 // src/styles/theme.css — components use these token names (bg-surface,
 // text-ink-900, etc.) instead of ever hardcoding hex values, so swapping
 // the active theme class on <html> is the only thing that needs to change.
+import tailwindcssAnimate from 'tailwindcss-animate';
+
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
@@ -10,19 +12,42 @@ export default {
         bg: 'var(--bg)',
         surface: 'var(--surface)',
         'surface-muted': 'var(--surface-muted)',
-        border: 'var(--border)',
+        border: {
+          DEFAULT: 'var(--border)',
+          subtle: 'var(--border-subtle)'
+        },
         ink: {
           900: 'var(--ink-900)',
           700: 'var(--ink-700)',
-          500: 'var(--ink-500)'
+          500: 'var(--ink-500)',
+          300: 'var(--ink-300)'
         },
         accent: {
           DEFAULT: 'var(--accent)',
           dark: 'var(--accent-dark)',
-          ink: 'var(--accent-ink)'
+          ink: 'var(--accent-ink)',
+          light: 'var(--accent-light)'
         },
-        success: 'var(--success)',
-        danger: 'var(--danger)',
+        success: {
+          DEFAULT: 'var(--success)',
+          light: 'var(--success-light)',
+          ink: 'var(--success-ink)'
+        },
+        danger: {
+          DEFAULT: 'var(--danger)',
+          light: 'var(--danger-light)',
+          ink: 'var(--danger-ink)'
+        },
+        warning: {
+          DEFAULT: 'var(--warning)',
+          light: 'var(--warning-light)',
+          ink: 'var(--warning-ink)'
+        },
+        info: {
+          DEFAULT: 'var(--info)',
+          light: 'var(--info-light)',
+          ink: 'var(--info-ink)'
+        },
         microsoft: {
           blue: '#0067b8',
           hover: '#005da6'
@@ -38,7 +63,12 @@ export default {
         }
       },
       borderRadius: {
-        DEFAULT: 'var(--radius)'
+        DEFAULT: 'var(--radius)',
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        xl: 'var(--radius-xl)',
+        full: 'var(--radius-full)'
       },
       fontFamily: {
         display: 'var(--font-display)',
@@ -47,5 +77,5 @@ export default {
       }
     }
   },
-  plugins: []
+  plugins: [tailwindcssAnimate]
 };

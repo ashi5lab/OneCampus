@@ -5,7 +5,6 @@ import { useNotices } from '../../notices/hooks/useNotices';
 import { useInbox } from '../../messages/hooks/useMessages';
 import { useActivities } from '../../activities/hooks/useActivities';
 import { useMyTimetable } from '../../timetable/hooks/useTimetable';
-import { ProfileMenu } from '../../../components/ProfileMenu';
 import { useMyProfile } from '../../profile/hooks/useProfile';
 import {
   Calendar,
@@ -33,58 +32,87 @@ const ACTIVITY_COLORS = {
 export function HomeInsightsPage() {
   const { user } = useAuth();
   const role = user?.role;
+  const isAdmin = role === 'admin';
   const { data: report } = useDashboardReport();
   const { data: notices } = useNotices();
   const { data: inbox } = useInbox();
   const { data: activities } = useActivities();
-  const { data: timetable } = useMyTimetable();
+  const { data: timetable } = useMyTimetable({ enabled: !isAdmin });
+  const unreadMessages = (inbox || []).filter((m) => !m.is_read).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <div className="border-b border-gray-200 bg-white/80 backdrop-blur sticky top-0 z-40">
-        <div className="mx-auto max-w-7xl px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Greeting />
-            <ProfileMenu />
-          </div>
-        </div>
+    <div>
+      <div className="mb-8">
+        <Greeting />
       </div>
 
-      {/* Main Content */}
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          <StatCard
-            icon={<CheckCircle className="w-6 h-6 text-emerald-600" />}
-            label="Attendance This Week"
-            value={`${report?.stats?.attendanceRate30d ?? 0}%`}
-            subtitle="Present • 13 / 15 days"
-            trend="+2.5%"
-            bgGradient="from-emerald-50 to-emerald-100"
-          />
-          <StatCard
-            icon={<BookOpen className="w-6 h-6 text-rose-600" />}
-            label="Pending Assignments"
-            value={report?.pendingActions?.filter(a => a.type === 'assignment').length || 0}
-            subtitle="Due this week"
-            bgGradient="from-rose-50 to-rose-100"
-          />
-          <StatCard
-            icon={<Calendar className="w-6 h-6 text-orange-600" />}
-            label="Upcoming Exams"
-            value={report?.stats?.upcomingExams ?? 0}
-            subtitle="Next: 5 days"
-            bgGradient="from-orange-50 to-orange-100"
-          />
-          <StatCard
-            icon={<MessageSquare className="w-6 h-6 text-blue-600" />}
-            label="Unread Messages"
-            value={(inbox || []).filter(m => !m.is_read).length}
-            subtitle="New messages"
-            bgGradient="from-blue-50 to-blue-100"
-          />
-        </div>
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        {isAdmin ? (
+          <>
+            <StatCard
+              icon={<CheckCircle className="w-6 h-6 text-emerald-600" />}
+              label="Attendance Marked"
+              value={report?.teacherActivity?.attendance_marked ?? 0}
+              subtitle="Last 7 days"
+              bgGradient="from-emerald-50 to-emerald-100"
+            />
+            <StatCard
+              icon={<BookOpen className="w-6 h-6 text-rose-600" />}
+              label="Assignments Graded"
+              value={report?.teacherActivity?.assignments_graded ?? 0}
+              subtitle="Last 7 days"
+              bgGradient="from-rose-50 to-rose-100"
+            />
+            <StatCard
+              icon={<AlertCircle className="w-6 h-6 text-orange-600" />}
+              label="Notices Posted"
+              value={report?.staffActivity?.notices_posted ?? 0}
+              subtitle="Last 7 days"
+              bgGradient="from-orange-50 to-orange-100"
+            />
+            <StatCard
+              icon={<MessageSquare className="w-6 h-6 text-blue-600" />}
+              label="Unread Messages"
+              value={unreadMessages}
+              subtitle="New messages"
+              bgGradient="from-blue-50 to-blue-100"
+            />
+          </>
+        ) : (
+          <>
+            <StatCard
+              icon={<CheckCircle className="w-6 h-6 text-emerald-600" />}
+              label="Attendance This Week"
+              value={`${report?.stats?.attendanceRate30d ?? 0}%`}
+              subtitle="Present • 13 / 15 days"
+              trend="+2.5%"
+              bgGradient="from-emerald-50 to-emerald-100"
+            />
+            <StatCard
+              icon={<BookOpen className="w-6 h-6 text-rose-600" />}
+              label="Pending Assignments"
+              value={report?.pendingActions?.filter(a => a.type === 'assignment').length || 0}
+              subtitle="Due this week"
+              bgGradient="from-rose-50 to-rose-100"
+            />
+            <StatCard
+              icon={<Calendar className="w-6 h-6 text-orange-600" />}
+              label="Upcoming Exams"
+              value={report?.stats?.upcomingExams ?? 0}
+              subtitle="Next: 5 days"
+              bgGradient="from-orange-50 to-orange-100"
+            />
+            <StatCard
+              icon={<MessageSquare className="w-6 h-6 text-blue-600" />}
+              label="Unread Messages"
+              value={unreadMessages}
+              subtitle="New messages"
+              bgGradient="from-blue-50 to-blue-100"
+            />
+          </>
+        )}
+      </div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -107,9 +135,8 @@ export function HomeInsightsPage() {
           <NoticesCard notices={notices} />
         </div>
 
-        {/* Quick Actions */}
-        <QuickActionsCard role={role} />
-      </div>
+      {/* Quick Actions */}
+      <QuickActionsCard role={role} />
     </div>
   );
 }
@@ -403,6 +430,13 @@ function QuickActionsCard({ role }) {
     { label: 'Check Results', icon: '📊', to: '/app/results', roles: ['learner'] },
     { label: 'Ask Doubt', icon: '❓', to: '/app/messages', roles: ['learner'] },
     { label: 'School Library', icon: '📖', to: '/app/library', roles: ['learner'] },
+    { label: 'Manage Classes', icon: '🏫', to: '/app/cohorts', roles: ['admin'] },
+    { label: 'Manage Instructors', icon: '🧑‍🏫', to: '/app/instructors', roles: ['admin'] },
+    { label: 'Manage Learners', icon: '🎓', to: '/app/learners', roles: ['admin'] },
+    { label: 'Reports', icon: '📈', to: '/app/reports', roles: ['admin'] },
+    { label: 'Broadcast', icon: '📣', to: '/app/broadcast', roles: ['admin'] },
+    { label: 'Access Control', icon: '🔐', to: '/app/access-control', roles: ['admin'] },
+    { label: 'Settings', icon: '⚙️', to: '/app/profile', roles: ['admin'] },
   ];
 
   const filtered = actions.filter(a => a.roles.includes(role));
