@@ -35,7 +35,9 @@ export function AttendanceRoster({ lockedCohortId } = {}) {
   const { t } = useConfig();
   const { can } = useAuth();
   const canMark = can('attendance.mark');
-  const { data: cohorts } = useCohorts({ enabled: !lockedCohortId });
+  // Teachers may have 'cohorts.manage' without 'cohorts.view'; allow either.
+  const canViewCohorts = can('cohorts.view') || can('cohorts.manage');
+  const { data: cohorts } = useCohorts({ enabled: !lockedCohortId && canViewCohorts });
   const { data: allLearners } = useLearners();
   const markAttendance = useMarkAttendance();
 
@@ -96,10 +98,13 @@ export function AttendanceRoster({ lockedCohortId } = {}) {
               onChange={(e) => setCohortId(e.target.value)}
             >
               <option value="">Select {t('cohort').toLowerCase()}…</option>
-              {(cohorts || []).map((cohort) => (
-                <option key={cohort.id} value={cohort.id}>{cohort.name}</option>
-              ))}
-            </select>
+               {canViewCohorts ? (
+                 (cohorts || []).map((cohort) => (
+                   <option key={cohort.id} value={cohort.id}>{cohort.name}</option>
+                 ))
+               ) : (
+                 <option disabled>No accessible cohorts</option>
+               )}            </select>
           </label>
         )}
         <label className="block">
