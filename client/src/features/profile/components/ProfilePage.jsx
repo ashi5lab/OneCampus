@@ -165,9 +165,8 @@ export function ProfilePage() {
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
-              className={`whitespace-nowrap rounded px-3 py-2 text-left text-[13px] font-semibold transition-colors ${
-                activeTab === t.key ? 'bg-accent/15 text-accent-dark' : 'text-ink-700 hover:bg-surface-muted'
-              }`}
+              className={`whitespace-nowrap rounded px-3 py-2 text-left text-[13px] font-semibold transition-colors ${activeTab === t.key ? 'bg-accent/15 text-accent-dark' : 'text-ink-700 hover:bg-surface-muted'
+                }`}
             >
               {t.label}
             </button>
@@ -262,7 +261,7 @@ function NotificationPreferencesCard() {
     setPushStatus('requesting');
     try {
       // NOTE: Replace 'TODO_VAPID_KEY' with the actual VAPID key when provided
-      const token = await requestPushPermission('TODO_VAPID_KEY');
+      const token = await requestPushPermission('BAULLVjzW1Q_VpJgGnfTmVnm_oDlcDE788ohWYa3bOwc8jy37oQJ0H1ZemT2BjJs-gpbr_eo0-d6FAXNNKskhls');
       if (token) {
         await saveFcmToken.mutateAsync({ token, device_info: navigator.userAgent });
         setPushStatus('success');
@@ -363,9 +362,8 @@ function HomeCardsCard() {
                 className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${on ? 'bg-accent' : 'bg-surface-muted'}`}
               >
                 <span
-                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${
-                    on ? 'translate-x-[18px]' : 'translate-x-0.5'
-                  }`}
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${on ? 'translate-x-[18px]' : 'translate-x-0.5'
+                    }`}
                 />
               </button>
             </div>
