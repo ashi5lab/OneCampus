@@ -1,14 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { attendanceApi } from '../services/attendanceApi';
 
-export function useAttendance() {
-  return useQuery({ queryKey: ['attendance'], queryFn: attendanceApi.list });
+export function useAttendance(page, pageSize) {
+  return useQuery({
+    queryKey: ['attendance', page, pageSize],
+    queryFn: () => attendanceApi.list(page, pageSize)
+  });
 }
 
-export function useAttendanceForCohortDate(cohortId, date) {
+export function useAttendanceForCohortDate(cohortId, date, page, pageSize) {
   return useQuery({
-    queryKey: ['attendance', 'roster', cohortId, date],
-    queryFn: () => attendanceApi.listByCohortDate(cohortId, date),
+    queryKey: ['attendance', 'roster', cohortId, date, page, pageSize],
+    queryFn: () => attendanceApi.listByCohortDate(cohortId, date, page, pageSize),
     enabled: !!cohortId && !!date
   });
 }

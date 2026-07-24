@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { parsePagination } = require('../../lib/pagination');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
 
 const attendanceSchema = z.object({
@@ -12,6 +13,9 @@ const attendanceSchema = z.object({
 
 async function getAll(req, res) {
   try {
+    const { pagination, error } = parsePagination(req.query);
+    if (error) return res.status(400).json({ error: 'Invalid pagination parameters', details: error });
+
     // Filter by cohort_id and/or date, independently — either may be omitted.
     const { cohort_id, date } = req.query;
     const conditions = [];
@@ -35,14 +39,23 @@ async function getAll(req, res) {
       conditions.push(`date = $${params.length}`);
     }
 
-    let query = 'SELECT * FROM onec_attendance';
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-    query += ' ORDER BY date DESC, id DESC';
+    const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+    const baseQuery = `FROM onec_attendance ${whereClause}`;
 
-    const result = await req.db.query(query, params);
-    res.json({ data: result.rows });
+    if (!pagination) {
+      const result = await req.db.query(`SELECT * ${baseQuery} ORDER BY date DESC, id DESC`, params);
+      return res.json({ data: result.rows });
+    }
+
+    const pageParams = [...params, pagination.limit, pagination.offset];
+    const [rows, count] = await Promise.all([
+      req.db.query(
+        `SELECT * ${baseQuery} ORDER BY date DESC, id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+        pageParams
+      ),
+      req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`, params)
+    ]);
+    return res.json({ data: rows.rows, meta: { total: count.rows[0].total, page: pagination.page, pageSize: pagination.pageSize } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
