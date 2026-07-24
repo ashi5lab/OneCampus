@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, LayoutGrid, Activity, Inbox, Calendar, Grip, Settings, ChevronDown } from 'lucide-react';
+import { Home, LayoutGrid, Activity, Inbox, Calendar, Grip, Settings, ChevronDown, CheckSquare, ShieldAlert } from 'lucide-react';
 import { useConfig } from '../contexts/ConfigContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useMyProfile } from '../features/profile/hooks/useProfile';
@@ -56,6 +56,16 @@ export function Sidebar() {
         <NavLink to="/app" end className={navItemClass}>
           <Home className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
           Dashboard
+        </NavLink>
+
+        <NavLink to="/app/attendance" className={navItemClass}>
+          <CheckSquare className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
+          Attendance
+        </NavLink>
+
+        <NavLink to="/app/discipline" className={navItemClass}>
+          <ShieldAlert className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
+          Discipline
         </NavLink>
 
         {user?.role !== 'guardian' && (user?.role === 'admin' || user?.role === 'instructor' || user?.role === 'learner' || can('class.view')) && (

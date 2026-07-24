@@ -18,8 +18,13 @@ import {
   ArrowRight,
   ClipboardList,
   PenTool,
-  ScrollText
+  ScrollText,
+  Plus,
+  CheckSquare,
+  ShieldAlert
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../../../components/ui/dropdown-menu';
+import { useNavigate } from 'react-router-dom';
 
 // Activity dot colors for timeline
 const ACTIVITY_COLORS = {
@@ -43,6 +48,7 @@ export function HomeInsightsPage() {
   const { data: activities } = useActivities();
   const { data: timetable } = useMyTimetable({ enabled: !isAdmin });
   const unreadMessages = (inbox || []).filter((m) => !m.is_read).length;
+  const navigate = useNavigate();
 
   // Today's attendance breakdown (admin payload only) — [{status, count}].
   const attendanceToday = report?.attendanceToday || [];
@@ -174,6 +180,29 @@ export function HomeInsightsPage() {
 
       {/* Quick Actions */}
       <QuickActionsCard role={role} />
+
+      {/* Floating Action Button for Teachers/Admins */}
+      {(role === 'instructor' || role === 'admin') && (
+        <div className="fixed bottom-20 right-6 z-50 md:bottom-8 md:right-8">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 transition-transform hover:scale-105 active:scale-95">
+                <Plus className="h-7 w-7" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={12} className="w-48">
+              <DropdownMenuItem onClick={() => navigate('/app/attendance')} className="flex items-center gap-2 py-2">
+                <CheckSquare className="h-4 w-4 text-indigo-600" />
+                <span className="font-medium text-gray-800">Attendance</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/app/discipline')} className="flex items-center gap-2 py-2">
+                <ShieldAlert className="h-4 w-4 text-rose-600" />
+                <span className="font-medium text-gray-800">Discipline</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </div>
   );
 }

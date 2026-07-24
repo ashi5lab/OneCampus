@@ -1,7 +1,5 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useConfig } from '../contexts/ConfigContext';
-import { useUnreadCount } from '../features/messages/hooks/useMessages';
 import { useActivities } from '../features/activities/hooks/useActivities';
 
 const ICONS = {
@@ -43,9 +41,6 @@ const tabClass = ({ isActive }) =>
 
 export function BottomTabBar() {
   const { can, user } = useAuth();
-  const { hasModule } = useConfig();
-  const messagingEnabled = hasModule('messaging') && can('messages.view');
-  const { data: unreadCount } = useUnreadCount({ enabled: messagingEnabled });
   const { data: activity } = useActivities();
 
   return (
@@ -55,7 +50,7 @@ export function BottomTabBar() {
     >
       <NavLink to="/app" end className={tabClass}>
         <TabIcon name="home" />
-        Dashboard
+        Home
       </NavLink>
 
       {user?.role !== 'guardian' && (user?.role === 'admin' || user?.role === 'instructor' || user?.role === 'learner' || can('class.view')) && (
@@ -74,33 +69,12 @@ export function BottomTabBar() {
             </span>
           )}
         </span>
-        Activities
+        Activity
       </NavLink>
-
-      {messagingEnabled && (
-        <NavLink to="/app/messages" className={tabClass}>
-          <span className="relative">
-            <TabIcon name="messages" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-accent px-0.5 text-[8.5px] font-bold text-accent-ink">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </span>
-          Messages
-        </NavLink>
-      )}
-
-      {can('calendar.view') && (
-        <NavLink to="/app/calendar" className={tabClass}>
-          <TabIcon name="calendar" />
-          Calendar
-        </NavLink>
-      )}
 
       <NavLink to="/app/more" className={tabClass}>
         <TabIcon name="more" />
-        More Apps
+        More
       </NavLink>
     </nav>
   );
