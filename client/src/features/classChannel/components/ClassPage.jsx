@@ -41,14 +41,38 @@ export function ClassPage() {
   return <ClassChannel cohort={cohort} showBack={list.length > 1} />;
 }
 
+import { TeacherHeader } from '../../../components/TeacherHeader';
+import { CalendarDays } from 'lucide-react';
+
 function ClassPicker({ cohorts }) {
   return (
-    <div>
-      <PageHeader eyebrow="Class" title="Your Classes" subtitle={`${cohorts.length} classes`} />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="bg-[#f8f9fe] min-h-screen pb-24 font-body">
+      <TeacherHeader 
+        title="My Classes" 
+        subtitle="All classes you're teaching" 
+        showSearch={true} 
+        searchPlaceholder="Search classes..." 
+        actionIcon="filter" 
+      />
+      
+      <div className="px-4 relative z-20 space-y-4 pt-4">
         {cohorts.map((c, i) => (
           <ClassCard key={c.id} cohort={c} to={`/app/class/${c.id}`} index={i} />
         ))}
+
+        {/* Timetable Promo Banner */}
+        <div className="mt-8 bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center gap-4">
+          <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center flex-shrink-0 text-indigo-600">
+            <CalendarDays className="w-6 h-6" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-bold text-indigo-900">Need to manage timetable?</div>
+            <div className="text-[11px] text-indigo-700/80 mt-0.5">View or update class timetable</div>
+          </div>
+          <Link to="/app/timetable" className="bg-[#5a4fcf] text-white px-4 py-2 rounded-xl text-[12px] font-bold shadow-sm whitespace-nowrap">
+            Open Timetable
+          </Link>
+        </div>
       </div>
     </div>
   );

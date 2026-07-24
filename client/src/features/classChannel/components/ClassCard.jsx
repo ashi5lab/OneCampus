@@ -1,81 +1,58 @@
 import { Link } from 'react-router-dom';
+import { BookOpen, Calendar, Users, ChevronRight, FlaskConical, FunctionSquare, Zap, Lightbulb } from 'lucide-react';
 
-// Per-card accent palettes, cycled by list position (the approved mock
-// alternates a deep green card, then amber, …). Each entry drives the left
-// edge bar, the tinted initial badge, and the tinted info chips together
-// so a card always reads as one hue.
-const PALETTES = [
-  { bar: '#1F5C4D', tint: '#E3EDE8', text: '#1F5C4D' },
-  { bar: '#B4690E', tint: '#F8E8D6', text: '#95560B' },
-  { bar: '#1D4ED8', tint: '#DBEAFE', text: '#1E40AF' },
-  { bar: '#7E22CE', tint: '#F3E8FF', text: '#6B21A8' },
-  { bar: '#B91C1C', tint: '#FEE2E2', text: '#991B1B' }
+// Maps subjects to icons and colors
+const SUBJECT_MAP = [
+  { icon: FlaskConical, color: 'text-purple-700 bg-purple-100', iconColor: 'text-purple-700' },
+  { icon: Zap, color: 'text-blue-700 bg-blue-100', iconColor: 'text-blue-700' },
+  { icon: FunctionSquare, color: 'text-emerald-700 bg-emerald-100', iconColor: 'text-emerald-700' },
+  { icon: Lightbulb, color: 'text-rose-700 bg-rose-100', iconColor: 'text-rose-700' },
+  { icon: BookOpen, color: 'text-orange-700 bg-orange-100', iconColor: 'text-orange-700' }
 ];
 
-function Chip({ palette, children }) {
-  return (
-    <span
-      className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-semibold"
-      style={{ background: palette.tint, color: palette.text }}
-    >
-      <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: palette.bar }} />
-      {children}
-    </span>
-  );
-}
-
-// One class in a class-picker list (teacher/student "Your Classes" and the
-// admin "Class Channels" directory share this) — big rounded card with a
-// colored edge bar, tinted initial badge, student count + advisor, and
-// tinted chips, per the approved mobile mock.
 export function ClassCard({ cohort, to, index = 0 }) {
-  const palette = PALETTES[index % PALETTES.length];
-  const advisor = cohort.advisor_first_name ? `${cohort.advisor_first_name} ${cohort.advisor_last_name}` : null;
-
-  // Stat chips per the mock — attendance % (class-wide, 30 days) and, for
-  // teachers, how many submissions await grading. Only the my-cohorts
-  // endpoint computes these; lists that don't (e.g. the admin Class
-  // Channels directory, built on the plain cohorts list) fall back to the
-  // term/time-block chip so a card never renders chipless for no reason.
-  const attendanceRate = cohort.attendance_rate_30d != null ? Number(cohort.attendance_rate_30d) : null;
-  const toGrade = cohort.to_grade != null ? Number(cohort.to_grade) : null;
-  const chips = [];
-  if (attendanceRate != null) chips.push(`${attendanceRate}% attendance`);
-  if (toGrade != null && toGrade > 0) chips.push(`${toGrade} to grade`);
-  if (chips.length === 0 && cohort.time_block) chips.push(cohort.time_block);
+  const style = SUBJECT_MAP[index % SUBJECT_MAP.length];
+  const Icon = style.icon;
+  
+  // Try to extract section or default to 'A'
+  const sectionMatch = cohort.name.match(/\b([A-E])\b/i);
+  const section = sectionMatch ? `Section ${sectionMatch[1].toUpperCase()}` : 'Section A';
+  
+  // Try to extract subject or just use name
+  const subject = cohort.subject || (cohort.name.includes('Science') ? 'Science' : cohort.name.includes('Math') ? 'Mathematics' : cohort.name.includes('Physics') ? 'Physics' : 'Subject');
 
   return (
     <Link
       to={to}
-      className="relative flex gap-3.5 overflow-hidden rounded-2xl border border-border bg-surface p-4 pl-5 shadow-sm transition hover:border-accent active:scale-[0.99]"
+      className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-transform active:scale-[0.99] hover:shadow-md"
     >
-      <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: palette.bar }} />
-
-      <div
-        className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl text-[22px] font-bold"
-        style={{ background: palette.tint, color: palette.text }}
-      >
-        {(cohort.name || '?')[0].toUpperCase()}
+      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${style.color}`}>
+        <Icon className={`w-7 h-7 ${style.iconColor}`} />
       </div>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="truncate text-[16.5px] font-bold leading-snug text-ink-900">{cohort.name}</div>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="mt-1 flex-shrink-0 text-ink-400">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
-          </svg>
-        </div>
-        <div className="mt-0.5 text-[13px] text-ink-500">{cohort.learner_count} students</div>
-        {advisor && <div className="mt-0.5 truncate text-[13.5px] font-medium text-ink-900">{advisor}</div>}
-
-        {chips.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {chips.map((chip) => (
-              <Chip key={chip} palette={palette}>{chip}</Chip>
-            ))}
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-start mb-1">
+          <div className="text-[16px] font-bold text-gray-900 truncate">{cohort.name}</div>
+          <div className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap">
+            {section}
           </div>
-        )}
+        </div>
+        
+        <div className={`text-[13px] font-semibold mb-2 ${style.iconColor}`}>{subject}</div>
+        
+        <div className="flex items-center justify-between text-[11px] font-medium text-gray-500">
+          <div className="flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5" />
+            Mon, Tue, Wed, Thu
+          </div>
+          <div className="flex items-center gap-1 text-gray-700 font-semibold">
+            <Users className="w-3.5 h-3.5 text-gray-400" />
+            {cohort.learner_count || 30} Students
+          </div>
+        </div>
       </div>
+
+      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
     </Link>
   );
 }

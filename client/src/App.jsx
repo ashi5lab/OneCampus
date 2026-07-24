@@ -220,6 +220,7 @@ export default function App() {
             server/modules/guardians/controller.js's getProfile). */}
         <Route path="guardians/:id" element={<GuardianProfilePage />} />
         <Route path="attendance" element={<AttendancePage />} />
+        <Route path="attendance/:cohortId" element={<AttendancePage />} />
         <Route
           path="attendance/absentees"
           element={

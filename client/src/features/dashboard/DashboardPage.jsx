@@ -10,12 +10,14 @@ import { useDashboardReport } from '../reports/hooks/useReports';
 import { HomeInsightsPage } from '../home/components/HomeInsightsPage';
 import { ProfileMenu } from '../../components/ProfileMenu';
 import { useMyProfile } from '../profile/hooks/useProfile';
+import { TeacherDashboard } from './components/TeacherDashboard';
 
-// Learner/instructor/staff/admin get the redesigned personal-insights Home
+// Learner/staff get the redesigned personal-insights Home
 // (see HomeInsightsPage) instead of this file's card-grid/reports-toggle
 // view — guardian is untouched for now, since a guardian's dashboard needs
 // a per-child view HomeInsightsPage doesn't yet support.
-const REDESIGNED_ROLES = ['learner', 'instructor', 'staff', 'admin'];
+const REDESIGNED_ROLES = ['learner', 'staff'];
+const TEACHER_ROLES = ['instructor', 'admin'];
 
 const DASHBOARD_VIEW_KEY = 'onecampus.dashboardView';
 const STATUS_LABEL = { present: 'Present', absent: 'Absent', late: 'Late', excused: 'Excused' };
@@ -26,6 +28,7 @@ export function DashboardPage() {
   const { user } = useAuth();
   const { data: me } = useMyProfile();
 
+  if (TEACHER_ROLES.includes(user?.role)) return <TeacherDashboard />;
   if (REDESIGNED_ROLES.includes(user?.role)) return <HomeInsightsPage />;
 
   // Default is the "Your Modules" card grid, matching the redesign mock —

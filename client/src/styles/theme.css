@@ -55,8 +55,8 @@
   --sidebar-border: #ECECF1;
 
   /* Typography */
-  --font-display: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "DM Sans", sans-serif;
   --font-mono: "SF Mono", "JetBrains Mono", monospace;
 
   --text-xl: 1.5rem;

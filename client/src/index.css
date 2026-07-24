@@ -14,6 +14,10 @@
     overflow-x: hidden;
   }
 
+  h1, h2, h3, h4, h5, h6, .card-title, .section-heading {
+    font-family: var(--font-display);
+  }
+
   /* Suppresses the elastic "rubber-band" scroll bounce past the top/bottom
      of the page — standard in native iOS/Android apps, but on by default in
      mobile Safari/Chrome, which is one more thing that reads as "a website"
