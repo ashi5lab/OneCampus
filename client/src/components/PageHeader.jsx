@@ -66,25 +66,33 @@ function InfoTooltip({ text }) {
 // sub-view (local state, not a route) that wants "back" to collapse that
 // sub-view instead of leaving the page. Everywhere else, omit both and it
 // does the right thing automatically.
+import { useEffect } from 'react';
+import { useTopbarStore } from '../stores/useTopbarStore';
+
 export function PageHeader({ eyebrow, title, subtitle, actions, tabs, back, onBack, className = '' }) {
   const { showBack, goBack } = useAutoBack(back);
-  const subtitleText = typeof subtitle === 'string' ? subtitle : undefined;
+  const setConfig = useTopbarStore(s => s.setConfig);
+  const clearConfig = useTopbarStore(s => s.clearConfig);
+
+  useEffect(() => {
+    setConfig({ 
+      title, 
+      subtitle, 
+      showBack, 
+      onBack: onBack || goBack 
+    });
+    return () => clearConfig();
+  }, [title, subtitle, showBack, onBack, goBack, setConfig, clearConfig]);
+
+  if (!actions && !tabs) return null;
 
   return (
     <div className={`mb-4 ${className}`}>
-      <div className="flex flex-row flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 sm:items-baseline sm:gap-3">
-          {showBack && <BackButton onClick={onBack || goBack} />}
-          <div>
-            <h1 className="flex items-center gap-1.5 font-display text-2xl font-bold tracking-tight text-ink-900">
-              {title}
-              <InfoTooltip text={subtitleText} />
-            </h1>
-          </div>
-          {subtitle && <div className="hidden text-[13px] text-ink-500 sm:block sm:pb-1">{subtitle}</div>}
+      {actions && (
+        <div className="flex flex-row flex-wrap items-center justify-end gap-3">
+          <div className="flex flex-shrink-0 items-center gap-2">{actions}</div>
         </div>
-        {actions && <div className="flex flex-shrink-0 items-center gap-2">{actions}</div>}
-      </div>
+      )}
       {tabs && <div className="mt-4">{tabs}</div>}
     </div>
   );

@@ -14,12 +14,15 @@ import {
   DropdownMenuTrigger
 } from './ui/dropdown-menu';
 import { useMyProfile } from '../features/profile/hooks/useProfile';
+import { useTopbarStore } from '../stores/useTopbarStore';
+import { BackButton } from './PageHeader';
 
 // Global App Header
 export function Topbar() {
   const { user, logout } = useAuth();
   const { data: myProfile } = useMyProfile();
   const navigate = useNavigate();
+  const config = useTopbarStore(s => s.config);
 
   const displayName = myProfile?.name || user?.name || user?.username || 'Mr. Arjun Sharma';
 
@@ -37,20 +40,34 @@ export function Topbar() {
         </div>
 
         <div className="flex items-center justify-between relative z-10 gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-[40px] h-[40px] bg-white rounded-full flex flex-shrink-0 items-center justify-center shadow-sm text-indigo-600 hidden sm:flex">
-                <School className="w-5 h-5" strokeWidth={2.5} />
-            </div>
-            <div>
-              <p className="text-gray-500 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-0.5">Good Morning,</p>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg md:text-xl font-extrabold text-[#212437] truncate max-w-[160px] sm:max-w-xs">{displayName}</h1>
-                <span className="bg-[#e4d9fd] text-[#6d4cea] px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide hidden sm:inline-block">
-                  {user?.role === 'admin' ? 'Admin' : user?.role || 'Learner'}
-                </span>
+          {config?.title ? (
+            <div className="flex items-center gap-3">
+              {config?.showBack && (
+                <div className="bg-white/80 rounded-full flex items-center justify-center shadow-sm">
+                  <BackButton onClick={config?.onBack} />
+                </div>
+              )}
+              <div>
+                <h1 className="text-lg md:text-xl font-extrabold text-[#212437]">{config.title}</h1>
+                {config.subtitle && <p className="text-gray-500 text-[11px] md:text-xs font-semibold mt-0.5">{config.subtitle}</p>}
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2.5">
+              <div className="w-[40px] h-[40px] bg-white rounded-full flex flex-shrink-0 items-center justify-center shadow-sm text-indigo-600 hidden sm:flex">
+                  <School className="w-5 h-5" strokeWidth={2.5} />
+              </div>
+              <div>
+                <p className="text-gray-500 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-0.5">Good Morning,</p>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg md:text-xl font-extrabold text-[#212437] truncate max-w-[160px] sm:max-w-xs">{displayName}</h1>
+                  <span className="bg-[#e4d9fd] text-[#6d4cea] px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide hidden sm:inline-block">
+                    {user?.role === 'admin' ? 'Admin' : user?.role || 'Learner'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Avatar / Bell */}
           <div className="flex items-center gap-2.5 flex-shrink-0">

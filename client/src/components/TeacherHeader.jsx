@@ -1,7 +1,14 @@
+import { useEffect } from 'react';
 import { Filter, Calendar } from 'lucide-react';
 import { OmniSearch } from './OmniSearch';
+import { useTopbarStore } from '../stores/useTopbarStore';
+import { useAutoBack } from './PageHeader';
 
 export function TeacherHeader({ 
+  title,
+  subtitle,
+  back,
+  onBack,
   showSearch = false, 
   onSearch, 
   searchValue,
@@ -10,6 +17,22 @@ export function TeacherHeader({
   onActionClick,
   headerStats = []
 }) {
+  const { showBack, goBack } = useAutoBack(back);
+  const setConfig = useTopbarStore(s => s.setConfig);
+  const clearConfig = useTopbarStore(s => s.clearConfig);
+
+  useEffect(() => {
+    if (title || showBack) {
+      setConfig({ 
+        title, 
+        subtitle, 
+        showBack, 
+        onBack: onBack || goBack 
+      });
+      return () => clearConfig();
+    }
+  }, [title, subtitle, showBack, onBack, goBack, setConfig, clearConfig]);
+
   return (
     <div className="relative mb-6 z-40">
       {/* Stats below the global Topbar */}
