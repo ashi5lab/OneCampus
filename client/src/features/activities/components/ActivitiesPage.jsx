@@ -28,7 +28,10 @@ const TYPE_ICON_PATH = {
 function TypeIcon({ type }) {
   const { bg, fg } = TYPE_ICON_BG[type] || { bg: '#F1F1F6', fg: '#6B6B78' };
   return (
-    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] text-[13px] font-bold" style={{ background: bg, color: fg }}>
+    <div
+      className="relative z-10 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[13px] font-bold ring-4 ring-surface"
+      style={{ background: bg, color: fg }}
+    >
       {type === 'mention' ? (
         '@'
       ) : (
@@ -40,25 +43,31 @@ function TypeIcon({ type }) {
   );
 }
 
-function groupLabel(ts) {
-  const date = new Date(ts);
-  const now = new Date();
-  if (date.toDateString() === now.toDateString()) return 'Today';
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return 'Earlier';
+// Every calendar day gets its own group, oldest activity included — not
+// just Today/Yesterday/Earlier (the old three-bucket grouping dumped
+// everything before yesterday into one undifferentiated "Earlier" pile).
+// "This Week" gets a weekday name (e.g. "Monday"), anything older than
+// that a full date, so scrolling back through history still reads at a
+// glance which day you're looking at.
+function dayKey(ts) {
+  return new Date(ts).toDateString();
 }
 
-function relativeTime(ts) {
-  const diffMs = Date.now() - new Date(ts).getTime();
-  const mins = Math.round(diffMs / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
+function dayLabel(ts) {
+  const date = new Date(ts);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((startOfToday - startOfDate) / 86400000);
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays > 1 && diffDays < 7) return date.toLocaleDateString('en-US', { weekday: 'long' });
+  return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+}
+
+function timeLabel(ts) {
+  return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 function getActivityLink(item) {
@@ -76,10 +85,9 @@ function getActivityLink(item) {
 }
 
 // A single chronological feed of everything relevant to this user or their
-// class(es) — see server/modules/activity for the fan-out query. Grouped
-// by Today/Yesterday/Earlier so a return visit reads what's new at a
-// glance, same idea as the Home tab's Activities preview card (of which
-// this is the full view).
+// class(es) — see server/modules/activity for the fan-out query. Rendered
+// as a day-by-day timeline (a connecting line through each day's icons),
+// covering the full history the API returns, not just the last two days.
 export function ActivitiesPage() {
   const queryClient = useQueryClient();
   const { data: result, isLoading, error } = useActivities();
@@ -87,17 +95,24 @@ export function ActivitiesPage() {
 
   useEffect(() => {
     localStorage.setItem('activitiesLastViewed', Date.now().toString());
-    // Clear the badge immediately for other components
     if (result && result.recentCount > 0) {
       queryClient.setQueryData(['activities'], { ...result, recentCount: 0 });
     }
   }, [result, queryClient]);
 
-  const groups = items.reduce((acc, item) => {
-    const label = groupLabel(item.ts);
-    (acc[label] ||= []).push(item);
-    return acc;
-  }, {});
+  // Items arrive most-recent-first; group consecutive entries by calendar
+  // day while preserving that order, so day sections themselves stay
+  // newest-first too.
+  const dayGroups = [];
+  for (const item of items) {
+    const key = dayKey(item.ts);
+    const lastGroup = dayGroups[dayGroups.length - 1];
+    if (lastGroup && lastGroup.key === key) {
+      lastGroup.items.push(item);
+    } else {
+      dayGroups.push({ key, label: dayLabel(item.ts), items: [item] });
+    }
+  }
 
   return (
     <div>
@@ -111,31 +126,42 @@ export function ActivitiesPage() {
         </div>
       )}
 
-      {['Today', 'Yesterday', 'Earlier'].map((label) =>
-        groups[label]?.length ? (
-          <div key={label} className="mb-5">
-            <div className="mb-2 text-[10.5px] font-bold uppercase tracking-wide text-ink-500">{label}</div>
-            <div className="overflow-hidden rounded border border-border bg-surface">
-              <div className="divide-y divide-surface-muted">
-                {groups[label].map((item) => {
-                  const linkProps = getActivityLink(item);
-                  return (
-                    <Link to={linkProps.to} state={linkProps.state} key={`${item.type}-${item.id}`} className="flex items-start gap-3 p-3.5 transition-colors hover:bg-surface-muted">
+      {dayGroups.map((group) => (
+        <div key={group.key} className="mb-6">
+          <div className="mb-3 text-[11px] font-bold uppercase tracking-wide text-ink-500">{group.label}</div>
+          <div className="relative">
+            {/* Connecting line running through every icon in this day's
+                group — omitted entirely for a single-item day since there's
+                nothing to connect. */}
+            {group.items.length > 1 && (
+              <div className="absolute bottom-4 left-[17px] top-4 w-px bg-border" aria-hidden="true" />
+            )}
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const linkProps = getActivityLink(item);
+                return (
+                  <Link
+                    to={linkProps.to}
+                    state={linkProps.state}
+                    key={`${item.type}-${item.id}`}
+                    className="relative flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-surface-muted"
+                  >
                     <TypeIcon type={item.type} />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[13px] font-semibold leading-snug text-ink-900">{item.title}</div>
-                      {item.subtitle && <div className="mt-0.5 text-[11.5px] text-ink-500">{item.subtitle}</div>}
+                    <div className="min-w-0 flex-1 pt-1">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <div className="text-[13.5px] font-semibold leading-snug text-ink-900">{item.title}</div>
+                        <div className="flex-shrink-0 whitespace-nowrap text-[11.5px] text-ink-500">{timeLabel(item.ts)}</div>
+                      </div>
+                      {item.subtitle && <div className="mt-0.5 text-[12px] text-ink-500">{item.subtitle}</div>}
                       {item.actor && <div className="mt-0.5 text-[11px] text-ink-500">{item.actor}</div>}
                     </div>
-                    <div className="flex-shrink-0 whitespace-nowrap text-[11px] text-ink-500">{relativeTime(item.ts)}</div>
-                    </Link>
-                  );
-                })}
-              </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
-        ) : null
-      )}
+        </div>
+      ))}
     </div>
   );
 }

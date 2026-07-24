@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   useClassPosts,
   useClassMembers,
+  useClassDocuments,
   useCreateClassPost,
   useCreateClassReply,
   useEditPost,
@@ -18,12 +19,32 @@ import { useMarkActivityContextViewed } from '../../activities/hooks/useActiviti
 import { MessageComposer } from './MessageComposer';
 import { MessagePost } from './MessagePost';
 import { EditHistoryModal } from './EditHistoryModal';
+import { AttachmentPreviewModal } from './AttachmentPreviewModal';
+
+const SHARED_FILE_ICON = { image: '🖼️', pdf: '📄', doc: '📝', xls: '📈', ppt: '📊', zip: '📦', file: '📎' };
+
+function formatSharedFileSize(bytes) {
+  if (bytes == null) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatSharedFileDate(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export function ClassChatTab({ cohortId }) {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { data: result, isLoading, error } = useClassPosts(cohortId);
   const { data: members } = useClassMembers(cohortId);
+  // Same per-cohort file library the Documents tab shows — "Shared Files"
+  // here is just its 5 most recent entries, not a separate data source, so
+  // uploading a document shows up in both places without extra plumbing.
+  const { data: documents } = useClassDocuments(cohortId);
   const createPost = useCreateClassPost(cohortId);
   const createReply = useCreateClassReply(cohortId);
   const editPost = useEditPost(cohortId);
@@ -94,16 +115,8 @@ export function ClassChatTab({ cohortId }) {
     setReplyingTo(null);
   }
 
-  const sharedFiles = [
-    { id: 1, name: 'Weekly Test Syllabus.pdf', type: 'PDF', size: '1.2 MB', uploadedAt: '18 Jul 2026' },
-    { id: 2, name: 'Assignment Guidelines.docx', type: 'DOCX', size: '215 KB', uploadedAt: '15 Jul 2026' },
-    { id: 3, name: 'Important Topics.pptx', type: 'PPTX', size: '3.4 MB', uploadedAt: '10 Jul 2026' },
-  ];
-
-  const getFileIcon = (type) => {
-    const icons = { PDF: '📄', DOCX: '📝', PPTX: '📊', XLS: '📈', ZIP: '📦' };
-    return icons[type] || '📎';
-  };
+  const sharedFiles = (documents || []).slice(0, 5);
+  const [sharedFilePreview, setSharedFilePreview] = useState(null);
 
   return (
     <div className="flex h-full flex-col overflow-hidden sm:rounded border-y sm:border border-border bg-surface -mx-4 sm:mx-0 lg:flex-row">
@@ -210,27 +223,54 @@ export function ClassChatTab({ cohortId }) {
           </div>
         </div>
 
-        {/* Shared Files Section */}
+        {/* Shared Files Section — the same per-cohort documents the
+            Documents tab lists, just the 5 most recent. */}
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-shrink-0 border-b border-surface-muted p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-ink-900">Shared Files</h3>
-              <a href="#" className="text-xs font-semibold text-accent hover:text-accent-dark">View all</a>
+              <button
+                type="button"
+                onClick={() => navigate(location.pathname, { state: { tab: 'documents' } })}
+                className="text-xs font-semibold text-accent hover:text-accent-dark"
+              >
+                View all
+              </button>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            {sharedFiles.length === 0 && (
+              <div className="py-4 text-center text-xs text-ink-500">No files shared yet.</div>
+            )}
             {sharedFiles.map((file) => (
               <div key={file.id} className="group flex items-start gap-2 rounded p-2 hover:bg-surface-muted transition-colors">
-                <span className="flex-shrink-0 text-lg">{getFileIcon(file.type)}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-medium text-ink-900 truncate group-hover:text-accent">{file.name}</div>
-                  <div className="text-[10px] text-ink-500 mt-0.5">{file.size} • {file.uploadedAt}</div>
-                </div>
-                <button className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  onClick={() => setSharedFilePreview({ url: file.url, name: file.name, size: file.size_bytes, type: file.file_type })}
+                  className="flex min-w-0 flex-1 items-start gap-2 text-left"
+                  title="Preview"
+                >
+                  <span className="flex-shrink-0 text-lg">{SHARED_FILE_ICON[file.file_type] || SHARED_FILE_ICON.file}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-ink-900 truncate group-hover:text-accent">{file.name}</div>
+                    <div className="text-[10px] text-ink-500 mt-0.5">
+                      {formatSharedFileSize(file.size_bytes)}{file.size_bytes != null ? ' • ' : ''}{formatSharedFileDate(file.created_at)}
+                    </div>
+                  </div>
+                </button>
+                <a
+                  href={file.url}
+                  download={file.name}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Download"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="text-accent">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                </button>
+                </a>
               </div>
             ))}
           </div>
@@ -239,6 +279,9 @@ export function ClassChatTab({ cohortId }) {
 
       {historyTarget && (
         <EditHistoryModal kind={historyTarget.kind} id={historyTarget.id} onClose={() => setHistoryTarget(null)} />
+      )}
+      {sharedFilePreview && (
+        <AttachmentPreviewModal attachment={sharedFilePreview} onClose={() => setSharedFilePreview(null)} />
       )}
     </div>
   );

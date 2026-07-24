@@ -33,9 +33,14 @@ const TAB_DEFS = [
 ];
 
 export function ClassChannel({ cohort, showBack }) {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const { hasModule } = useConfig();
   const navigate = useNavigate();
+  // Admins reach this via the class-channels roster (/app/class-channels);
+  // everyone else via their own fixed Class destination (/app/class) — see
+  // Sidebar/BottomTabBar's identical role check. Back must return to
+  // whichever list actually led here, not always the same one.
+  const backTo = user?.role === 'admin' ? '/app/class-channels' : '/app/class';
   const location = useLocation();
   const [tab, setTab] = useState(location.state?.tab || 'chat');
 
@@ -71,13 +76,13 @@ export function ClassChannel({ cohort, showBack }) {
     // inline paddingBottom), which this page doesn't need since it manages
     // its own height — without it the page scrolls by that padding's worth
     // even though the content already fits.
-    <div className="flex h-[calc(100dvh_-_env(safe-area-inset-top)_-_68px_-_max(0.25rem,env(safe-area-inset-bottom)))] flex-col mb-[calc(0px_-_max(4.5rem,3.75rem_+_env(safe-area-inset-bottom)))] md:h-[calc(100dvh-40px)] md:-mb-[60px]">
+    <div className="flex h-[calc(100dvh_-_env(safe-area-inset-top)_-_68px_-_max(0.25rem,env(safe-area-inset-bottom)))] flex-col mb-[calc(0px_-_max(4.5rem,3.75rem_+_env(safe-area-inset-bottom)))] md:h-[calc(100dvh-120px)] md:-mb-[60px]">
       <div className="flex-shrink-0">
         <PageHeader
           title={cohort.name}
           subtitle={subtitle}
           back={showBack}
-          onBack={() => navigate('/app/class')}
+          onBack={() => navigate(backTo)}
           tabs={
             // Horizontally scrollable, not wrapping — up to 5 tabs need to
             // fit (or at least be reachable by a swipe) on the narrowest
