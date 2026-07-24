@@ -66,13 +66,195 @@ Sidebar:
 ## Student Profile
 Complete portfolio including attendance, exams, assignments, discipline, documents, guardian information and analytics.
 
-### Student Portfolio Enhancements
-- Attendance insights and analytics.
-- Academic performance reports and progress cards.
-- Charts and graphs visualizing student performance.
-- Export options for all reports and documents (PDF, PPT, C
-SV).
-- Full detailed student portfolio (PDF/PPT) with slides covering performance, attendance, behaviours, etc.
+#### Student Portfolio
+Create a unified Student Portfolio page. This page acts as the student's complete academic history throughout their time in school. The profile should contain:
+- Student information
+- Admission number
+- Parent & Guardian information & Phone number of guardian (mandatory) and student (optional)
+- Address
+- Academic information
+- Class history
+- Roll number
+- Photo
+- Contact details
+- Emergency contact
+- Optional: Medical information, Transport information
+The profile should support printing and exporting (PDF/PPT).
+
+#### Student Dashboard
+Every student profile should open into a dashboard showing an overview instead of raw records. Display summary cards such as:
+- Overall Attendance
+- Current Grade / GPA
+- Pending Assignments
+- Upcoming Exams
+- Behaviour Score
+- Discipline Summary
+- Recent Activities
+The dashboard gives a quick understanding of the student's overall progress.
+
+#### Academic Performance
+Create a dedicated Academic Performance section that consolidates information from every examination and assignment. Features:
+- Subject‑wise performance
+- Term‑wise performance
+- Monthly performance
+- Yearly performance
+- Overall average
+- Highest marks
+- Lowest marks
+- Rank (if enabled)
+- Teacher remarks
+Support grading systems: Marks, Percentage, GPA, Letter Grade.
+
+#### Academic Analytics
+Provide visual analytics for academic performance. Include charts such as:
+- Subject comparison
+- Marks trend
+- Grade trend
+- Performance over time
+- Subject strengths
+- Subject weaknesses
+- Top performing subjects
+- Subjects requiring attention
+Analytics should update automatically when marks are published.
+
+#### Attendance Analytics
+Attendance should include much more than daily records. Display:
+- Overall attendance percentage
+- Monthly attendance
+- Weekly attendance
+- Yearly attendance
+- Present vs Absent
+- Late arrivals
+- Half‑day records
+- Leave records
+- Attendance streak
+- Consecutive absences
+Visualizations:
+- Monthly heatmap
+- Line chart
+- Calendar view
+- Attendance trend
+Generate alerts for:
+- Low attendance
+- Consecutive absences
+- Falling attendance trend
+
+#### Assignment Analytics
+Assignments should include:
+- Total assignments
+- Submitted
+- Pending
+- Late submissions
+- Average score
+- Subject‑wise assignment score
+- Submission trend
+- Teacher feedback
+Visual analytics:
+- Completion rate
+- Monthly submission graph
+- Subject comparison
+
+#### Examination Analytics
+Provide examination insights. Display:
+- Total exams
+- Average score
+- Highest score
+- Subject‑wise averages
+- Term comparison
+- Year comparison
+Visualizations:
+- Bar charts
+- Line charts
+- Radar chart
+- Subject comparison
+
+#### Behaviour & Discipline
+Create a Behaviour section. Track:
+- Positive records
+- Negative records
+- Achievements
+- Warnings
+- Teacher remarks
+- Counselling sessions
+- Rewards
+- Recognitions
+- Behaviour score
+- Discipline score
+Each record should include:
+- Date
+- Teacher
+- Category
+- Comment
+- Action taken
+- Follow‑up status
+Support attachments where applicable.
+
+#### Student Timeline
+Provide a chronological timeline. The timeline should automatically aggregate activities such as:
+- Attendance marked
+- Exam completed
+- Assignment submitted
+- Notice received
+- Behaviour record
+- Discipline entry
+- Award received
+- PTM attended
+- Leave applied
+This should provide a complete student history.
+
+#### Progress Card
+Generate printable progress card (configured per tenant in app settings). Include:
+- School branding
+- Student details
+- Exam scores
+- Subject grades
+- Attendance summary
+- Behaviour summary
+- Teacher remarks
+- Principal remarks
+- Promotion status
+- Signature placeholders
+Support PDF export.
+
+#### Report Generation
+Allow reports to be generated for:
+- Individual student
+- Entire class
+- Entire grade
+- Whole school
+Reports should support PDF, Excel, CSV.
+
+#### Role‑Based Views
+**Parent View** – read‑only access to:
+- Student dashboard
+- Attendance analytics
+- Academic analytics
+- Assignments
+- Exam results
+- Behaviour & discipline records
+- Teacher remarks
+- School notices
+- Calendar
+
+**Student View** – read‑only access to:
+- Their own portfolio
+- Academic progress
+- Attendance
+- Assignments
+- Exam results
+- Behaviour & discipline records
+- Achievements
+- Upcoming events
+- Teacher remarks
+
+**Teacher View** – permissions to:
+- View every student's portfolio
+- Add behaviour records
+- Add discipline entries
+- Publish marks & grades
+- View analytics
+- Generate reports
+- Print progress cards
 
 
 ## Exams

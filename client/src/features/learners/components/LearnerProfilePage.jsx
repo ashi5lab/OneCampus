@@ -6,7 +6,7 @@ import { StatCard } from '../../../components/StatCard';
 import { Badge } from '../../../components/Badge';
 import { DataTable } from '../../../components/DataTable';
 import { Avatar } from '../../../components/Avatar';
-import { BackButton, useAutoBack } from '../../../components/PageHeader';
+import { PageHeader, BackButton, useAutoBack } from '../../../components/PageHeader';
 import { ProfilePictureUploader } from '../../profile/components/ProfilePictureUploader';
 import { useLearnerProfile, useUpdateLearner, useDeleteLearner } from '../hooks/useLearners';
 import { LearnerForm } from './LearnerForm';
