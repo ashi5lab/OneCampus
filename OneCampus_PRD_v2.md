@@ -70,7 +70,8 @@ Complete portfolio including attendance, exams, assignments, discipline, documen
 - Attendance insights and analytics.
 - Academic performance reports and progress cards.
 - Charts and graphs visualizing student performance.
-- Export options for all reports and documents (PDF, PPT, CSV).
+- Export options for all reports and documents (PDF, PPT, C
+SV).
 - Full detailed student portfolio (PDF/PPT) with slides covering performance, attendance, behaviours, etc.
 
 
