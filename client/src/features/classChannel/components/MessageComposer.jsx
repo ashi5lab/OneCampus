@@ -10,6 +10,23 @@ const COLORS = [
 ];
 const SIZE_STEPS = [0.85, 1, 1.15, 1.3, 1.45];
 
+// Same breakpoint the rest of the app uses to switch between the desktop
+// Sidebar and the mobile BottomTabBar (see Layout.jsx) — reused here so
+// "web" means the same thing it does everywhere else in the UI, rather
+// than introducing a second, possibly-inconsistent definition of mobile.
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+  );
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 768px)');
+    const handler = (e) => setIsDesktop(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+  return isDesktop;
+}
+
 function memberInitials(m) {
   if (m.id === 'all') return '@';
   return `${m.first_name?.[0] || ''}${m.last_name?.[0] || ''}`.toUpperCase();
@@ -103,6 +120,7 @@ export function MessageComposer({
   const [mentionHi, setMentionHi] = useState(0);
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
+  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     const el = editorRef.current;
@@ -203,14 +221,21 @@ export function MessageComposer({
         return;
       }
     }
-    // Enter always inserts a line break here — only the send button submits
-    // (chat-in-a-textarea muscle memory expects Enter to send, but a rich
-    // composer with multi-line messages reads better the other way, and
-    // this was an explicit ask). insertLineBreak (not the browser's default
-    // paragraph-splitting behavior) so it produces a plain <br>, which is
-    // already in the sanitizer's allow-list — a <div> would just get
-    // stripped, silently merging the lines back together.
+    // On desktop/web, Enter sends (Shift+Enter for a line break) — standard
+    // chat-input muscle memory, and an explicit ask. On mobile there's no
+    // reliable way to tell "Enter" apart from a virtual keyboard's newline
+    // key, and thumb-typed multi-line messages are common, so Enter still
+    // only inserts a line break there — only the send button submits.
+    // insertLineBreak (not the browser's default paragraph-splitting
+    // behavior) so it produces a plain <br>, already in the sanitizer's
+    // allow-list — a <div> would just get stripped, silently merging the
+    // lines back together.
     if (e.key === 'Enter') {
+      if (isDesktop && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit();
+        return;
+      }
       e.preventDefault();
       document.execCommand('insertLineBreak');
       syncEmpty();

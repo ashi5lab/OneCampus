@@ -6,6 +6,11 @@ import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { ConfigProvider } from './contexts/ConfigContext';
+// Side-effect import: registers the beforeinstallprompt/appinstalled
+// listeners at module load, before any component (including the login
+// form the install button lives on) has mounted — see lib/pwa.js's
+// top-of-file comment for why this needs to happen this early.
+import './lib/pwa';
 import './index.css';
 
 // React Query's default (retry every failure 3x with exponential backoff)

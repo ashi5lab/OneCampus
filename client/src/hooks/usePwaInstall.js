@@ -1,35 +1,39 @@
 import { useState, useEffect, useCallback } from 'react';
-import { isIos, isStandalone } from '../lib/pwa';
+import {
+  isIos,
+  isStandalone,
+  getDeferredInstallPrompt,
+  clearDeferredInstallPrompt,
+  subscribeToInstallPrompt
+} from '../lib/pwa';
 
-// Centralizes the beforeinstallprompt dance so every screen that wants an
-// install affordance (landing page, login page, ...) shares one listener
-// and one deferred-prompt reference instead of each re-registering its own.
+// The actual beforeinstallprompt/appinstalled listeners live in lib/pwa.js,
+// registered once at module load (see its comment for why — this hook can
+// mount long after the event already fired). This just mirrors that
+// module-level state into React state so components re-render when it
+// changes, and re-syncs on mount in case the event fired before this
+// particular instance existed.
 export function usePwaInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState(() => getDeferredInstallPrompt());
   const [installed, setInstalled] = useState(isStandalone());
 
   useEffect(() => {
-    function handleBeforeInstallPrompt(e) {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    }
-    function handleAppInstalled() {
-      setInstalled(true);
-      setDeferredPrompt(null);
-    }
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+    const sync = () => {
+      setDeferredPrompt(getDeferredInstallPrompt());
+      if (isStandalone()) setInstalled(true);
     };
+    sync(); // pick up an event that fired before this mount
+    return subscribeToInstallPrompt(sync);
   }, []);
 
   const promptInstall = useCallback(async () => {
     if (!deferredPrompt) return 'unavailable';
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') setDeferredPrompt(null);
+    if (outcome === 'accepted') {
+      clearDeferredInstallPrompt();
+      setInstalled(true);
+    }
     return outcome;
   }, [deferredPrompt]);
 

@@ -11,6 +11,16 @@ const attendanceSchema = z.object({
   remarks: z.string().optional().nullable()
 });
 
+const bulkSchema = z.object({
+  cohort_id: z.number().int(),
+  date: z.string(),
+  records: z.array(z.object({
+    learner_id: z.number().int(),
+    status: z.enum(['present', 'absent', 'late', 'excused']),
+    remarks: z.string().optional().nullable()
+  })).min(1, 'At least one record is required')
+});
+
 async function getAll(req, res) {
   try {
     const { pagination, error } = parsePagination(req.query);
@@ -115,6 +125,61 @@ async function mark(req, res) {
   }
 }
 
+// Bulk upsert — accepts all students' attendance for one cohort+date in a
+// single request, wraps in a transaction so it's all-or-nothing. This
+// replaces the old pattern of firing N individual POST /attendance calls
+// (one per student), which hammered the server and the DB with N separate
+// round-trips.
+async function markBulk(req, res) {
+  try {
+    const parsed = bulkSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+
+    const { cohort_id, date, records } = parsed.data;
+    const marked_by = req.user.userId;
+    const results = [];
+
+    // Use a transaction so all records succeed or none do
+    await req.db.query('BEGIN');
+    try {
+      for (const rec of records) {
+        const { learner_id, status, remarks } = rec;
+
+        // Check for existing record (same upsert logic as single mark)
+        const existing = await req.db.query(
+          `SELECT id FROM onec_attendance WHERE learner_id = $1 AND date = $2 AND allocation_id IS NULL`,
+          [learner_id, date]
+        );
+
+        let result;
+        if (existing.rows.length > 0) {
+          result = await req.db.query(
+            'UPDATE onec_attendance SET status = $1, remarks = $2, marked_by = $3, cohort_id = $4 WHERE id = $5 RETURNING *',
+            [status, remarks || null, marked_by, cohort_id, existing.rows[0].id]
+          );
+        } else {
+          result = await req.db.query(
+            `INSERT INTO onec_attendance (learner_id, cohort_id, allocation_id, date, status, remarks, marked_by)
+             VALUES ($1, $2, NULL, $3, $4, $5, $6) RETURNING *`,
+            [learner_id, cohort_id, date, status, remarks || null, marked_by]
+          );
+        }
+        results.push(result.rows[0]);
+      }
+      await req.db.query('COMMIT');
+    } catch (txErr) {
+      await req.db.query('ROLLBACK');
+      throw txErr;
+    }
+
+    return res.status(200).json({ data: results });
+  } catch (err) {
+    console.error(err);
+    if (err.code === '23503') return res.status(400).json({ error: 'Learner, cohort, or allocation does not exist' });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 // Class-wise absentee/late report for a single day — powers the admin
 // dashboard "Absentees Today" card and its drill-down page. Returns a
 // per-cohort breakdown listing the absent and late students (with remarks)
@@ -210,4 +275,4 @@ async function absenteeReport(req, res) {
   }
 }
 
-module.exports = { getAll, mark, absenteeReport };
+module.exports = { getAll, mark, markBulk, absenteeReport };
