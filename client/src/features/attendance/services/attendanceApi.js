@@ -1,9 +1,20 @@
 import { apiClient } from '../../../lib/apiClient';
 
 export const attendanceApi = {
-  list: () => apiClient.get('/attendance').then((res) => res.data),
-  listByCohortDate: (cohortId, date) =>
-    apiClient.get(`/attendance?cohort_id=${cohortId}&date=${date}`).then((res) => res.data),
+  list: (page, pageSize) => {
+    const params = new URLSearchParams();
+    if (page) params.set('page', page);
+    if (pageSize) params.set('pageSize', pageSize);
+    return apiClient.get(`/attendance?${params.toString()}`).then((res) => res.data);
+  },
+  listByCohortDate: (cohortId, date, page, pageSize) => {
+    const params = new URLSearchParams();
+    params.set('cohort_id', cohortId);
+    params.set('date', date);
+    if (page) params.set('page', page);
+    if (pageSize) params.set('pageSize', pageSize);
+    return apiClient.get(`/attendance?${params.toString()}`).then((res) => res.data);
+  },
   absenteeReport: (date, cohortIds = []) => {
     const params = new URLSearchParams();
     if (date) params.set('date', date);
