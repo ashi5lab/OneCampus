@@ -6,7 +6,11 @@ import { useAuth } from '../contexts/AuthContext';
 // this the page would render with React Query showing stale/previous
 // cached data until the API's 403 quietly resolves (see GuardiansPage).
 export function RequirePermission({ permission, children }) {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
+  // Admins bypass all permission checks
+  if (user?.role === 'admin') {
+    return children;
+  }
 
   if (!can(permission)) {
     return (
