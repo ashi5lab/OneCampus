@@ -13,8 +13,10 @@ import {
   useUpdateNotificationPreferences,
   useHomeCardPrefs,
   useUpdateHomeCardPrefs,
+  useSaveFcmToken,
   MY_PROFILE_KEY
 } from '../hooks/useProfile';
+import { requestPushPermission } from '../../../lib/firebase';
 
 // Same role split as BottomTabBar/Sidebar's REDESIGNED_ROLES — only
 // learner/instructor/staff have a Home tab with configurable cards to
@@ -248,11 +250,30 @@ function ChangePasswordCard() {
 function NotificationPreferencesCard() {
   const { data: prefs, isLoading, error } = useNotificationPreferences();
   const updatePrefs = useUpdateNotificationPreferences();
+  const saveFcmToken = useSaveFcmToken();
+  const [pushStatus, setPushStatus] = useState('');
 
   if (isLoading || error) return null;
 
   const receivesBroadcast = !prefs.broadcast_opt_out;
   const showWhatsapp = prefs.whatsapp_opt_in !== null;
+
+  async function handleEnablePush() {
+    setPushStatus('requesting');
+    try {
+      // NOTE: Replace 'TODO_VAPID_KEY' with the actual VAPID key when provided
+      const token = await requestPushPermission('TODO_VAPID_KEY');
+      if (token) {
+        await saveFcmToken.mutateAsync({ token, device_info: navigator.userAgent });
+        setPushStatus('success');
+      } else {
+        setPushStatus('denied');
+      }
+    } catch (err) {
+      console.error(err);
+      setPushStatus('error');
+    }
+  }
 
   return (
     <div className="rounded border border-border bg-surface p-5">
@@ -273,7 +294,7 @@ function NotificationPreferencesCard() {
       </label>
 
       {showWhatsapp && (
-        <label className="flex items-start gap-2">
+        <label className="mb-4 flex items-start gap-2">
           <input
             type="checkbox"
             className="mt-0.5"
@@ -286,6 +307,20 @@ function NotificationPreferencesCard() {
           </span>
         </label>
       )}
+
+      <div className="mt-5 border-t border-surface-muted pt-4">
+        <div className="mb-1 text-[13.5px] font-bold text-ink-900">Push Notifications</div>
+        <div className="mb-3 text-[12px] text-ink-500">Enable device notifications to receive instant alerts for important updates.</div>
+        <button
+          onClick={handleEnablePush}
+          disabled={pushStatus === 'requesting' || pushStatus === 'success'}
+          className="rounded bg-accent px-4 py-2 text-xs font-semibold text-accent-ink disabled:opacity-60"
+        >
+          {pushStatus === 'requesting' ? 'Requesting...' : pushStatus === 'success' ? 'Enabled' : 'Enable Push Notifications'}
+        </button>
+        {pushStatus === 'denied' && <div className="mt-2 text-xs font-semibold text-danger">Permission denied by browser.</div>}
+        {pushStatus === 'error' && <div className="mt-2 text-xs font-semibold text-danger">Failed to enable notifications.</div>}
+      </div>
 
       {updatePrefs.error && <div className="mt-3 text-xs font-semibold text-danger">{updatePrefs.error.message}</div>}
     </div>

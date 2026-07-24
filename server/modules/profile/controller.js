@@ -301,6 +301,33 @@ async function forceLogoutUser(req, res) {
   }
 }
 
+const fcmTokenSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  device_info: z.string().optional()
+});
+
+async function saveFcmToken(req, res) {
+  try {
+    const parsed = fcmTokenSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+    const { token, device_info } = parsed.data;
+
+    // Upsert the token for this user
+    await req.db.query(
+      `INSERT INTO onec_fcm_tokens (user_id, token, device_info, updated_at)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, token) DO UPDATE
+       SET updated_at = CURRENT_TIMESTAMP, device_info = EXCLUDED.device_info`,
+      [req.user.userId, token, device_info || null]
+    );
+
+    res.json({ data: { success: true } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   upload,
   uploadProfilePicture,
@@ -313,5 +340,6 @@ module.exports = {
   updateHomeCardPrefs,
   listUsers,
   adminChangePassword,
-  forceLogoutUser
+  forceLogoutUser,
+  saveFcmToken
 };

@@ -54,3 +54,7 @@ export function useAdminChangePassword() {
 export function useForceLogoutUser() {
   return useMutation({ mutationFn: (userId) => profileApi.forceLogoutUser(userId) });
 }
+
+export function useSaveFcmToken() {
+  return useMutation({ mutationFn: profileApi.saveFcmToken });
+}

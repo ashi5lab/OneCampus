@@ -12,6 +12,7 @@ router.get('/notification-preferences', controller.getNotificationPreferences);
 router.put('/notification-preferences', controller.updateNotificationPreferences);
 router.get('/home-card-prefs', controller.getHomeCardPrefs);
 router.put('/home-card-prefs', controller.updateHomeCardPrefs);
+router.post('/fcm-token', controller.saveFcmToken);
 
 // Admin-side password reset — the only /profile routes that touch a user
 // other than the caller, hence the only permission-gated ones here.

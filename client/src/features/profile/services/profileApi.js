@@ -16,5 +16,6 @@ export const profileApi = {
   listUsers: () => apiClient.get('/profile/users').then((res) => res.data),
   adminChangePassword: (userId, payload) =>
     apiClient.put(`/profile/users/${userId}/password`, payload).then((res) => res.data),
-  forceLogoutUser: (userId) => apiClient.post(`/profile/users/${userId}/force-logout`).then((res) => res.data)
+  forceLogoutUser: (userId) => apiClient.post(`/profile/users/${userId}/force-logout`).then((res) => res.data),
+  saveFcmToken: (payload) => apiClient.post('/profile/fcm-token', payload).then((res) => res.data)
 };
