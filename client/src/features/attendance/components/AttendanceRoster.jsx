@@ -6,6 +6,7 @@ import { useAttendanceForCohortDate, useMarkAttendance, useMarkAttendanceBulk } 
 import { showToast } from '../../../lib/toast';
 import { Avatar } from '../../../components/Avatar';
 import { PageHeader } from '../../../components/PageHeader';
+import { DatePicker } from '../../../components/DatePicker';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Calendar, ChevronDown, Search, Eye } from 'lucide-react';
 
@@ -15,25 +16,15 @@ function todayIso() {
 }
 
 function formatDateDisplay(isoDate) {
+  if (!isoDate) return '';
   const d = new Date(`${isoDate}T00:00:00`);
   const day = d.getDate();
   const month = d.toLocaleDateString('en-US', { month: 'long' });
   const year = d.getFullYear();
   const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
-  return `${day} ${month} ${year}, ${weekday}`;
+  return `${weekday}, ${month} ${day}, ${year}`;
 }
 
-function generateDateRange() {
-  const dates = [];
-  const today = new Date();
-  for (let i = -15; i <= 15; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    dates.push({ iso, display: formatDateDisplay(iso) });
-  }
-  return dates;
-}
 
 const STATUS_OPTIONS = [
   { value: 'present', label: 'Present', color: '#22c55e' },
@@ -57,13 +48,14 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
   const [statuses, setStatuses] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
+
   const [openStatusId, setOpenStatusId] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   const searchRef = useRef(null);
-  const dateRef = useRef(null);
+  const dateInputRef = useRef(null);
+
 
   const { data: cohorts } = useCohorts();
   const { data: allLearners } = useLearners();
@@ -103,7 +95,7 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
   useEffect(() => {
     function handleMouseDown(e) {
       if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
-      if (dateRef.current && !dateRef.current.contains(e.target)) setDatePickerOpen(false);
+
       setOpenStatusId(null);
     }
     document.addEventListener('mousedown', handleMouseDown);
@@ -126,7 +118,7 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
 
   useEffect(() => { setPage(1); }, [searchQuery, pageSize]);
 
-  const datesList = useMemo(() => generateDateRange(), []);
+
 
   const visiblePages = useMemo(() => {
     const start = Math.max(1, page - 1);
@@ -232,31 +224,12 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
             )}
           </div>
 
-          {/* Date Dropdown */}
-          <div ref={dateRef} className="relative">
-            <button
-              onClick={() => setDatePickerOpen((v) => !v)}
-              className="w-full bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100 flex items-center gap-3 text-left"
-            >
-              <Calendar className="w-5 h-5 text-[#5a4fcf] flex-shrink-0" />
-              <span className="flex-1 text-[14px] font-medium text-gray-900">{formatDateDisplay(date)}</span>
-              <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            </button>
-            {datePickerOpen && (
-              <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 mt-1 z-50 max-h-60 overflow-y-auto">
-                {datesList.map((d) => (
-                  <button
-                    key={d.iso}
-                    onClick={() => { setDate(d.iso); setDatePickerOpen(false); }}
-                    className={`w-full px-4 py-2.5 text-left text-[13px] hover:bg-indigo-50 transition border-b border-gray-50 last:border-0
-                      ${d.iso === date ? 'font-bold text-[#5a4fcf] bg-indigo-50' : 'text-gray-700'}`}
-                  >
-                    {d.display}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Date Picker */}
+          <DatePicker 
+            value={date} 
+            onChange={setDate} 
+            max={todayIso()} 
+          />
 
           {/* Table Header */}
           <div className="bg-[#f0f0fb] rounded-xl px-4 py-2.5 flex items-center text-[12px] font-semibold text-gray-500">

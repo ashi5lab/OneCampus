@@ -18,7 +18,7 @@ const bulkSchema = z.object({
     learner_id: z.number().int(),
     status: z.enum(['present', 'absent', 'late', 'excused']),
     remarks: z.string().optional().nullable()
-  })).min(1, 'At least one record is required')
+  }))
 });
 
 async function getAll(req, res) {
