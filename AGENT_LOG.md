@@ -726,3 +726,119 @@ This was a frontend-only change. No server code, migrations, or database operati
 *Log entry authored by Antigravity Agent*
 *Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
 *Timestamp: 2026-07-25T21:54 IST*
+
+---
+
+## Entry 004 — TeacherDashboard: Replace All Mock Data with Live API Data
+
+**Date:** 2026-07-25
+**Time:** ~22:03 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "yes. do that."
+
+(In response to the agent identifying that all data in TeacherDashboard was hardcoded mock data and asking whether to wire up real data.)
+
+---
+
+### Investigation
+
+Checked all relevant hooks and API shapes:
+
+| Hook | File | Data shape |
+|---|---|---|
+| `useLearners()` | `features/learners/hooks/useLearners.js` | `data[]` or `{ data[] }` array of learner records |
+| `useCohorts()` | `features/cohorts/hooks/useCohorts.js` | array of cohort records |
+| `useMyTimetable()` | `features/timetable/hooks/useTimetable.js` | `{ data[] }` — instructor's own allocations across all cohorts |
+| `useCohortAttendanceLogs(date)` | `features/attendance/hooks/useAttendance.js` | `{ data[] }` — log rows per cohort for a date |
+| `useAssignments()` | `features/assignments/hooks/useAssignments.js` | assignments list |
+| `useNotices()` | `features/notices/hooks/useNotices.js` | notices list |
+| `useAgenda(from, to)` | `features/calendar/hooks/useCalendar.js` | expanded calendar events in range |
+
+Also examined the timetable server controller to understand the `schedule_data` field shape:
+- `schedule_data.days` → array of day names e.g. `["Monday", "Wednesday"]`
+- `schedule_data.hour` → `"HH:MM-HH:MM"` string e.g. `"09:00-09:45"`
+
+---
+
+### Changes Made
+
+**File:** `client/src/features/dashboard/components/TeacherDashboard.jsx` — **Full rewrite**
+
+Every hardcoded array replaced with live data. Key logic added:
+
+#### Header Stats
+- Students: `useLearners().data.length` (total enrolled students)
+- Classes: `useCohorts().data.length` (total classes)
+
+#### Today at a Glance cards
+- **My Classes**: total cohort count from `useCohorts()`
+- **Attendance Marked**: `useCohortAttendanceLogs(today)` — counts `is_partial=false` logs vs today's scheduled class count
+- **Assignments To Grade**: `useAssignments()` — counts assignments where `ungraded_count > 0`
+- **Today's Classes**: count of timetable allocations for today's day name; "Next:" subtitle shows the start time of the next non-completed slot
+
+#### Today's Schedule
+- Source: `useMyTimetable()` — instructor's personal cross-cohort allocations
+- Filter: `schedule_data.days.includes(todayDayName)`
+- Sort: by `schedule_data.hour` start time (string comparison on `HH:MM`)
+- Status derived live from wall-clock time:
+  - `nowMins >= endMins` → **Completed**
+  - `nowMins >= startMins` → **Next**
+  - otherwise → **Upcoming**
+- Empty state: "No classes scheduled for today."
+
+#### Recent Notices
+- Source: `useNotices()` — first 3 results
+- Shows real notice title + `timeAgo(created_at)` (Just now / X min ago / X hr ago / Xd ago)
+- Empty state: "No notices yet."
+
+#### Upcoming Events
+- Source: `useAgenda(today, today+30days)` — next 3 events
+- Renders real date (month + day number from `event.date`), real title, real time if `start_time` present
+- Empty state: "No upcoming events."
+
+#### Utility helpers added (pure functions, no external deps)
+- `todayIso()` — local `YYYY-MM-DD` string
+- `timeAgo(isoString)` — human-readable relative time
+- `formatHour(hourStr)` — converts `"09:00-09:45"` to `{ start: "09:00 AM", end: "09:45 AM" }`
+- `slotStatus(hourStr)` — returns `Completed | Next | Upcoming` from current time
+
+---
+
+### Files Changed
+
+| File | Action |
+|---|---|
+| `client/src/features/dashboard/components/TeacherDashboard.jsx` | **Full rewrite** — removed all mock data, wired all hooks |
+
+---
+
+### No Database Changes
+
+Frontend-only change. All APIs already existed and return the required data.
+
+---
+
+### Expected Outcome
+
+| Section | Before | After |
+|---|---|---|
+| Header: Students | Hardcoded "1,248" | Real enrolled student count |
+| Header: Classes | Hardcoded "48" | Real cohort count |
+| Glance: My Classes | Hardcoded "4" | Real cohort count |
+| Glance: Attendance Marked | Hardcoded "3/4" | Real "marked/total" from today's logs |
+| Glance: Assignments To Grade | Hardcoded "8" | Real count of assignments with ungraded submissions |
+| Glance: Today's Classes | Hardcoded "2" | Real count from instructor's timetable for today |
+| Today's Schedule | Fake Class 8A/10A/9B | Real instructor allocations for today, live status |
+| Recent Notices | Fake notices from May | Real notices from DB, with time-ago |
+| Upcoming Events | Fake May events | Real calendar events from today → +30 days |
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T22:03 IST*
