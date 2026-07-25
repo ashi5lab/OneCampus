@@ -81,15 +81,12 @@ Create a unified Student Portfolio page. This page acts as the student's complet
 - Optional: Medical information, Transport information
 The profile should support printing and exporting (PDF/PPT).
 
-#### Student Dashboard
-Every student profile should open into a dashboard showing an overview instead of raw records. Display summary cards such as:
-- Overall Attendance
-- Current Grade / GPA
-- Pending Assignments
-- Upcoming Exams
-- Behaviour Score
-- Discipline Summary
-- Recent Activities
+#### Student Dashboard & Layout
+Every student profile opens into a dashboard displaying an overview instead of raw records. The layout is designed to be highly responsive and modern:
+- **Header Banner:** A premium purple theme banner integrating the avatar, contact buttons (Call/WhatsApp), and core stats (Attendance, CGPA, Rank, Behavior Score).
+- **Web Layout:** Two-column grid with a main tabbed content area on the left and a fixed sidebar on the right containing parent/guardian details, academic details, and quick links.
+- **Mobile Layout:** Single-column scrollable feed where sidebar cards gracefully stack below the main content.
+- **Interactive Tabs:** Pill-shaped navigation for Overview, Academics, Attendance, and Behavior sections.
 The dashboard gives a quick understanding of the student's overall progress.
 
 #### Academic Performance

@@ -169,6 +169,9 @@ export function LearnerProfilePage() {
     : null;
 
   const primaryGuardian = guardians.length > 0 ? guardians[0] : null;
+  const primaryGuardianPhone = primaryGuardian?.phone;
+  const primaryGuardianWhatsapp = primaryGuardian?.meta?.whatsapp || primaryGuardian?.phone;
+  const sameNumber = primaryGuardianPhone === primaryGuardianWhatsapp;
 
   function handleDelete() {
     if (!window.confirm(`Are you sure you want to delete ${learner.first_name} ${learner.last_name}?`)) return;
@@ -181,19 +184,7 @@ export function LearnerProfilePage() {
         This will configure the global Topbar automatically. 
         It replaces the inline header for the profile redesign.
       */}
-      <PageHeader 
-        title="Student Profile" 
-        actions={
-          canManage && (
-            <button
-              onClick={() => setShowEdit(true)}
-              className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-accent-ink hover:opacity-90 transition-opacity"
-            >
-              Edit Profile
-            </button>
-          )
-        }
-      />
+      <PageHeader title="Student Profile" />
 
       {showEdit ? (
         <div className="py-4 bg-surface rounded-2xl shadow-sm border border-border p-6">
@@ -214,130 +205,149 @@ export function LearnerProfilePage() {
         </div>
       ) : (
         <>
-          {/* Header Card (Avatar, Contact, Info) */}
-          <div className="bg-surface rounded-[24px] shadow-sm border border-border overflow-hidden">
-            <div className="p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
-              {/* Avatar Section */}
-              <div className="relative shrink-0">
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-indigo-50 shadow-sm overflow-hidden bg-surface-muted flex items-center justify-center">
-                  {isOwnProfile ? (
-                    <ProfilePictureUploader
-                      name={`${learner.first_name} ${learner.last_name}`}
-                      pictureUrl={learner.profile_picture_url}
-                      invalidateKey={['learners', learnerId, 'profile']}
-                    />
-                  ) : (
-                    <Avatar name={`${learner.first_name} ${learner.last_name}`} src={learner.profile_picture_url} size={128} className="w-full h-full" />
-                  )}
-                </div>
-              </div>
-
-              {/* Info Section */}
-              <div className="flex-1 text-center md:text-left">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <h1 className="text-2xl md:text-3xl font-extrabold text-ink-900 flex items-center justify-center md:justify-start gap-3">
+          <div className="bg-[#4b43c4] rounded-[24px] shadow-sm overflow-hidden text-white mb-6 bg-gradient-to-br from-[#4b43c4] to-[#3a34a8] relative">
+            {canManage && (
+              <button
+                onClick={() => setShowEdit(true)}
+                className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-full text-xs font-bold transition-colors shadow-sm z-10"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Edit Profile</span>
+              </button>
+            )}
+            <div className="p-6 md:p-8">
+              <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
+                
+                {/* Left: Avatar & Info */}
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+                  <div className="relative shrink-0">
+                    <div className="w-24 h-24 md:w-[104px] md:h-[104px] rounded-full border-[3px] border-white shadow-md overflow-hidden flex items-center justify-center bg-white/10 relative mt-4 md:mt-0">
+                      {isOwnProfile ? (
+                        <ProfilePictureUploader
+                          name={`${learner.first_name} ${learner.last_name}`}
+                          pictureUrl={learner.profile_picture_url}
+                          invalidateKey={['learners', learnerId, 'profile']}
+                        />
+                      ) : (
+                        <Avatar name={`${learner.first_name} ${learner.last_name}`} src={learner.profile_picture_url} size={128} className="w-full h-full" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-center md:text-left pt-2">
+                    <h1 className="text-2xl md:text-[28px] font-extrabold flex items-center justify-center md:justify-start gap-3 mb-1">
                       {learner.first_name} {learner.last_name}
-                      <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                      <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide">
                         {learner.registry_no}
                       </span>
                     </h1>
-                    <p className="text-ink-500 text-sm mt-1 font-medium">
-                      {learner.cohort_name || 'No Class Assigned'} • Roll No. {learner.id}
+                    <p className="text-indigo-100/90 text-[13px] font-medium leading-relaxed">
+                      {learner.cohort_name || 'No Class Assigned'}
+                    </p>
+                    <p className="text-indigo-100/90 text-[13px] font-medium leading-relaxed">
+                      Roll No. {learner.id}
                     </p>
                   </div>
-                  
-                  {/* Action Buttons */}
-                  <div className="flex items-center justify-center md:justify-end gap-3">
-                    {primaryGuardian?.phone && (
-                      <>
-                        <a href={`tel:${primaryGuardian.phone}`} className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full text-sm font-bold transition-colors">
-                          <Phone className="w-4 h-4 fill-current" />
-                          <span>Call</span>
-                        </a>
-                        <a href={`https://wa.me/${primaryGuardian.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-bold transition-colors">
-                          <MessageCircle className="w-4 h-4 fill-current" />
-                          <span>WhatsApp</span>
-                        </a>
-                      </>
+                </div>
+
+                {/* Right: Actions */}
+                <div className="flex flex-col md:items-end gap-3 w-full md:w-auto mt-4 md:mt-0">
+                  <div className="flex flex-wrap justify-center md:justify-end items-center gap-3 md:mt-12">
+                    {(primaryGuardianPhone || primaryGuardianWhatsapp) && (
+                      <div className="flex flex-col gap-2 mt-4 md:mt-0">
+                        {sameNumber ? (
+                          <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-full border border-white/10 shadow-sm">
+                            <div className="flex items-center gap-2">
+                              <a href={`tel:${primaryGuardianPhone}`} className="flex items-center justify-center w-7 h-7 bg-white text-[#4b43c4] rounded-full transition-colors shadow-sm hover:bg-indigo-50" title="Call">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                              </a>
+                              <a href={`https://wa.me/${primaryGuardianWhatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center justify-center w-7 h-7 bg-[#25D366] text-white rounded-full transition-colors shadow-sm hover:bg-[#20b858]" title="WhatsApp">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                              </a>
+                            </div>
+                            <div className="w-px h-4 bg-white/20"></div>
+                            <span className="text-xs font-bold tracking-wide">{primaryGuardianPhone}</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            {primaryGuardianPhone && (
+                              <div className="flex items-center gap-3 bg-white/10 px-4 py-1.5 rounded-full border border-white/10 shadow-sm">
+                                <a href={`tel:${primaryGuardianPhone}`} className="flex items-center justify-center w-6 h-6 bg-white text-[#4b43c4] rounded-full transition-colors shadow-sm hover:bg-indigo-50" title="Call">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                </a>
+                                <span className="text-[11px] font-bold tracking-wide">{primaryGuardianPhone}</span>
+                              </div>
+                            )}
+                            {primaryGuardianWhatsapp && (
+                              <div className="flex items-center gap-3 bg-white/10 px-4 py-1.5 rounded-full border border-white/10 shadow-sm">
+                                <a href={`https://wa.me/${primaryGuardianWhatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center justify-center w-6 h-6 bg-[#25D366] text-white rounded-full transition-colors shadow-sm hover:bg-[#20b858]" title="WhatsApp">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                                </a>
+                                <span className="text-[11px] font-bold tracking-wide">{primaryGuardianWhatsapp}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
+              </div>
 
-                <hr className="my-5 border-border" />
-
-                {/* Quick Details Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 shrink-0">
-                      <Calendar className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-ink-400 font-bold uppercase tracking-wider">DOB</p>
-                      <p className="text-sm font-semibold text-ink-900">{learner.meta?.date_of_birth ? new Date(learner.meta.date_of_birth).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</p>
-                    </div>
+              {/* Stats Grid inside banner */}
+              <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 pt-8 border-t border-white/10 relative">
+                
+                {/* Stat 1: CGPA */}
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 shrink-0">
-                      <User className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-ink-400 font-bold uppercase tracking-wider">Gender</p>
-                      <p className="text-sm font-semibold text-ink-900">{learner.meta?.gender ? learner.meta.gender.charAt(0).toUpperCase() + learner.meta.gender.slice(1) : '—'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 shrink-0">
-                      <Users className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-ink-400 font-bold uppercase tracking-wider">Guardian</p>
-                      <p className="text-sm font-semibold text-ink-900 truncate max-w-[150px]" title={primaryGuardian ? `${primaryGuardian.first_name} ${primaryGuardian.last_name}` : '—'}>
-                        {primaryGuardian ? `${primaryGuardian.first_name} ${primaryGuardian.last_name}` : '—'}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="text-[11px] text-indigo-100/90 font-medium mb-0.5">CGPA</p>
+                    <p className="text-xl font-extrabold leading-none mb-1">{avgScorePct != null ? `${(avgScorePct/10).toFixed(1)}/10` : '—'}</p>
+                    <p className="text-[11px] font-bold text-emerald-400">{avgScorePct >= 80 ? 'Excellent' : 'Average'}</p>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            <div className="bg-surface rounded-2xl shadow-sm border border-border p-4 flex flex-col items-center justify-center text-center">
-              <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
-                <CheckCircle className="w-4 h-4" />
-              </div>
-              <p className="text-xs text-ink-500 font-semibold mb-1">Attendance</p>
-              <p className="text-xl font-extrabold text-ink-900">{attendanceRate != null ? `${attendanceRate}%` : '—'}</p>
-              <p className="text-[11px] font-bold text-emerald-600 mt-0.5">{attendanceRate >= 90 ? 'Excellent' : attendanceRate >= 75 ? 'Good' : 'Needs Impr.'}</p>
-            </div>
-            
-            <div className="bg-surface rounded-2xl shadow-sm border border-border p-4 flex flex-col items-center justify-center text-center">
-              <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-              <p className="text-xs text-ink-500 font-semibold mb-1">Avg Score</p>
-              <p className="text-xl font-extrabold text-ink-900">{avgScorePct != null ? `${avgScorePct}%` : '—'}</p>
-              <p className="text-[11px] font-bold text-indigo-600 mt-0.5">{avgScorePct >= 80 ? 'Excellent' : 'Average'}</p>
-            </div>
+                {/* Stat 2: Class Rank */}
+                <div className="flex items-center gap-4 relative">
+                  <div className="hidden md:block absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
+                  <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/><polyline points="16 6 22 6 22 12"/></svg>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-indigo-100/90 font-medium mb-0.5">Class Rank</p>
+                    <p className="text-xl font-extrabold leading-none mb-1">{learner.meta?.rank || 'N/A'} <span className="text-sm font-medium text-indigo-200">/ {learner.meta?.total_students || '—'}</span></p>
+                    <p className="text-[11px] font-bold text-[#b4c6fa]">Top 11%</p>
+                  </div>
+                </div>
 
-            <div className="bg-surface rounded-2xl shadow-sm border border-border p-4 flex flex-col items-center justify-center text-center">
-              <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
-                <Trophy className="w-4 h-4" />
-              </div>
-              <p className="text-xs text-ink-500 font-semibold mb-1">Class Rank</p>
-              <p className="text-xl font-extrabold text-ink-900">N/A</p>
-              <p className="text-[11px] font-bold text-blue-600 mt-0.5">Not Ranked</p>
-            </div>
+                {/* Stat 3: Attendance */}
+                <div className="flex items-center gap-4 relative">
+                  <div className="hidden md:block absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
+                  <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-indigo-100/90 font-medium mb-0.5">Attendance</p>
+                    <p className="text-xl font-extrabold leading-none mb-1">{attendanceRate != null ? `${attendanceRate}%` : '—'}</p>
+                    <p className="text-[11px] font-bold text-[#b4c6fa]">{attendanceRate >= 90 ? 'Good' : 'Needs Impr.'}</p>
+                  </div>
+                </div>
 
-            <div className="bg-surface rounded-2xl shadow-sm border border-border p-4 flex flex-col items-center justify-center text-center">
-              <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mb-2">
-                <Smile className="w-4 h-4" />
+                {/* Stat 4: Days Present */}
+                <div className="flex items-center gap-4 relative">
+                  <div className="hidden md:block absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
+                  <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/></svg>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-indigo-100/90 font-medium mb-0.5">Days Present</p>
+                    <p className="text-xl font-extrabold leading-none mb-1">{attendanceCounts.present || 0} <span className="text-sm font-medium text-indigo-200">/ {totalAttendance}</span></p>
+                    <p className="text-[11px] font-bold text-indigo-200">This Month</p>
+                  </div>
+                </div>
+
               </div>
-              <p className="text-xs text-ink-500 font-semibold mb-1">Behavior Score</p>
-              <p className="text-xl font-extrabold text-ink-900">4.8 <span className="text-sm font-medium text-ink-400">/ 5</span></p>
-              <p className="text-[11px] font-bold text-emerald-600 mt-0.5">Good</p>
             </div>
           </div>
 
