@@ -12,17 +12,31 @@ import { RoleBadge } from './RoleBadge';
 // (the person's actual first+last name, joined server-side from whichever
 // profile table applies — see server/lib/userDirectory.js). Admin/any user
 // with no such row falls back to username-only.
-export function UserSearchSelect({ users, roles, value, onChange, placeholder = 'Search by name…', disabled = false }) {
+export function UserSearchSelect({ 
+  users, 
+  roles, 
+  value, 
+  onChange, 
+  placeholder = 'Search by name…', 
+  disabled = false,
+  showUsername = true,
+  showClass = true,
+  showRole = true
+}) {
   const pool = roles?.length ? users.filter((u) => roles.includes(u.role)) : users;
-  const options = pool.map((u) => ({
-    value: u.id,
-    // Plain-text label — this is what the closed input displays and what
-    // typing filters against, so it has to carry the same information the
-    // colored badge conveys visually (never rely on the dropdown-only
-    // color+letter as the sole way to tell users apart).
-    label: u.name && u.name !== u.username ? `${u.name} (${u.username})` : u.username,
-    role: u.role
-  }));
+  const options = pool.map((u) => {
+    let nameStr = u.name || u.username;
+    if (showClass && u.cohort_name) {
+      nameStr += ` (${u.cohort_name})`;
+    }
+    
+    return {
+      value: u.id,
+      label: nameStr,
+      username: u.username,
+      role: u.role
+    };
+  });
 
   return (
     <SearchSelect
@@ -33,9 +47,14 @@ export function UserSearchSelect({ users, roles, value, onChange, placeholder = 
       disabled={disabled}
       emptyMessage="No matching users."
       renderOption={(option) => (
-        <span className="flex items-center justify-between gap-2">
-          <span className="truncate">{option.label}</span>
-          <RoleBadge role={option.role} />
+        <span className="flex items-center justify-between gap-2 w-full">
+          <span className="flex flex-col truncate">
+            <span className="truncate">{option.label}</span>
+            {showUsername && option.username !== option.label && (
+              <span className="text-[11px] text-ink-500 font-medium truncate">{option.username}</span>
+            )}
+          </span>
+          {showRole && <RoleBadge role={option.role} />}
         </span>
       )}
     />

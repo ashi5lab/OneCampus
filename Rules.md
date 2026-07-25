@@ -12,7 +12,7 @@ This document outlines the core rules and reusable components for maintaining a 
 - **DataTable:** Use `<DataTable />` for rendering lists and tabular data. It handles empty states and responsive scrolling automatically.
 - **Badge / Pills:** Use the `<Badge />` component for statuses. For interactive tabs, use pill-shaped buttons with rounded-full borders and Lucide icons.
 - **Avatar:** Use the `<Avatar />` component for user profile pictures. When editing the current user's profile, use `<ProfilePictureUploader />`.
-- **UserSearchSelect:** For any user selection (students, teachers, guardians, etc.), always use the `<UserSearchSelect />` autocomplete component instead of standard dropdowns. Ensure `useAllUsers()` hook is used to provide the `users` prop, and filter using the `roles` array prop.
+- **UserSearchSelect:** For any user selection (students, teachers, guardians, etc.), always use the `<UserSearchSelect />` autocomplete component instead of standard dropdowns. Ensure `useAllUsers()` hook is used to provide the `users` prop, and filter using the `roles` array prop. It supports toggling elements via `showUsername`, `showClass`, and `showRole` props (all default to `true`).
 ## 3. Styling & Cards
 - **Premium Cards:** Content should be grouped into cards with `bg-surface rounded-2xl shadow-sm border border-border`. For hero/banner cards (like the student profile header), use larger rounded corners (`rounded-[24px]`) and premium gradients (e.g., `bg-gradient-to-br from-[#4b43c4] to-[#3a34a8]`).
 - **Typography:** Ensure high contrast. Use `text-ink-900` for primary text and headings, `text-ink-500` for secondary text, and `font-extrabold` for large statistics or primary names.

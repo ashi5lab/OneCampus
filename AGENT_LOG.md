@@ -980,3 +980,100 @@ A screenshot was provided showing a two-section form layout ("Incident Informati
 *Log entry authored by Antigravity Agent*
 *Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
 *Timestamp: 2026-07-25T22:32 IST*
+
+---
+
+## Entry 007 — Enhance UserSearchSelect UI and Backend Query
+
+**Date:** 2026-07-25
+**Time:** ~22:40 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "make a small change to theUserSearchSelect - it should show name (class) and a second line with small font grey colour username - all these keep as props - we can hide or show - by default show all - if mentioned false for username - hide it, false for class - hide it, mentioned false for role (L or T ) - hide it."
+
+---
+
+### Investigation
+
+- **Frontend (`UserSearchSelect.jsx`)**: Needs to support three new toggle props (`showUsername`, `showClass`, `showRole`) and render a two-line layout.
+- **Backend (`userDirectory.js`)**: The global user query `listUsersWithNames` did not fetch the cohort (class) name. It needed to join `onec_cohorts` to expose `cohort_name` for learners.
+
+---
+
+### Changes Made
+
+#### 1. Backend: Included Class Name
+- **File**: `server/lib/userDirectory.js`
+- **Change**: Added `LEFT JOIN onec_cohorts c ON l.cohort_id = c.id` and added `c.name AS cohort_name` to the SELECT list of the global user directory query.
+
+#### 2. Frontend: Component UI Enhancements
+- **File**: `client/src/components/UserSearchSelect.jsx`
+- **Props Added**: `showUsername` (default `true`), `showClass` (default `true`), `showRole` (default `true`).
+- **Logic**:
+  - The `label` (which shows in the input and is used for searching) is now formatted as `Name (Class)` if the user is a learner and `showClass` is true.
+  - The dropdown list rendering (`renderOption`) was updated to a Flex column layout.
+  - The username is rendered on a second line in small grey font (`text-[11px] text-ink-500 font-medium`) if `showUsername` is true.
+  - The `RoleBadge` rendering is wrapped in `if (showRole)`.
+
+---
+
+### Files Changed
+
+| File | Action | Description |
+|---|---|---|
+| `server/lib/userDirectory.js` | MODIFIED | Joined `onec_cohorts` to expose `cohort_name` for learners. |
+| `client/src/components/UserSearchSelect.jsx` | MODIFIED | Added UI props, two-line dropdown layout, and class name formatting. |
+
+---
+
+### Expected Outcome
+
+- When using the `UserSearchSelect` component (like in the Discipline form), the selected text and search items now say e.g., "John Doe (Class 8A)".
+- Inside the dropdown, under "John Doe (Class 8A)", the username is displayed in small grey text.
+- Developers can pass `showUsername={false}`, `showClass={false}`, or `showRole={false}` to hide any of these elements.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T22:40 IST*
+
+---
+
+## Entry 008 — Document UserSearchSelect Props in PRD and Rules
+
+**Date:** 2026-07-25
+**Time:** ~22:44 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "note the usersearchselect change to PRD file and rules"
+
+---
+
+### Changes Made
+
+- **`Rules.md`**: Updated the `UserSearchSelect` bullet point under *Reusable Components* to document the new `showUsername`, `showClass`, and `showRole` boolean props (all default to `true`).
+- **`OneCampus_PRD_v2.md`**: Updated the `UserSearchSelect` bullet point under *Global UI Components* to reflect the same layout toggle capabilities.
+
+---
+
+### Files Changed
+
+| File | Action | Description |
+|---|---|---|
+| `Rules.md` | MODIFIED | Documented new UI toggle props. |
+| `OneCampus_PRD_v2.md` | MODIFIED | Documented new UI toggle props. |
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T22:44 IST*

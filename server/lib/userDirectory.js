@@ -17,12 +17,14 @@ async function listUsersWithNames(req, { excludeUserId, includeInactive = false 
   const result = await req.db.query(
     `SELECT u.id, u.username, u.email, u.role, u.is_active,
             COALESCE(i.first_name || ' ' || i.last_name, s.first_name || ' ' || s.last_name,
-                     l.first_name || ' ' || l.last_name, g.first_name || ' ' || g.last_name) AS name
+                     l.first_name || ' ' || l.last_name, g.first_name || ' ' || g.last_name) AS name,
+            c.name AS cohort_name
      FROM onec_users u
      LEFT JOIN onec_instructors i ON i.user_id = u.id AND u.role = 'instructor'
      LEFT JOIN onec_staff s ON s.user_id = u.id AND u.role = 'staff'
      LEFT JOIN onec_learners l ON l.user_id = u.id AND u.role = 'learner'
      LEFT JOIN onec_guardians g ON g.user_id = u.id AND u.role = 'guardian'
+     LEFT JOIN onec_cohorts c ON l.cohort_id = c.id
      ${whereClause}
      ORDER BY u.role, u.username`,
     params
