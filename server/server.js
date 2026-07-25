@@ -47,6 +47,7 @@ app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 // the router runs its own express.raw parser (see modules/webhooks/whatsapp.js).
 const whatsappWebhookRoutes = require('./modules/webhooks/whatsapp');
 app.use('/webhooks', whatsappWebhookRoutes);
+app.use('/api/webhook', whatsappWebhookRoutes);
 
 app.use(express.json());
 app.use(cookieParser());
@@ -66,8 +67,6 @@ app.use('/api/v1/platform', platformRoutes);
 const storageRoutes = require('./modules/storage/routes');
 app.use('/api/v1/storage', storageRoutes);
 
-const whatsappWebhook = require('./modules/webhooks/whatsapp');
-app.use('/api/webhook/whatsapp', whatsappWebhook);
 
 // Resolve the tenant, then pin a dedicated DB connection to that tenant's schema.
 // Scoped to /api/v1 only — mounting this with no path (as it originally was)
