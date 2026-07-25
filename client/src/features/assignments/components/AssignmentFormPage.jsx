@@ -7,7 +7,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useModules } from '../../modules/hooks/useModules';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
-import { useAllUsers } from '../../profile/hooks/useProfile';
+import { useLearners } from '../../learners/hooks/useLearners';
 import { useAssignment, useCreateAssignment, useUpdateAssignment } from '../hooks/useAssignments';
 import { PageHeader } from '../../../components/PageHeader';
 import { Spinner } from '../../../components/Spinner';
@@ -67,7 +67,7 @@ export function AssignmentFormPage() {
   const { data: existing, isLoading: loadingExisting } = useAssignment(id);
   const { data: modulesData } = useModules();
   const { data: cohortsData } = useCohorts();
-  const { data: allUsersData } = useAllUsers();
+  const { data: learnersData } = useLearners();
 
   const createAssignment = useCreateAssignment();
   const updateAssignment = useUpdateAssignment();
@@ -120,9 +120,14 @@ export function AssignmentFormPage() {
   const targetType = watch('target_type');
   const evalType = watch('eval_type');
 
-  const moduleOptions = (modulesData?.data ?? []).map(m => ({ value: m.id, label: m.name }));
-  const cohortOptions = (cohortsData?.data ?? []).map(c => ({ value: c.id, label: c.name }));
-  const allUsers = allUsersData?.data ?? [];
+  const moduleOptions = (modulesData ?? []).map(m => ({ value: m.id, label: m.name }));
+  const cohortOptions = (cohortsData ?? []).map(c => ({ value: c.id, label: c.name }));
+  const allUsers = (learnersData ?? []).map(l => ({
+    id: l.user_id,
+    name: `${l.first_name} ${l.last_name}`,
+    cohort_name: l.cohort_name,
+    role: 'learner'
+  }));
 
   async function onSubmit(values, asDraft = false) {
     const payload = { ...values };
@@ -174,11 +179,14 @@ export function AssignmentFormPage() {
 
       <form
         onSubmit={handleSubmit(v => onSubmit(v, false))}
-        className="mx-auto max-w-2xl space-y-0 pb-12"
+        className="pb-12 space-y-6"
       >
-        {/* ── Section: Basics ─────────────────────────────────── */}
-        <section className="mb-6 rounded border border-border bg-surface p-6">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Basics</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* ── Left Column ─────────────────────────────────────── */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* ── Section: Basics ─────────────────────────────────── */}
+            <section className="rounded border border-border bg-surface p-6">
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Basics</h2>
 
           <Field label="Assignment Title" error={errors.title}>
             <input
@@ -215,11 +223,27 @@ export function AssignmentFormPage() {
               {...register('description')}
             />
           </Field>
-        </section>
+            </section>
 
-        {/* ── Section: Target ─────────────────────────────────── */}
-        <section className="mb-6 rounded border border-border bg-surface p-6">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Target Audience</h2>
+            {/* ── Section: Instructions ───────────────────────────── */}
+            <section className="rounded border border-border bg-surface p-6">
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Instructions</h2>
+              <Field label="Instructions" error={errors.instructions}>
+                <textarea
+                  className="input resize-none"
+                  rows={6}
+                  placeholder="Detailed instructions for students (optional)"
+                  {...register('instructions')}
+                />
+              </Field>
+            </section>
+          </div>
+
+          {/* ── Right Column ────────────────────────────────────── */}
+          <div className="space-y-6">
+            {/* ── Section: Target ─────────────────────────────────── */}
+            <section className="rounded border border-border bg-surface p-6">
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Target Audience</h2>
 
           <Field label="Assign to" error={errors.target_type}>
             <Controller
@@ -286,11 +310,11 @@ export function AssignmentFormPage() {
               />
             </Field>
           )}
-        </section>
+            </section>
 
-        {/* ── Section: Evaluation ─────────────────────────────── */}
-        <section className="mb-6 rounded border border-border bg-surface p-6">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Evaluation</h2>
+            {/* ── Section: Evaluation ─────────────────────────────── */}
+            <section className="rounded border border-border bg-surface p-6">
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Evaluation</h2>
 
           <Field label="Evaluation Type" error={errors.eval_type}>
             <Controller
@@ -345,23 +369,12 @@ export function AssignmentFormPage() {
               />
             </Field>
           )}
-        </section>
-
-        {/* ── Section: Instructions ───────────────────────────── */}
-        <section className="mb-6 rounded border border-border bg-surface p-6">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Instructions</h2>
-          <Field label="Instructions" error={errors.instructions}>
-            <textarea
-              className="input resize-none"
-              rows={5}
-              placeholder="Detailed instructions for students (optional)"
-              {...register('instructions')}
-            />
-          </Field>
-        </section>
+            </section>
+          </div>
+        </div>
 
         {/* ── Actions ─────────────────────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 pt-4">
           {!isEdit && (
             <button
               type="button"

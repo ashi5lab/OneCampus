@@ -194,6 +194,26 @@ async function getAssignment(req, res) {
     );
     assignment.total_graded = parseInt(statsRes.rows[0].total_graded, 10);
 
+    // Total students count
+    let totalStudentsQuery = '';
+    if (assignment.target_type === 'specific_students') {
+      totalStudentsQuery = `
+        SELECT COUNT(DISTINCT ats.learner_id) AS total_students
+        FROM onec_assignment_target_students ats
+        JOIN onec_learners l ON ats.learner_id = l.id
+        WHERE ats.assignment_id = $1 AND l.status = 'active'
+      `;
+    } else {
+      totalStudentsQuery = `
+        SELECT COUNT(DISTINCT l.id) AS total_students
+        FROM onec_learners l
+        JOIN onec_assignment_cohorts ac ON ac.cohort_id = l.cohort_id
+        WHERE ac.assignment_id = $1 AND l.status = 'active'
+      `;
+    }
+    const totalRes = await req.db.query(totalStudentsQuery, [id]);
+    assignment.total_students = parseInt(totalRes.rows[0].total_students, 10);
+
     res.json({ data: assignment });
   } catch (err) {
     console.error(err);
@@ -403,41 +423,50 @@ async function getValuationStudents(req, res) {
     const conditions = [];
     const params = [id];
 
-    let fromClause;
+    let fromJoins;
+    let whereClause;
+
     if (target_type === 'specific_students') {
-      fromClause = `
+      fromJoins = `
         FROM onec_assignment_target_students ats
         JOIN onec_learners l ON ats.learner_id = l.id
-        WHERE ats.assignment_id = $1 AND l.status = 'active'
+        LEFT JOIN onec_cohorts c ON c.id = l.cohort_id
       `;
+      whereClause = `WHERE ats.assignment_id = $1 AND l.status = 'active'`;
     } else {
-      if (!cohort_id) return res.status(400).json({ error: 'cohort_id is required for class assignments' });
-      params.push(cohort_id);
-      fromClause = `
+      fromJoins = `
         FROM onec_learners l
         JOIN onec_assignment_cohorts ac ON ac.cohort_id = l.cohort_id AND ac.assignment_id = $1
-        WHERE l.cohort_id = $2 AND l.status = 'active'
+        JOIN onec_cohorts c ON c.id = l.cohort_id
       `;
+      if (cohort_id) {
+        params.push(cohort_id);
+        whereClause = `WHERE l.cohort_id = $2 AND l.status = 'active'`;
+      } else {
+        whereClause = `WHERE l.status = 'active'`;
+      }
     }
 
     if (search) {
       params.push(`%${search}%`);
       const p = params.length;
-      fromClause += ` AND (l.first_name ILIKE $${p} OR l.last_name ILIKE $${p} OR l.registry_no ILIKE $${p})`;
+      whereClause += ` AND (l.first_name ILIKE $${p} OR l.last_name ILIKE $${p} OR l.registry_no ILIKE $${p})`;
     }
 
-    const countResult = await req.db.query(`SELECT COUNT(*) ${fromClause}`, params);
+    const countResult = await req.db.query(`SELECT COUNT(*) ${fromJoins} ${whereClause}`, params);
     const total = parseInt(countResult.rows[0].count, 10);
 
     const result = await req.db.query(
       `SELECT l.id AS learner_id, l.user_id, l.first_name, l.last_name, l.registry_no,
-              ROW_NUMBER() OVER (ORDER BY l.last_name, l.first_name) AS roll_no,
+              c.name AS cohort_name,
+              ROW_NUMBER() OVER (ORDER BY c.name, l.last_name, l.first_name) AS roll_no,
               s.id AS submission_id, s.score_obtained, s.grade_value, s.feedback,
               COALESCE(s.status, 'pending') AS status
-       ${fromClause}
+       ${fromJoins}
        LEFT JOIN onec_assignment_submissions s
          ON s.assignment_id = $1 AND s.learner_id = l.id
-       ORDER BY l.last_name, l.first_name
+       ${whereClause}
+       ORDER BY c.name, l.last_name, l.first_name
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, pageSize, offset]
     );
@@ -526,11 +555,7 @@ async function completeValuation(req, res) {
 
     const ungradedRes = await req.db.query(ungradedQuery, [id]);
     const ungraded = parseInt(ungradedRes.rows[0].count, 10);
-    if (ungraded > 0) {
-      return res.status(400).json({
-        error: `${ungraded} student${ungraded > 1 ? 's' : ''} still pending. Grade everyone before completing valuation.`
-      });
-    }
+    // Removed strict backend block for ungraded > 0, as the frontend now displays a confirmation warning.
 
     const result = await req.db.query(
       `UPDATE onec_assignments SET status = 'completed', publish_marks = TRUE
@@ -618,8 +643,7 @@ async function getActivity(req, res) {
     const { id } = req.params;
     const { limit = 50, offset = 0 } = req.query;
     const result = await req.db.query(
-      `SELECT al.id, al.action, al.details, al.created_at,
-              u.username, u.first_name, u.last_name
+      `SELECT al.id, al.action, al.details, al.created_at, u.username
        FROM onec_audit_logs al
        LEFT JOIN onec_users u ON u.id = al.user_id
        WHERE (al.details->>'assignment_id')::int = $1

@@ -18,7 +18,8 @@ import { showToast } from '../../../lib/toast';
 export function ClassAssignmentsTab({ cohortId }) {
   const { can } = useAuth();
   const { t } = useConfig();
-  const { data: assignments, isLoading, error } = useAssignments();
+  const { data, isLoading, error } = useAssignments();
+  const assignments = data?.assignments ?? [];
   const createAssignment = useCreateAssignment();
   const updateAssignment = useUpdateAssignment();
   const deleteAssignment = useDeleteAssignment();

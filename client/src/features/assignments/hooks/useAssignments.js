@@ -62,7 +62,7 @@ export function useDuplicateAssignment() {
 export function useTogglePublish() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, publish }) => assignmentsApi.togglePublish(id, publish),
+    mutationFn: ({ id, published }) => assignmentsApi.togglePublish(id, published),
     onSuccess: (_, { id }) => invalidate(qc, [[...KEY, id]]),
   });
 }
@@ -81,9 +81,30 @@ export function useUpsertGrade(assignmentId) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload) => assignmentsApi.upsertGrade(assignmentId, payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [...KEY, assignmentId, 'valuation'] });
-      qc.invalidateQueries({ queryKey: [...KEY, assignmentId] });
+    onSuccess: (data, payload) => {
+      // Optimistically update the valuation cache to avoid a network refetch
+      qc.setQueriesData(
+        { queryKey: [...KEY, assignmentId, 'valuation'] },
+        (oldData) => {
+          if (!oldData || !oldData.students) return oldData;
+          return {
+            ...oldData,
+            students: oldData.students.map(student => {
+              if (student.learner_id === payload.learner_id) {
+                return {
+                  ...student,
+                  score_obtained: payload.score_obtained ?? student.score_obtained,
+                  grade_value: payload.grade_value ?? student.grade_value,
+                  status: data.status
+                };
+              }
+              return student;
+            })
+          };
+        }
+      );
+      // Only refetch the main assignment overview (exact: true)
+      qc.invalidateQueries({ queryKey: [...KEY, assignmentId], exact: true });
     },
   });
 }

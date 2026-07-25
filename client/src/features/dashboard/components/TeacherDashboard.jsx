@@ -132,7 +132,7 @@ export function TeacherDashboard() {
   }
 
   // Assignments: count ones the instructor created that have ungraded submissions
-  const assignments = assignmentsData?.data ?? assignmentsData ?? [];
+  const assignments = assignmentsData?.assignments ?? [];
   const toGradeCount = assignments.filter((a) => (a.ungraded_count ?? 0) > 0).length;
 
   let assignmentsColor = 'text-emerald-600 bg-emerald-50';

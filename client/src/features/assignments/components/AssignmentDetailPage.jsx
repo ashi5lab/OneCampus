@@ -106,18 +106,17 @@ function ValuationTab({ assignment, selectedCohortId }) {
 
   const columns = [
     {
-      key: 'roll',
-      header: '#',
-      render: (row) => <span className="text-xs text-ink-500">{row.roll_no}</span>,
-    },
-    {
       key: 'name',
       header: 'Student',
       render: (row) => (
         <div>
-          <div className="font-semibold text-ink-900">{row.name}</div>
-          <div className="text-xs text-ink-500">
-            {row.registry_no ?? row.learner_user_id}
+          <div className="font-semibold text-ink-900">
+            {row.first_name} {row.last_name ?? ''}
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-ink-500 font-medium">
+            {row.cohort_name && <span className="rounded bg-surface-muted px-1.5 py-0.5 border border-border">Class: {row.cohort_name}</span>}
+            {row.registry_no && <span className="rounded bg-surface-muted px-1.5 py-0.5 border border-border">Reg: {row.registry_no}</span>}
+            {row.roll_no && <span className="rounded bg-surface-muted px-1.5 py-0.5 border border-border">Roll: {row.roll_no}</span>}
           </div>
         </div>
       ),
@@ -147,12 +146,12 @@ function ValuationTab({ assignment, selectedCohortId }) {
       render: (row) => (
         <span
           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-            row.submission_status === 'graded'
+            row.status === 'graded'
               ? 'bg-green-100 text-green-700'
               : 'bg-amber-100 text-amber-700'
           }`}
         >
-          {row.submission_status === 'graded' ? 'Graded' : 'Pending'}
+          {row.status === 'graded' ? 'Graded' : 'Pending'}
         </span>
       ),
     },
@@ -316,7 +315,7 @@ export function AssignmentDetailPage() {
       onConfirm: () => {
         setConfirmAction(null);
         togglePublish.mutate(
-          { id: assignment.id, publish: next },
+          { id: assignment.id, published: next },
           {
             onSuccess: () => showToast.success(next ? 'Marks published.' : 'Marks unpublished.'),
             onError: e => showToast.error(e.message),
@@ -327,10 +326,18 @@ export function AssignmentDetailPage() {
   }
 
   function handleCompleteValuation() {
+    const total = assignment.total_students ?? 0;
+    const graded = assignment.total_graded ?? 0;
+    const ungraded = total - graded;
+
+    const message = ungraded > 0 
+      ? `There are still ${ungraded} student(s) who haven't been graded yet. Are you sure you want to complete the valuation and publish marks now? (You can still edit marks later).`
+      : 'Mark valuation as complete? Marks will be published to students. (You can still edit marks later if needed).';
+
     setConfirmAction({
-      message: 'Mark valuation complete? Marks will be published to students.',
-      label: 'Complete',
-      danger: false,
+      message,
+      label: 'Complete Valuation',
+      danger: ungraded > 0,
       onConfirm: () => {
         setConfirmAction(null);
         completeValuation.mutate(assignment.id, {
@@ -371,14 +378,22 @@ export function AssignmentDetailPage() {
               </button>
             )}
             {isGrader && assignment.status !== 'completed' && (
-              <button
-                onClick={handleCompleteValuation}
-                disabled={completeValuation.isPending}
-                className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
-              >
-                {completeValuation.isPending && <Spinner size="xs" />}
-                Complete Valuation
-              </button>
+              <>
+                <button
+                  onClick={() => showToast.success('Marks are saved automatically as a draft.')}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink-700 hover:bg-surface-muted"
+                >
+                  Save as Draft
+                </button>
+                <button
+                  onClick={handleCompleteValuation}
+                  disabled={completeValuation.isPending}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                >
+                  {completeValuation.isPending && <Spinner size="xs" />}
+                  Complete Valuation
+                </button>
+              </>
             )}
             {isManager && (
               <button

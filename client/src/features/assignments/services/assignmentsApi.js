@@ -11,16 +11,24 @@ function qs(params = {}) {
 }
 
 export const assignmentsApi = {
-  list: (params) => apiClient.get(`/assignments${qs(params)}`).then(r => r.data),
+  list: (params) => apiClient.get(`/assignments${qs(params)}`).then(r => ({
+    assignments: r.data,
+    total: r.meta?.total ?? 0,
+    meta: r.meta
+  })),
   get: (id) => apiClient.get(`/assignments/${id}`).then(r => r.data),
   create: (payload) => apiClient.post('/assignments', payload).then(r => r.data),
   update: (id, payload) => apiClient.put(`/assignments/${id}`, payload).then(r => r.data),
   remove: (id) => apiClient.delete(`/assignments/${id}`).then(r => r.data),
   duplicate: (id) => apiClient.post(`/assignments/${id}/duplicate`).then(r => r.data),
-  togglePublish: (id, publish) =>
-    apiClient.patch(`/assignments/${id}/publish`, { publish }).then(r => r.data),
+  togglePublish: (id, published) =>
+    apiClient.patch(`/assignments/${id}/publish`, { published }).then(r => r.data),
   getValuationStudents: (id, params) =>
-    apiClient.get(`/assignments/${id}/valuation${qs(params)}`).then(r => r.data),
+    apiClient.get(`/assignments/${id}/valuation${qs(params)}`).then(r => ({
+      students: r.data,
+      total: r.meta?.total ?? 0,
+      meta: r.meta
+    })),
   upsertGrade: (id, payload) =>
     apiClient.post(`/assignments/${id}/grade`, payload).then(r => r.data),
   completeValuation: (id) =>
