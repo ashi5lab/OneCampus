@@ -6,9 +6,15 @@ import { AttendanceRoster } from './AttendanceRoster';
 import { MyAttendanceView } from './MyAttendanceView';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners } from '../../learners/hooks/useLearners';
+import { useCohortAttendanceLogs } from '../hooks/useAttendance';
 import { TeacherHeader } from '../../../components/TeacherHeader';
 import { Avatar } from '../../../components/Avatar';
 import { ChevronRight, Clock, CheckCircle2, Search, ChevronDown } from 'lucide-react';
+
+function todayIso() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
 
 export function AttendancePage() {
   const { can } = useAuth();
@@ -35,6 +41,15 @@ function AttendancePicker() {
   const navigate = useNavigate();
   const { data: cohorts, isLoading: cohortsLoading } = useCohorts();
   const { data: allLearners } = useLearners();
+  const today = useMemo(() => todayIso(), []);
+  const { data: logsData } = useCohortAttendanceLogs(today);
+
+  // Map cohort_id → log entry for O(1) lookup in the render loop
+  const logsMap = useMemo(() => {
+    const map = {};
+    (logsData?.data || []).forEach((l) => { map[String(l.cohort_id)] = l; });
+    return map;
+  }, [logsData]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -165,45 +180,63 @@ function AttendancePicker() {
           ) : list.length === 0 ? (
             <div className="text-center py-8 text-gray-400 text-sm">No classes found.</div>
           ) : (
-            list.map((c) => (
-              <Link
-                key={c.id}
-                to={`/app/attendance/${c.id}`}
-                className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-transform active:scale-[0.99] hover:shadow-md"
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-indigo-50 text-indigo-700 rounded-2xl flex items-center justify-center text-[18px] font-bold">
-                      {(c.name || '?')[0].toUpperCase()}
+            list.map((c) => {
+              const log = logsMap[String(c.id)];
+              const isMarked = !!log;
+              const presentCount = log?.present_count ?? null;
+              const totalLearners = log?.total_learners ?? c.learner_count ?? null;
+              return (
+                <Link
+                  key={c.id}
+                  to={`/app/attendance/${c.id}`}
+                  className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-transform active:scale-[0.99] hover:shadow-md"
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-indigo-50 text-indigo-700 rounded-2xl flex items-center justify-center text-[18px] font-bold">
+                        {(c.name || '?')[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="text-[16px] font-bold text-gray-900">{c.name}</div>
+                        <div className="text-[12px] font-medium text-gray-500">
+                          {c.learner_count != null ? `${c.learner_count} students` : 'Students'}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-[16px] font-bold text-gray-900">{c.name}</div>
-                      <div className="text-[12px] font-medium text-gray-500">Period 1 • 09:00 AM - 09:45 AM</div>
-                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                </div>
 
-                <div className="flex gap-2 mt-1">
-                  <div className="flex-1 bg-gray-50 rounded-xl p-2.5 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
-                      <Clock className="w-3.5 h-3.5" />
-                      Status
+                  <div className="flex gap-2 mt-1">
+                    <div className="flex-1 bg-gray-50 rounded-xl p-2.5 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+                        <Clock className="w-3.5 h-3.5" />
+                        Status
+                      </div>
+                      {isMarked ? (
+                        <div className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                          Marked
+                        </div>
+                      ) : (
+                        <div className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                          Pending
+                        </div>
+                      )}
                     </div>
-                    <div className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                      Pending
+                    <div className="flex-1 bg-gray-50 rounded-xl p-2.5 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Present
+                      </div>
+                      <div className="text-[11px] font-bold text-gray-900">
+                        {isMarked && presentCount != null && totalLearners != null
+                          ? `${presentCount}/${totalLearners}`
+                          : '--/--'}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex-1 bg-gray-50 rounded-xl p-2.5 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      Present
-                    </div>
-                    <div className="text-[11px] font-bold text-gray-900">--/--</div>
-                  </div>
-                </div>
-              </Link>
-            ))
+                </Link>
+              );
+            }))
           )
         )}
       </div>

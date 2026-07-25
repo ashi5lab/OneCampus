@@ -291,4 +291,50 @@ async function absenteeReport(req, res) {
   }
 }
 
-module.exports = { getAll, mark, markBulk, absenteeReport };
+// Returns per-cohort log status for a given date — powers the class-picker
+// cards on the attendance page ("Marked" / "Pending") and the present count.
+// For each cohort that has a log entry for the date, we also compute how many
+// learners are present (= total active learners in cohort − exceptions).
+async function getLogs(req, res) {
+  try {
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+
+    const result = await req.db.query(
+      `SELECT
+         l.cohort_id,
+         l.date,
+         l.marked_by,
+         u.username AS marked_by_name,
+         c.name AS cohort_name,
+         (SELECT COUNT(*) FROM onec_learners WHERE cohort_id = l.cohort_id AND status = 'active')::int AS total_learners,
+         (SELECT COUNT(*) FROM onec_attendance a WHERE a.cohort_id = l.cohort_id AND a.date = l.date AND a.status = 'absent')::int AS absent_count,
+         (SELECT COUNT(*) FROM onec_attendance a WHERE a.cohort_id = l.cohort_id AND a.date = l.date AND a.status = 'late')::int AS late_count,
+         (SELECT COUNT(*) FROM onec_attendance a WHERE a.cohort_id = l.cohort_id AND a.date = l.date AND a.status = 'excused')::int AS excused_count
+       FROM onec_cohort_attendance_logs l
+       LEFT JOIN onec_cohorts c ON c.id = l.cohort_id
+       LEFT JOIN onec_users u ON u.id = l.marked_by
+       WHERE l.date = $1
+       ORDER BY c.name`,
+      [date]
+    );
+
+    const logs = result.rows.map((row) => ({
+      cohort_id: row.cohort_id,
+      cohort_name: row.cohort_name,
+      date: row.date,
+      marked_by_name: row.marked_by_name,
+      total_learners: row.total_learners,
+      absent_count: row.absent_count,
+      late_count: row.late_count,
+      excused_count: row.excused_count,
+      present_count: Math.max(0, row.total_learners - row.absent_count - row.late_count - row.excused_count)
+    }));
+
+    res.json({ data: logs });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getAll, mark, markBulk, absenteeReport, getLogs };
