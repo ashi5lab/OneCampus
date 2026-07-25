@@ -372,4 +372,23 @@ async function setSchoolHead(req, res) {
   }
 }
 
-module.exports = { getAll, getById, create, update, remove, getProfile, setClassHead, setSchoolHead };
+async function assignCohort(req, res) {
+  try {
+    const { id } = req.params;
+    const { cohort_id } = req.body;
+    if (cohort_id !== null && cohort_id !== undefined && !Number.isInteger(Number(cohort_id))) {
+      return res.status(400).json({ error: 'cohort_id must be an integer or null' });
+    }
+    const result = await req.db.query(
+      'UPDATE onec_learners SET cohort_id = $1 WHERE id = $2 RETURNING id, cohort_id',
+      [cohort_id ?? null, id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Learner not found' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getAll, getById, create, update, remove, getProfile, setClassHead, setSchoolHead, assignCohort };

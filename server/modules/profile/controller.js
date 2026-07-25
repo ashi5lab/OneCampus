@@ -328,6 +328,146 @@ async function saveFcmToken(req, res) {
   }
 }
 
+// Returns a full users report for admin: role allocation status, class assignment
+// status, and aggregate summary counts — all in one query via window functions.
+async function getUsersReport(req, res) {
+  try {
+    const { search = '', filter = 'all' } = req.query;
+
+    const result = await req.db.query(`
+      WITH user_data AS (
+        SELECT
+          u.id AS user_id,
+          u.username,
+          u.role,
+          u.profile_picture_url,
+          COALESCE(
+            CASE WHEN u.role = 'learner'     THEN l.first_name || ' ' || l.last_name     END,
+            CASE WHEN u.role = 'instructor'  THEN i.first_name || ' ' || i.last_name     END,
+            CASE WHEN u.role = 'staff'       THEN st.first_name || ' ' || st.last_name   END,
+            CASE WHEN u.role = 'guardian'    THEN g.first_name || ' ' || g.last_name     END,
+            u.username
+          ) AS name,
+          l.id         AS learner_id,
+          l.registry_no,
+          l.cohort_id,
+          c.name       AS cohort_name,
+          i.id         AS instructor_id,
+          st.id        AS staff_id,
+          CASE
+            WHEN u.role = 'learner'    THEN (l.id IS NULL)
+            WHEN u.role = 'instructor' THEN (i.id IS NULL)
+            WHEN u.role = 'staff'     THEN (st.id IS NULL)
+            WHEN u.role = 'guardian'  THEN (g.id IS NULL)
+            ELSE false
+          END AS is_profile_missing,
+          CASE
+            WHEN u.role = 'learner'    THEN (l.cohort_id IS NOT NULL)
+            WHEN u.role = 'instructor' THEN (
+              EXISTS(SELECT 1 FROM onec_instructor_cohorts ic WHERE ic.instructor_id = i.id)
+              OR EXISTS(SELECT 1 FROM onec_cohorts co WHERE co.advisor_id = u.id)
+            )
+            ELSE true
+          END AS has_class
+        FROM onec_users u
+        LEFT JOIN onec_learners    l  ON l.user_id  = u.id AND u.role = 'learner'
+        LEFT JOIN onec_instructors i  ON i.user_id  = u.id AND u.role = 'instructor'
+        LEFT JOIN onec_staff       st ON st.user_id = u.id AND u.role = 'staff'
+        LEFT JOIN onec_guardians   g  ON g.user_id  = u.id AND u.role = 'guardian'
+        LEFT JOIN onec_cohorts     c  ON c.id = l.cohort_id
+        WHERE ($1 = '' OR
+               COALESCE(l.first_name || ' ' || l.last_name,
+                        i.first_name || ' ' || i.last_name,
+                        st.first_name || ' ' || st.last_name,
+                        g.first_name || ' ' || g.last_name,
+                        u.username) ILIKE $1
+               OR u.username ILIKE $1
+               OR l.registry_no ILIKE $1)
+      )
+      SELECT
+        *,
+        COUNT(*)                                                                       OVER() AS total_count,
+        COUNT(*) FILTER (WHERE is_profile_missing)                                    OVER() AS no_profile_count,
+        COUNT(*) FILTER (WHERE role = 'learner'    AND NOT is_profile_missing AND NOT has_class) OVER() AS learners_no_class_count,
+        COUNT(*) FILTER (WHERE role = 'instructor' AND NOT is_profile_missing AND NOT has_class) OVER() AS instructors_no_class_count
+      FROM user_data
+      WHERE (
+        $2 = 'all'                   OR
+        ($2 = 'no_profile'           AND is_profile_missing) OR
+        ($2 = 'learners_no_class'    AND role = 'learner'    AND NOT is_profile_missing AND NOT has_class) OR
+        ($2 = 'instructors_no_class' AND role = 'instructor' AND NOT is_profile_missing AND NOT has_class)
+      )
+      ORDER BY
+        (CASE WHEN is_profile_missing THEN 0 ELSE 1 END),
+        (CASE WHEN NOT has_class AND role IN ('learner','instructor') AND NOT is_profile_missing THEN 0 ELSE 1 END),
+        role, name
+    `, [search ? `%${search}%` : '', filter]);
+
+    const rows = result.rows;
+    const first = rows[0] || {};
+    res.json({
+      data: {
+        summary: {
+          total: parseInt(first.total_count ?? 0, 10),
+          no_profile: parseInt(first.no_profile_count ?? 0, 10),
+          learners_no_class: parseInt(first.learners_no_class_count ?? 0, 10),
+          instructors_no_class: parseInt(first.instructors_no_class_count ?? 0, 10)
+        },
+        users: rows.map(({ total_count, no_profile_count, learners_no_class_count, instructors_no_class_count, ...u }) => u)
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+const changeRoleSchema = require('zod').object({
+  role: require('zod').enum(['admin', 'staff', 'instructor', 'learner', 'guardian'])
+});
+
+// Changes a user's role on onec_users — only allowed when the user has no
+// existing role-profile row (nothing to orphan). Blocks if a profile exists.
+async function changeUserRole(req, res) {
+  try {
+    const { userId } = req.params;
+    const parsed = changeRoleSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+    const { role } = parsed.data;
+
+    const userRow = await req.db.query(
+      `SELECT u.role,
+              l.id AS learner_id, i.id AS instructor_id, s.id AS staff_id, g.id AS guardian_id
+       FROM onec_users u
+       LEFT JOIN onec_learners    l ON l.user_id = u.id
+       LEFT JOIN onec_instructors i ON i.user_id = u.id
+       LEFT JOIN onec_staff       s ON s.user_id = u.id
+       LEFT JOIN onec_guardians   g ON g.user_id = u.id
+       WHERE u.id = $1`,
+      [userId]
+    );
+    if (userRow.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    const u = userRow.rows[0];
+    const hasProfile = u.learner_id || u.instructor_id || u.staff_id || u.guardian_id;
+    if (hasProfile) {
+      return res.status(400).json({
+        error: 'Cannot change role: user has an existing role profile. Delete the profile record first.'
+      });
+    }
+
+    const result = await req.db.query(
+      'UPDATE onec_users SET role = $1 WHERE id = $2 RETURNING id, username, role',
+      [role, userId]
+    );
+    logAudit(req, 'user.role_changed', { user_id: userId, from: u.role, to: role, by: req.user.userId });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   upload,
   uploadProfilePicture,
@@ -339,6 +479,8 @@ module.exports = {
   getHomeCardPrefs,
   updateHomeCardPrefs,
   listUsers,
+  getUsersReport,
+  changeUserRole,
   adminChangePassword,
   forceLogoutUser,
   saveFcmToken

@@ -16,6 +16,7 @@ router.delete('/:id', requirePermission('learners.manage'), controller.remove);
 // its own access check (roster access OR own/linked-child self-view), see
 // controller.js for why.
 router.get('/:id/profile', controller.getProfile);
+router.patch('/:id/cohort', requirePermission('learners.manage'), controller.assignCohort);
 router.patch('/:id/class-head', requirePermission('learners.manage'), controller.setClassHead);
 // setSchoolHead does its own narrower principal-only check inside — see
 // controller.js. learners.manage is still required at the route level as
