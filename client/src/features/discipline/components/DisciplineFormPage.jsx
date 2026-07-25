@@ -36,18 +36,21 @@ export function DisciplineFormPage() {
   const createRecord = useCreateDisciplineRecord();
   const updateRecord = useUpdateDisciplineRecord();
 
-  const [learnerId, setLearnerId] = useState('');
+  // userId holds onec_users.id — the value UserSearchSelect always returns.
+  // The server resolves this to onec_learners.id before inserting.
+  const [userId, setUserId] = useState('');
   const [incidentDate, setIncidentDate] = useState(todayIso());
   const [severity, setSeverity] = useState('minor');
   const [description, setDescription] = useState('');
   const [actionTaken, setActionTaken] = useState('');
 
-  // Populate data on edit mode
+  // Populate data on edit mode — use learner_user_id (onec_users.id) so the
+  // UserSearchSelect can match the correct option by user_id, not learner_id.
   useEffect(() => {
     if (isEdit && records) {
       const record = records.find(r => String(r.id) === id);
       if (record) {
-        setLearnerId(record.learner_id);
+        setUserId(record.learner_user_id ?? record.learner_id);
         setIncidentDate(record.incident_date);
         setSeverity(record.severity);
         setDescription(record.description || '');
@@ -59,7 +62,7 @@ export function DisciplineFormPage() {
   function handleSubmit(e) {
     e.preventDefault();
     const payload = {
-      learner_id: Number(learnerId),
+      user_id: Number(userId),
       incident_date: incidentDate,
       severity,
       description,
@@ -98,12 +101,12 @@ export function DisciplineFormPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
             <label className="block">
               <div className="mb-1.5 text-xs font-semibold text-ink-700">Student</div>
-              <UserSearchSelect 
-                users={users?.data || users || []} 
+              <UserSearchSelect
+                users={users?.data || users || []}
                 roles={['learner']}
-                value={learnerId} 
-                onChange={setLearnerId} 
-                placeholder="Search by name…" 
+                value={userId}
+                onChange={setUserId}
+                placeholder="Search by name…"
               />
             </label>
 
@@ -165,10 +168,10 @@ export function DisciplineFormPage() {
           </button>
           <button
             type="submit"
-            disabled={isPending || !learnerId}
+            disabled={isPending || !userId}
             className="rounded-full bg-accent px-6 py-2.5 text-[13.5px] font-semibold text-accent-ink disabled:opacity-60 transition-colors"
           >
-            {isPending ? 'Saving…' : 'Save Record'}
+            {isPending ? 'Saving…' : isEdit ? 'Update Record' : 'Save Record'}
           </button>
         </div>
       </form>

@@ -1203,7 +1203,73 @@ A screenshot was provided showing a two-section form layout ("Incident Informati
 
 ---
 
-## Entry 009 — Build Learner Behaviour Page in Student Profile
+## Entry 013 — Discipline Form Saving Wrong Student (user_id vs learner_id Mismatch)
+
+**Date:** 2026-07-25
+**Session:** 1038c693-05cb-5db2-aad9-142777098a43
+
+---
+
+### User Report
+
+> "i searched for ishaan dixit and logged a new discipline record - it showed ishaan and I selected, and submitted.. but in the discipline records page it shows nikhil chopra with a different learner_id - this is serious"
+
+---
+
+### Root Cause (Confirmed)
+
+This is the canonical user_id vs learner_id ID-space mismatch — the exact class of bug documented in Entries 005 and 006.
+
+**Trace:**
+
+| Step | Code | Value |
+|---|---|---|
+| 1 | `userDirectory.js` SELECT | Returns `u.id` = `onec_users.id` (e.g. 1187 for Ishaan) |
+| 2 | `UserSearchSelect` | Sets `value: u.id` → fires `onChange(1187)` |
+| 3 | `DisciplineFormPage` state | `learnerId = 1187` |
+| 4 | Payload sent to API | `{ learner_id: 1187 }` |
+| 5 | `discipline/controller.js` INSERT | `INSERT INTO onec_discipline_records (learner_id, ...) VALUES (1187, ...)` |
+| 6 | FK constraint | `onec_discipline_records.learner_id` → `onec_learners.id` |
+| 7 | Collision | `onec_learners.id = 1187` happens to be Nikhil Chopra's learner row |
+
+**Result:** Record inserted against Nikhil Chopra instead of Ishaan Dixit.
+
+The edit pre-fill had the same bug in reverse: reading back `record.learner_id` (which is `onec_learners.id`) and feeding it into `UserSearchSelect` which expects `onec_users.id` → wrong student pre-selected in edit mode.
+
+---
+
+### Fix
+
+**Architecture alignment:** UserSearchSelect always works in `user_id` (onec_users.id) space. The backend is responsible for resolving `user_id → learner_id` before DB insert. This is consistent with Rule 8.
+
+#### `server/modules/discipline/controller.js`
+
+- Changed `recordSchema`: `learner_id` → `user_id`
+- `create()`: Added lookup `SELECT id FROM onec_learners WHERE user_id = $1` before INSERT. Returns 400 if no learner profile found.
+- `update()`: Same lookup added before UPDATE.
+- `getAll()`: Added `l.user_id AS learner_user_id` to SELECT so edit pre-fill has the correct ID.
+
+#### `client/src/features/discipline/components/DisciplineFormPage.jsx`
+
+- Renamed state `learnerId` → `userId` (communicates the correct ID space)
+- Edit pre-fill now uses `record.learner_user_id` (not `record.learner_id`)
+- Payload field changed: `learner_id` → `user_id`
+
+---
+
+### Files Changed
+
+| File | Change |
+|---|---|
+| `server/modules/discipline/controller.js` | Accept user_id, resolve to learner_id server-side; return learner_user_id in GET |
+| `client/src/features/discipline/components/DisciplineFormPage.jsx` | State + payload renamed to user_id; edit pre-fill uses learner_user_id |
+
+---
+
+### Generalisation Note
+
+Any other feature that uses `UserSearchSelect` to pick a learner and then sends the result as `learner_id` to the server has the same bug. **All such API payloads must use `user_id`; the server resolves to role-table IDs internally.** Affected modules to audit: certificates, assignments, evaluations, PTM bookings, kindergarten activity.
+## Entry 014 — Build Learner Behaviour Page in Student Profile
 
 **Date:** 2026-07-25
 **Time:** ~23:00 IST
@@ -1248,12 +1314,14 @@ A screenshot was provided showing a two-section form layout ("Incident Informati
 ---
 
 *Log entry authored by Antigravity Agent*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*
+*Timestamp: 2026-07-25T23:30 IST*
 *Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
 *Timestamp: 2026-07-25T23:00 IST*
 
 ---
 
-## Entry 010 — Show "No records yet" on Behavior Empty State
+## Entry 015 — Show "No records yet" on Behavior Empty State
 
 **Date:** 2026-07-25
 **Time:** ~23:36 IST
@@ -1292,7 +1360,7 @@ A screenshot was provided showing a two-section form layout ("Incident Informati
 
 ---
 
-## Entry 011 — Adjusted Behavior Scoring Mechanics
+## Entry 016 — Adjusted Behavior Scoring Mechanics
 
 **Date:** 2026-07-25
 **Time:** ~23:55 IST
@@ -1326,7 +1394,7 @@ A screenshot was provided showing a two-section form layout ("Incident Informati
 
 ---
 
-## Entry 012 — Discipline Records Filtering & Server Pagination
+## Entry 017 — Discipline Records Filtering & Server Pagination
 
 **Date:** 2026-07-26
 **Time:** ~00:05 IST
@@ -1375,7 +1443,7 @@ A screenshot was provided showing a two-section form layout ("Incident Informati
 
 ---
 
-## Entry 013 — Fix Discipline API 500 Error
+## Entry 018 — Fix Discipline API 500 Error
 
 **Date:** 2026-07-26
 **Time:** ~00:08 IST
