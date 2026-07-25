@@ -9,15 +9,14 @@ import { SearchSelect } from '../../../components/SearchSelect';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { Spinner } from '../../../components/Spinner';
 import {
-  useAssignment,
-  useTogglePublish,
-  useCompleteValuation,
-  useValuationStudents,
-  useUpsertGrade,
-} from '../hooks/useAssignments';
-import { assignmentsApi } from '../services/assignmentsApi';
-import { AssignmentStatusBadge, PublishBadge } from './AssignmentStatusBadge';
-import { SubmissionForm } from './SubmissionForm';
+  useExam,
+  useToggleExamPublish,
+  useCompleteExamValuation,
+  useExamValuationStudents,
+  useUpsertExamGrade,
+} from '../hooks/useExams';
+import { examsApi } from '../services/examsApi';
+import { ExamStatusBadge, ExamPublishBadge } from './ExamStatusBadge';
 import { showToast } from '../../../lib/toast';
 
 const GRADE_OPTIONS = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'].map(g => ({
@@ -26,9 +25,9 @@ const GRADE_OPTIONS = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'].map(g =>
 }));
 
 // ─── Valuation Row Input ──────────────────────────────────────────────────────
-function EvalInput({ assignment, student, onChange }) {
+function EvalInput({ exam, student, onChange }) {
   const [value, setValue] = useState(
-    assignment.eval_type === 'marks'
+    exam.eval_type === 'marks'
       ? (student.score_obtained ?? '')
       : (student.grade_value ?? '')
   );
@@ -44,12 +43,12 @@ function EvalInput({ assignment, student, onChange }) {
     }
   }, [onChange]);
 
-  if (assignment.eval_type === 'marks') {
+  if (exam.eval_type === 'marks') {
     return (
       <input
         type="number"
         min={0}
-        max={assignment.max_score}
+        max={exam.max_score}
         className="input w-24 text-sm"
         value={value}
         onChange={e => setValue(e.target.value)}
@@ -70,7 +69,7 @@ function EvalInput({ assignment, student, onChange }) {
 }
 
 // ─── Valuation Table ──────────────────────────────────────────────────────────
-function ValuationTab({ assignment, selectedCohortId }) {
+function ValuationTab({ exam, selectedCohortId }) {
   const { can } = useAuth();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -83,8 +82,8 @@ function ValuationTab({ assignment, selectedCohortId }) {
     page_size: pageSize,
   };
 
-  const { data, isLoading } = useValuationStudents(assignment.id, params);
-  const upsertGrade = useUpsertGrade(assignment.id);
+  const { data, isLoading } = useExamValuationStudents(exam.id, params);
+  const upsertGrade = useUpsertExamGrade(exam.id);
 
   const students = data?.students ?? [];
   const total = data?.total ?? 0;
@@ -93,7 +92,7 @@ function ValuationTab({ assignment, selectedCohortId }) {
     return new Promise((resolve, reject) => {
       const payload = {
         learner_id: student.learner_id,
-        ...(assignment.eval_type === 'marks'
+        ...(exam.eval_type === 'marks'
           ? { score_obtained: Number(val) }
           : { grade_value: val }),
       };
@@ -123,18 +122,18 @@ function ValuationTab({ assignment, selectedCohortId }) {
     },
     {
       key: 'grade',
-      header: assignment.eval_type === 'marks' ? `Marks (/${assignment.max_score})` : 'Grade',
+      header: exam.eval_type === 'marks' ? `Marks (/${exam.max_score})` : 'Grade',
       render: (row) =>
-        can('assignments.grade') ? (
+        can('exams.grade') ? (
           <EvalInput
             key={row.learner_id}
-            assignment={assignment}
+            exam={exam}
             student={row}
             onChange={(v) => handleGrade(row, v)}
           />
         ) : (
           <span className="text-sm">
-            {assignment.eval_type === 'marks'
+            {exam.eval_type === 'marks'
               ? (row.score_obtained ?? '—')
               : (row.grade_value ?? '—')}
           </span>
@@ -181,41 +180,41 @@ function ValuationTab({ assignment, selectedCohortId }) {
 }
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
-function OverviewTab({ assignment }) {
+function OverviewTab({ exam }) {
   const { t } = useConfig();
   return (
     <div className="space-y-4">
-      {assignment.description && (
+      {exam.description && (
         <div>
           <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-ink-500">Description</h3>
-          <p className="text-sm text-ink-700">{assignment.description}</p>
+          <p className="text-sm text-ink-700">{exam.description}</p>
         </div>
       )}
-      {assignment.instructions && (
+      {exam.instructions && (
         <div>
           <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-ink-500">Instructions</h3>
-          <p className="whitespace-pre-wrap text-sm text-ink-700">{assignment.instructions}</p>
+          <p className="whitespace-pre-wrap text-sm text-ink-700">{exam.instructions}</p>
         </div>
       )}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <InfoCell label="Subject" value={assignment.module_name ?? '—'} />
-        <InfoCell label={t('cohort')} value={assignment.class_names ?? '—'} />
-        <InfoCell label="Due Date" value={assignment.due_date ? new Date(assignment.due_date).toLocaleDateString() : '—'} />
-        <InfoCell label="Taken By" value={assignment.taken_by_name ?? '—'} />
-        <InfoCell label="Eval Type" value={assignment.eval_type === 'marks' ? 'Marks' : 'Grades'} />
-        {assignment.eval_type === 'marks' && (
+        <InfoCell label="Subject" value={exam.subject_name ?? '—'} />
+        <InfoCell label={t('cohort')} value={exam.class_names ?? '—'} />
+        <InfoCell label="Date" value={exam.exam_date ? new Date(exam.exam_date).toLocaleDateString() : '—'} />
+        <InfoCell label="Taken By" value={exam.taken_by_name ?? '—'} />
+        <InfoCell label="Eval Type" value={exam.eval_type === 'marks' ? 'Marks' : 'Grades'} />
+        {exam.eval_type === 'marks' && (
           <>
-            <InfoCell label="Max Marks" value={assignment.max_score ?? '—'} />
-            <InfoCell label="Passing Marks" value={assignment.passing_marks ?? '—'} />
+            <InfoCell label="Max Marks" value={exam.max_score ?? '—'} />
+            <InfoCell label="Passing Marks" value={exam.passing_marks ?? '—'} />
           </>
         )}
-        {assignment.eval_type === 'grades' && (
-          <InfoCell label="Pass Grade" value={assignment.pass_grade ?? '—'} />
+        {exam.eval_type === 'grades' && (
+          <InfoCell label="Pass Grade" value={exam.pass_grade ?? '—'} />
         )}
-        <InfoCell label="Created By" value={assignment.created_by_name ?? '—'} />
+        <InfoCell label="Created By" value={exam.created_by_name ?? '—'} />
         <InfoCell
           label="Students Graded"
-          value={`${assignment.total_graded ?? 0} / ${assignment.total_students ?? 0}`}
+          value={`${exam.total_graded ?? 0} / ${exam.total_students ?? 0}`}
         />
       </div>
     </div>
@@ -233,21 +232,22 @@ function InfoCell({ label, value }) {
 
 // ─── Activity Tab ─────────────────────────────────────────────────────────────
 const ACTION_LABELS = {
-  'assignment.created':             'Assignment created',
-  'assignment.updated':             'Assignment updated',
-  'assignment.deleted':             'Assignment deleted',
-  'assignment.duplicated':          'Assignment duplicated',
-  'assignment.graded':              'Student graded',
-  'assignment.submitted':           'Submission received',
-  'assignment.publish_toggled':     'Publish status changed',
-  'assignment.valuation_completed': 'Valuation completed',
+  'exam.created':             'Exam created',
+  'exam.updated':             'Exam updated',
+  'exam.deleted':             'Exam deleted',
+  'exam.duplicated':          'Exam duplicated',
+  'exam.graded':              'Student graded',
+  'exam.publish_toggled':     'Publish status changed',
+  'exam.valuation_completed': 'Valuation completed',
+  'exam.published':           'Marks published',
+  'exam.unpublished':         'Marks unpublished',
 };
 
-function ActivityTab({ assignmentId }) {
+function ActivityTab({ examId }) {
   const { data, isLoading } = useQuery({
-    queryKey: ['assignments', assignmentId, 'activity'],
-    queryFn: () => assignmentsApi.getActivity ? assignmentsApi.getActivity(assignmentId) : Promise.resolve({ activity: [] }),
-    enabled: !!assignmentId,
+    queryKey: ['exams', examId, 'activity'],
+    queryFn: () => examsApi.getActivity(examId),
+    enabled: !!examId,
   });
 
   const activity = data?.activity ?? [];
@@ -282,33 +282,33 @@ function ActivityTab({ assignmentId }) {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export function AssignmentDetailPage() {
+export function ExamDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { can } = useAuth();
 
-  const { data: assignment, isLoading, error } = useAssignment(id);
-  const togglePublish = useTogglePublish();
-  const completeValuation = useCompleteValuation();
+  const { data: exam, isLoading, error } = useExam(id);
+  const togglePublish = useToggleExamPublish();
+  const completeValuation = useCompleteExamValuation();
 
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedCohortId, setSelectedCohortId] = useState('');
-  const [confirmAction, setConfirmAction] = useState(null); // { message, onConfirm, label, danger }
+  const [confirmAction, setConfirmAction] = useState(null);
 
   if (isLoading) return <div className="p-8 text-center text-sm text-ink-500">Loading…</div>;
   if (error) return <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>;
-  if (!assignment) return <div className="p-8 text-center text-sm text-ink-500">Assignment not found.</div>;
+  if (!exam) return <div className="p-8 text-center text-sm text-ink-500">Exam not found.</div>;
 
-  const cohortOptions = (assignment.cohort_ids ?? []).map((cid, i) => ({
+  const cohortOptions = (exam.cohort_ids ?? []).map((cid, i) => ({
     value: String(cid),
-    label: (assignment.class_names ?? '').split(', ')[i] ?? `Class ${cid}`,
+    label: (exam.class_names ?? '').split(', ')[i] ?? `Class ${cid}`,
   }));
 
-  const isGrader = can('assignments.grade');
-  const isManager = can('assignments.manage');
+  const isGrader = can('exams.grade');
+  const isManager = can('exams.manage');
 
   function handlePublishToggle() {
-    const next = !assignment.publish_marks;
+    const next = !exam.publish_marks;
     setConfirmAction({
       message: next ? 'Publish marks? Students will be able to see their results.' : 'Unpublish marks? Students will no longer see their results.',
       label: next ? 'Publish' : 'Unpublish',
@@ -316,7 +316,7 @@ export function AssignmentDetailPage() {
       onConfirm: () => {
         setConfirmAction(null);
         togglePublish.mutate(
-          { id: assignment.id, published: next },
+          { id: exam.id, published: next },
           {
             onSuccess: () => showToast.success(next ? 'Marks published.' : 'Marks unpublished.'),
             onError: e => showToast.error(e.message),
@@ -327,11 +327,11 @@ export function AssignmentDetailPage() {
   }
 
   function handleCompleteValuation() {
-    const total = assignment.total_students ?? 0;
-    const graded = assignment.total_graded ?? 0;
+    const total = exam.total_students ?? 0;
+    const graded = exam.total_graded ?? 0;
     const ungraded = total - graded;
 
-    const message = ungraded > 0 
+    const message = ungraded > 0
       ? `There are still ${ungraded} student(s) who haven't been graded yet. Are you sure you want to complete the valuation and publish marks now? (You can still edit marks later).`
       : 'Mark valuation as complete? Marks will be published to students. (You can still edit marks later if needed).';
 
@@ -341,7 +341,7 @@ export function AssignmentDetailPage() {
       danger: ungraded > 0,
       onConfirm: () => {
         setConfirmAction(null);
-        completeValuation.mutate(assignment.id, {
+        completeValuation.mutate(exam.id, {
           onSuccess: () => showToast.success('Valuation completed and marks published!'),
           onError: e => showToast.error(e.message),
         });
@@ -359,29 +359,29 @@ export function AssignmentDetailPage() {
     <div>
       <PageHeader
         back
-        onBack={() => navigate('/app/assignments')}
+        onBack={() => navigate('/app/exams')}
         eyebrow={
-          <Link to="/app/assignments" className="hover:underline">
-            Assignments
+          <Link to="/app/exams" className="hover:underline">
+            Exams
           </Link>
         }
-        title={assignment.title}
+        title={exam.title}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <AssignmentStatusBadge status={assignment.status} />
-            <PublishBadge published={assignment.publish_marks} />
+            <ExamStatusBadge status={exam.status} />
+            <ExamPublishBadge published={exam.publish_marks} />
             {isManager && (
               <button
-                onClick={() => navigate(`/app/assignments/${assignment.id}/edit`)}
+                onClick={() => navigate(`/app/exams/${exam.id}/edit`)}
                 className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink-700 hover:bg-surface-muted"
               >
                 Edit
               </button>
             )}
-            {isGrader && assignment.status !== 'completed' && (
+            {isGrader && exam.status !== 'completed' && (
               <>
                 <button
-                  onClick={() => showToast.success('Marks are saved automatically as a draft.')}
+                  onClick={() => showToast.success('Marks are saved automatically.')}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink-700 hover:bg-surface-muted"
                 >
                   Save as Draft
@@ -401,13 +401,13 @@ export function AssignmentDetailPage() {
                 onClick={handlePublishToggle}
                 disabled={togglePublish.isPending}
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
-                  assignment.publish_marks
+                  exam.publish_marks
                     ? 'border border-border bg-surface text-ink-700 hover:bg-surface-muted'
                     : 'bg-accent text-accent-ink hover:opacity-90'
                 }`}
               >
                 {togglePublish.isPending && <Spinner size="xs" />}
-                {assignment.publish_marks ? 'Unpublish' : 'Publish Marks'}
+                {exam.publish_marks ? 'Unpublish' : 'Publish Marks'}
               </button>
             )}
           </div>
@@ -450,19 +450,12 @@ export function AssignmentDetailPage() {
 
       {/* Tab content */}
       <div className="rounded border border-border bg-surface p-5">
-        {activeTab === 'overview' && <OverviewTab assignment={assignment} />}
+        {activeTab === 'overview' && <OverviewTab exam={exam} />}
         {activeTab === 'students' && isGrader && (
-          <ValuationTab assignment={assignment} selectedCohortId={selectedCohortId} />
+          <ValuationTab exam={exam} selectedCohortId={selectedCohortId} />
         )}
-        {activeTab === 'activity' && <ActivityTab assignmentId={assignment.id} />}
+        {activeTab === 'activity' && <ActivityTab examId={exam.id} />}
       </div>
-
-      {/* Learner self-view */}
-      {!isGrader && (
-        <div className="mt-6">
-          <SubmissionForm assignment={assignment} />
-        </div>
-      )}
 
       {confirmAction && (
         <ConfirmDialog

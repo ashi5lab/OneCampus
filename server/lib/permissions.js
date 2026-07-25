@@ -25,6 +25,7 @@ const ALL_PERMISSIONS = [
   'notices.view', 'notices.manage',
   'library.view', 'library.manage',
   'assignments.view', 'assignments.manage', 'assignments.grade', 'assignments.submit',
+  'exams.view', 'exams.manage', 'exams.grade',
   'online_exams.view', 'online_exams.manage', 'online_exams.grade', 'online_exams.take',
   'reports.view',
   'users.manage_passwords',
