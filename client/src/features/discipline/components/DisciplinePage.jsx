@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useSearchParams } from 'react-router-dom';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { PageHeader } from '../../../components/PageHeader';
@@ -23,6 +24,17 @@ export function DisciplinePage() {
   const [editingRecord, setEditingRecord] = useState(null);
   const { data: records, isLoading, error } = useDisciplineRecords();
   const deleteRecord = useDeleteDisciplineRecord();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Auto-open the Log Incident modal when navigated here from the dashboard
+  // quick-action button (?openLog=1). Clear the param immediately so a page
+  // refresh doesn't re-trigger it.
+  useEffect(() => {
+    if (canLog && searchParams.get('openLog') === '1') {
+      setShowForm(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [canLog, searchParams, setSearchParams]);
 
   const columns = [
     { key: 'incident_date', header: 'Date', render: (row) => new Date(row.incident_date).toLocaleDateString() },

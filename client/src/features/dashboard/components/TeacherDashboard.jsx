@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users, CheckCircle2, ClipboardList, CalendarDays, Speaker, Calendar as CalendarIcon, FileText, GraduationCap, Plus, CalendarCheck, ShieldAlert } from 'lucide-react';
+import { Users, CheckCircle2, ClipboardList, CalendarDays, Speaker, Calendar as CalendarIcon, FileText, GraduationCap, Plus, CalendarCheck, ShieldAlert, Zap, ChevronRight } from 'lucide-react';
 import { TeacherHeader } from '../../../components/TeacherHeader';
 
 export function TeacherDashboard() {
@@ -60,7 +60,42 @@ export function TeacherDashboard() {
 
       {/* Main Content */}
       <div className="px-4 relative z-20 space-y-6 pt-4">
-        
+
+        {/* Quick-action shortcut row */}
+        <div className="flex flex-col md:flex-row gap-3">
+          {/* Mark Attendance Now */}
+          <button
+            type="button"
+            onClick={() => navigate('/app/attendance')}
+            className="flex items-center gap-3 bg-[#e8f9ee] rounded-2xl px-4 py-3.5 shadow-sm border border-[#c3edcf] active:scale-[0.98] transition-transform text-left w-full"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#22c55e] flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Zap className="w-5 h-5 text-white fill-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-bold text-[#166534] leading-tight">Mark Attendance Now</div>
+              <div className="text-[11px] text-[#16a34a] mt-0.5 font-medium">Quickly mark student attendance</div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-[#22c55e] flex-shrink-0" />
+          </button>
+
+          {/* Log Discipline */}
+          <button
+            type="button"
+            onClick={() => navigate('/app/discipline?openLog=1')}
+            className="flex items-center gap-3 bg-[#fff7ed] rounded-2xl px-4 py-3.5 shadow-sm border border-[#fed7aa] active:scale-[0.98] transition-transform text-left w-full"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#f97316] flex items-center justify-center flex-shrink-0 shadow-sm">
+              <ShieldAlert className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-bold text-[#7c2d12] leading-tight">Log Discipline</div>
+              <div className="text-[11px] text-[#ea580c] mt-0.5 font-medium">Record student behavior</div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-[#f97316] flex-shrink-0" />
+          </button>
+        </div>
+
         {/* Today at a glance */}
         <div>
           <h2 className="text-[15px] font-bold text-gray-900 mb-3 md:mb-3">Today at a glance</h2>

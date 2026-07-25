@@ -651,3 +651,78 @@ In JSX, `{expression}` is closed by the first bare `}` the parser encounters. Th
 *Log entry authored by Antigravity Agent*
 *Session: 1038c693-05cb-5db2-aad9-142777098a43*
 *Timestamp: 2026-07-25T21:10 IST*
+
+---
+
+## Entry 003 — Dashboard Quick-Action Buttons: Mark Attendance Now & Log Discipline
+
+**Date:** 2026-07-25
+**Time:** ~21:54 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "lets add a button in dashboard just below today at glance with a lightning icon Mark Attendance now in green color. This take user to attendance page - as in the image - when clicked attendance page. another button is Log Discipline record - when clicked open the discipline pages log incident modal."
+
+A reference screenshot was provided showing two side-by-side cards:
+- Left: Green card, lightning bolt icon, "Mark Attendance Now" / "Quickly mark student attendance"
+- Right: Orange card, shield+plus icon, "Log Discipline" / "Record student behavior"
+Both placed directly below the header stats area, above "Today at a glance".
+
+---
+
+### Investigation Steps
+
+1. Identified that instructor/admin users land on `TeacherDashboard` (via `DashboardPage.jsx` routing: `TEACHER_ROLES = ['instructor', 'admin']`).
+2. Examined `TeacherDashboard.jsx` — found the header stats block and "Today at a glance" section. The insertion point is between them.
+3. Examined `DisciplinePage.jsx` — the "Log Incident" modal is controlled by `showForm` state. To trigger it from the dashboard, the cleanest approach is a `?openLog=1` URL param that `DisciplinePage` reads on mount.
+4. Confirmed the discipline route is `/app/discipline` (from `App.jsx` line 300).
+
+---
+
+### Changes Made
+
+#### 1. `client/src/features/dashboard/components/TeacherDashboard.jsx`
+
+- Added `Zap` and `ChevronRight` to lucide-react imports.
+- Inserted a `grid grid-cols-2 gap-3` quick-action row immediately after the `<div className="px-4 ...">` opening, before "Today at a glance":
+  - **Mark Attendance Now**: green bg (`#e8f9ee`), green border (`#c3edcf`), green filled icon (`#22c55e`), navigates to `/app/attendance`
+  - **Log Discipline**: orange bg (`#fff7ed`), orange border (`#fed7aa`), orange icon (`#f97316`), navigates to `/app/discipline?openLog=1`
+
+#### 2. `client/src/features/discipline/components/DisciplinePage.jsx`
+
+- Added `useEffect` to imports.
+- Added `useSearchParams` from `react-router-dom`.
+- Added a `useEffect` that runs on mount: if `canLog` is true and `?openLog=1` is in the URL, calls `setShowForm(true)` and immediately clears the param via `setSearchParams({}, { replace: true })` so a page refresh doesn't re-trigger the modal.
+
+---
+
+### Files Changed
+
+| File | Action | Change |
+|---|---|---|
+| `client/src/features/dashboard/components/TeacherDashboard.jsx` | MODIFIED | Added two quick-action shortcut cards below the TeacherHeader |
+| `client/src/features/discipline/components/DisciplinePage.jsx` | MODIFIED | Added ?openLog=1 URL param handler to auto-open incident modal |
+
+---
+
+### No Database Changes
+
+This was a frontend-only change. No server code, migrations, or database operations were performed.
+
+---
+
+### Expected Outcome
+
+- Instructors/admins see two side-by-side action cards on their dashboard home, directly below the header stats.
+- Tapping "Mark Attendance Now" navigates to `/app/attendance` (the class picker).
+- Tapping "Log Discipline" navigates to `/app/discipline` and the "Log Incident" modal opens automatically.
+- After modal closes (or on refresh), the `?openLog=1` param is gone — the modal does not re-open.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T21:54 IST*
