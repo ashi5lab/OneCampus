@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Phone, MessageCircle, Calendar, User, Users, CheckCircle, TrendingUp, Trophy, Smile, Grid, BookOpen, MoreHorizontal, ChevronRight, FileText, Download } from 'lucide-react';
 import { useConfig } from '../../../contexts/ConfigContext';
@@ -179,7 +179,7 @@ export function LearnerProfilePage() {
   }
 
   return (
-    <div className="pb-10 max-w-[1200px] mx-auto space-y-6">
+    <div className="pb-10 space-y-6">
       {/* 
         This will configure the global Topbar automatically. 
         It replaces the inline header for the profile redesign.
@@ -234,9 +234,9 @@ export function LearnerProfilePage() {
                     </div>
                   </div>
                   <div className="text-center md:text-left pt-2">
-                    <h1 className="text-2xl md:text-[28px] font-extrabold flex items-center justify-center md:justify-start gap-3 mb-1">
+                    <h1 className="text-2xl md:text-[28px] font-extrabold flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3 mb-1">
                       {learner.first_name} {learner.last_name}
-                      <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide">
+                      <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide whitespace-nowrap">
                         {learner.registry_no}
                       </span>
                     </h1>
@@ -294,7 +294,7 @@ export function LearnerProfilePage() {
               </div>
 
               {/* Stats Grid inside banner */}
-              <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 pt-8 border-t border-white/10 relative">
+              <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8 pt-8 border-t border-white/10 relative">
                 
                 {/* Stat 1: CGPA */}
                 <div className="flex items-center gap-4">
@@ -310,7 +310,7 @@ export function LearnerProfilePage() {
 
                 {/* Stat 2: Class Rank */}
                 <div className="flex items-center gap-4 relative">
-                  <div className="hidden md:block absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
+                  <div className="hidden lg:block absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
                   <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/><polyline points="16 6 22 6 22 12"/></svg>
                   </div>
@@ -323,7 +323,7 @@ export function LearnerProfilePage() {
 
                 {/* Stat 3: Attendance */}
                 <div className="flex items-center gap-4 relative">
-                  <div className="hidden md:block absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
+                  <div className="hidden lg:block absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
                   <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
                   </div>
@@ -336,7 +336,7 @@ export function LearnerProfilePage() {
 
                 {/* Stat 4: Days Present */}
                 <div className="flex items-center gap-4 relative">
-                  <div className="hidden md:block absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
+                  <div className="hidden lg:block absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
                   <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/></svg>
                   </div>
@@ -352,10 +352,10 @@ export function LearnerProfilePage() {
           </div>
 
           {/* Main Layout (Grid on Desktop, Stacked on Mobile) */}
-          <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex flex-col xl:flex-row gap-6">
             
             {/* Left Content Area */}
-            <div className="flex-1 space-y-6">
+            <div className="flex-1 min-w-0 space-y-6">
               
               {/* Tab Bar */}
               <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide">
@@ -394,9 +394,9 @@ export function LearnerProfilePage() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {/* Subject List */}
-                      <div className="space-y-4">
-                        {subjectScores.length > 0 ? subjectScores.map((sub, i) => (
-                          <div key={i} className="flex items-center justify-between">
+                      <div className="divide-y divide-border/50">
+                        {scores.length > 0 ? scores.slice(0, 5).map((sub, i) => (
+                          <div key={i} className="flex items-center justify-between py-3 px-2 -mx-2 hover:bg-surface-muted/30 transition-colors rounded-lg">
                             <div className="flex items-center gap-3 text-sm font-semibold text-ink-800">
                               <div className={`w-2 h-2 rounded-full ${i % 2 === 0 ? 'bg-emerald-500' : 'bg-indigo-500'}`}></div>
                               {sub.name}
@@ -429,16 +429,16 @@ export function LearnerProfilePage() {
                     <div className="flex flex-col sm:flex-row items-center gap-8">
                       <AttendanceDoughnutChart attendanceRate={attendanceRate} counts={attendanceCounts} />
                       
-                      <div className="flex-1 space-y-3 w-full">
-                        <div className="flex items-center justify-between text-sm">
+                      <div className="flex-1 divide-y divide-border/50 w-full text-sm">
+                        <div className="flex items-center justify-between py-2.5">
                           <div className="flex items-center gap-2 text-ink-700 font-medium"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Present</div>
                           <span className="font-bold text-ink-900">{attendanceCounts.present || 0} Days</span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center justify-between py-2.5">
                           <div className="flex items-center gap-2 text-ink-700 font-medium"><div className="w-2 h-2 rounded-full bg-red-500"></div> Absent</div>
                           <span className="font-bold text-ink-900">{attendanceCounts.absent || 0} Days</span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center justify-between py-2.5">
                           <div className="flex items-center gap-2 text-ink-700 font-medium"><div className="w-2 h-2 rounded-full bg-orange-400"></div> Late</div>
                           <span className="font-bold text-ink-900">{attendanceCounts.late || 0} Days</span>
                         </div>
@@ -473,7 +473,7 @@ export function LearnerProfilePage() {
                 <div className="space-y-5 bg-surface rounded-2xl shadow-sm border border-border p-5">
                   <div>
                     <h3 className="mb-3 text-sm font-extrabold text-ink-900">Exam Scores</h3>
-                    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+                    <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
                       <DataTable
                         columns={[
                           { key: 'module', header: t('topic'), render: (row) => <span className="font-semibold text-ink-800">{row.module_name}</span> },
@@ -501,7 +501,7 @@ export function LearnerProfilePage() {
               {tab === 'attendance' && (
                 <div className="bg-surface rounded-2xl shadow-sm border border-border p-5">
                   <h3 className="mb-3 text-sm font-extrabold text-ink-900">Recent Attendance</h3>
-                  <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+                  <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
                     <DataTable
                       columns={[
                         { key: 'date', header: 'Date', render: (row) => <span className="font-medium">{new Date(row.date).toLocaleDateString()}</span> },
@@ -551,7 +551,7 @@ export function LearnerProfilePage() {
             </div>
 
             {/* Right Column / Sidebar */}
-            <div className="w-full lg:w-[320px] shrink-0 flex flex-col gap-5">
+            <div className="w-full xl:w-[320px] shrink-0 flex flex-col gap-5">
               
               {/* Parent & Guardian */}
               <div className="bg-surface rounded-2xl shadow-sm border border-border p-5">
@@ -567,29 +567,30 @@ export function LearnerProfilePage() {
                 {guardians.length === 0 ? (
                   <p className="text-sm text-ink-500 text-center py-4 bg-surface-muted rounded-xl">No guardians linked.</p>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="divide-y divide-border/50">
                     {guardians.map(g => (
-                      <div key={g.id} className="text-sm">
-                        <div className="flex justify-between items-center mb-1">
+                      <React.Fragment key={g.id}>
+                        <div className="flex justify-between items-center py-3 text-sm">
                           <span className="text-ink-500 font-medium">Name</span>
                           <span className="font-bold text-ink-900">{g.first_name} {g.last_name}</span>
                         </div>
-                        <div className="flex justify-between items-center mb-1">
+                        <div className="flex justify-between items-center py-3 text-sm">
                           <span className="text-ink-500 font-medium">Phone</span>
                           <span className="font-bold text-ink-900">{g.phone || '—'}</span>
                         </div>
                         {g.email && (
-                          <div className="flex justify-between items-center">
+                          <div className="flex justify-between items-center py-3 text-sm">
                             <span className="text-ink-500 font-medium">Email</span>
                             <span className="font-bold text-ink-900 truncate max-w-[120px]">{g.email}</span>
                           </div>
                         )}
-                        <hr className="my-3 border-surface-muted" />
-                      </div>
+                      </React.Fragment>
                     ))}
-                    <button onClick={() => setShowGuardianLinks(true)} className="w-full text-center text-xs font-bold text-indigo-600 hover:underline">
-                      View Full Details →
-                    </button>
+                    <div className="pt-3">
+                      <button onClick={() => setShowGuardianLinks(true)} className="w-full text-center text-xs font-bold text-indigo-600 hover:underline">
+                        View Full Details →
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -601,16 +602,16 @@ export function LearnerProfilePage() {
                     <BookOpen className="w-4 h-4 text-indigo-500" /> Academic Details
                   </h3>
                 </div>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between items-center">
+                <div className="divide-y divide-border/50 text-sm">
+                  <div className="flex justify-between items-center py-3">
                     <span className="text-ink-500 font-medium">Class</span>
                     <span className="font-bold text-ink-900">{learner.cohort_name || '—'}</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center py-3">
                     <span className="text-ink-500 font-medium">Admission No.</span>
                     <span className="font-bold text-ink-900">{learner.registry_no}</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center py-3">
                     <span className="text-ink-500 font-medium">Admitted</span>
                     <span className="font-bold text-ink-900">{learner.meta?.admission_date ? new Date(learner.meta.admission_date).toLocaleDateString() : '—'}</span>
                   </div>
