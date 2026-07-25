@@ -399,3 +399,58 @@ Deliver a premium, modern, education-focused platform that feels as intuitive as
  # # #   G l o b a l   N o t i f i c a t i o n s 
  -   I m p l e m e n t   a   g l o b a l   r e u s a b l e   T o a s t   c o m p o n e n t   f o r   a l l   s u c c e s s   a n d   f a i l u r e   n o t i f i c a t i o n s   ( r e p l a c i n g   n a t i v e   \  l e r t \ ) .  
  
+---
+
+## Exams Module
+
+### Overview
+Full exam lifecycle management — create, schedule, grade, and publish results. Built as a structural clone of the Assignments module with exam-specific fields.
+
+### Database Tables
+- **`onec_exams`**: id, title, description, module_id (FK → onec_modules), exam_date DATE, eval_type (marks|grades), max_score, passing_marks, pass_grade, instructions, target_type (class|specific_students), status (draft|created|grading_in_progress|completed), publish_marks BOOLEAN, taken_by (FK → onec_users), created_by (FK → onec_users), created_at
+- **`onec_exam_cohorts`**: exam_id, cohort_id (supports multi-class targeting)
+- **`onec_exam_target_students`**: exam_id, learner_id (for specific_students target_type)
+- **`onec_exam_submissions`**: id, exam_id, learner_id, score_obtained, grade_value, feedback, submission_text, status, graded_by, graded_at, submitted_at; UNIQUE(exam_id, learner_id)
+
+### API Endpoints (`/api/v1/exams`)
+| Method | Path | Permission | Description |
+|--------|------|-----------|-------------|
+| GET | / | exams.view | List with search/filter/pagination |
+| POST | / | exams.manage | Create exam |
+| GET | /:id | exams.view | Get exam detail |
+| PUT | /:id | exams.manage | Update exam |
+| DELETE | /:id | exams.manage | Delete exam |
+| POST | /:id/duplicate | exams.manage | Duplicate exam |
+| PATCH | /:id/publish | exams.manage | Toggle marks published |
+| GET | /:id/valuation | exams.grade | Student list for grading |
+| POST | /:id/grade | exams.grade | Upsert grade for student |
+| PATCH | /:id/complete | exams.grade | Complete valuation |
+| GET | /:id/activity | exams.view | Audit activity log |
+| GET | /:id/submissions | exams.view | List all submissions |
+
+### Permissions
+- `exams.view` — list and view exams
+- `exams.manage` — create, edit, delete, duplicate, publish
+- `exams.grade` — access valuation panel and record grades
+
+### Key Fields
+- **Exam Name** — the exam title
+- **Subject** — linked module (subject)
+- **Date** — exam_date (single date, not a due_date range)
+- **Taken By** — instructor who conducts the exam; defaults to logged-in user; autocomplete via UserSearchSelect
+
+### Taken By (Assignments + Exams)
+Both Assignments and Exams have a `taken_by` field (FK to `onec_users`) that records which instructor takes/conducts it. Defaults to the logged-in user. UI shows an instructor autocomplete (UserSearchSelect with role='instructor').
+
+### Status Flow
+draft → created → grading_in_progress → completed
+
+### Client Routes
+- `/app/exams` — list page
+- `/app/exams/new` — create form
+- `/app/exams/:id` — detail (Overview + Students/Grading tabs)
+- `/app/exams/:id/edit` — edit form
+- `/app/exams/:id/success` — post-create confirmation
+
+### Class Channel Integration
+The Class Channel's Exams tab (`ClassExamsTab`) shows exams filtered to that cohort, with columns: Exam Name, Subject, Date, Taken By.
