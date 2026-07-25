@@ -4,7 +4,7 @@ const { parsePagination } = require('../../lib/pagination');
 const { getOwnLearnerId } = require('../../lib/ownLearner');
 const { hasPermission } = require('../../lib/permissions');
 
-const GRADE_VALUES = ['A+', 'A', 'B+', 'B', 'C', 'D', 'F'];
+const GRADE_VALUES = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'];
 
 const assignmentSchema = z.object({
   title:         z.string().min(1, 'Title is required'),
