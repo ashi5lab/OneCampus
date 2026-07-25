@@ -5,6 +5,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { useOnlineExams, useOnlineExam, useCreateOnlineExam, useUpdateOnlineExam, useDeleteOnlineExam } from '../hooks/useOnlineExams';
+import { showToast } from '../../../lib/toast';
 import { useMarkActivityContextViewed } from '../../activities/hooks/useActivities';
 import { CreateExamPage } from '../../exams/components/CreateExamPage';
 import { ExamCalendar } from './ExamCalendar';
@@ -191,7 +192,7 @@ function EditExamModal({ examId, onClose, updateExam }) {
           {
             onSuccess: (updated) => {
               if (updated.questionsLocked) {
-                window.alert('Learners have already started this exam, so only the title/subject/class/duration were updated — the questions were left as-is.');
+                showToast.info('Learners have already started this exam, so only the title/subject/class/duration were updated — the questions were left as-is.');
               }
               onClose();
             }

@@ -231,11 +231,30 @@ async function getProfile(req, res) {
         [learnerId]
       ),
       req.db.query(
-        'SELECT status, COUNT(*)::int AS count FROM onec_attendance WHERE learner_id = $1 GROUP BY status',
+        `WITH marked_days AS (
+           SELECT COUNT(*) AS total
+           FROM onec_cohort_attendance_logs l
+           JOIN onec_learners lr ON l.cohort_id = lr.cohort_id
+           WHERE lr.id = $1
+         ),
+         exceptions AS (
+           SELECT status, COUNT(*)::int AS count 
+           FROM onec_attendance 
+           WHERE learner_id = $1 
+           GROUP BY status
+         )
+         SELECT 'total_possible' AS status, COALESCE(MAX(m.total), 0)::int AS count FROM marked_days m
+         UNION ALL
+         SELECT status, count FROM exceptions`,
         [learnerId]
       ),
       req.db.query(
-        'SELECT id, date, status, remarks FROM onec_attendance WHERE learner_id = $1 ORDER BY date DESC LIMIT 20',
+        `SELECT cl.id, cl.date, COALESCE(a.status, 'present') AS status, a.remarks
+         FROM onec_cohort_attendance_logs cl
+         JOIN onec_learners l ON cl.cohort_id = l.cohort_id
+         LEFT JOIN onec_attendance a ON a.learner_id = l.id AND a.date = cl.date
+         WHERE l.id = $1
+         ORDER BY cl.date DESC LIMIT 20`,
         [learnerId]
       ),
       req.db.query(
@@ -255,11 +274,25 @@ async function getProfile(req, res) {
       )
     ]);
 
+    const attSum = attendanceSummary.rows;
+    const totalPossible = Number(attSum.find(r => r.status === 'total_possible')?.count || 0);
+    const absents = Number(attSum.find(r => r.status === 'absent')?.count || 0);
+    const lates = Number(attSum.find(r => r.status === 'late')?.count || 0);
+    const excused = Number(attSum.find(r => r.status === 'excused')?.count || 0);
+    const present = totalPossible - (absents + lates + excused);
+
+    const formattedSummary = [
+      { status: 'present', count: present },
+      { status: 'absent', count: absents },
+      { status: 'late', count: lates },
+      { status: 'excused', count: excused }
+    ];
+
     res.json({
       data: {
         learner: learnerResult.rows[0],
         guardians: guardians.rows,
-        attendance: { summary: attendanceSummary.rows, recent: recentAttendance.rows },
+        attendance: { summary: formattedSummary, recent: recentAttendance.rows },
         scores: scores.rows,
         certificates: certificates.rows
       }

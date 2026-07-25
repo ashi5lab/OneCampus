@@ -9,3 +9,4 @@ This document tracks features that have been ideated or partially designed but a
   - Student WhatsApp Number
   - Parent/Guardian Phone Number
   - Parent/Guardian WhatsApp Number
+- **Global Notifications:** Implement a global reusable `Toast` component for all success and failure notifications (replacing native `alert`).

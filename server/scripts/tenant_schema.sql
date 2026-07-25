@@ -673,3 +673,12 @@ CREATE INDEX idx_class_message_reactions_lookup ON onec_class_message_reactions(
 -- null means "show every card" (the default), never written to until a
 -- learner/instructor/staff user actually customizes it in Settings.
 ALTER TABLE onec_users ADD COLUMN home_card_prefs JSONB;
+
+CREATE TABLE onec_cohort_attendance_logs (
+    id SERIAL PRIMARY KEY,
+    cohort_id INTEGER NOT NULL REFERENCES onec_cohorts(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    marked_by INTEGER REFERENCES onec_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(cohort_id, date)
+);

@@ -3,6 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useAttendanceForCohortDate, useMarkAttendance, useMarkAttendanceBulk } from '../hooks/useAttendance';
+import { showToast } from '../../../lib/toast';
 import { Avatar } from '../../../components/Avatar';
 import { PageHeader } from '../../../components/PageHeader';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -137,21 +138,28 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
 
   async function handleSaveAll() {
     try {
-      const records = filteredRoster.map((learner) => ({
-        learner_id: learner.id,
-        status: statuses[learner.id] || 'present',
-        remarks: null,
-      }));
+      const records = filteredRoster
+        .map((learner) => ({
+          learner_id: learner.id,
+          status: statuses[learner.id] || 'present',
+          remarks: null,
+        }))
+        .filter((r) => {
+          const existing = (existingRecords || []).find((ex) => ex.learner_id === r.learner_id);
+          const existingStatus = existing?.status || 'present';
+          // Only send the payload if the status has actually changed from what is in the DB
+          return r.status !== existingStatus;
+        });
 
       await markAttendanceBulk.mutateAsync({
         cohort_id: Number(cohortId),
         date,
         records
       });
-      alert('Attendance saved successfully');
+      showToast.success('Attendance saved successfully');
       navigate('/app/attendance');
     } catch (err) {
-      alert(err.message || 'Failed to save attendance');
+      showToast.error(err.message || 'Failed to save attendance');
     }
   }
 

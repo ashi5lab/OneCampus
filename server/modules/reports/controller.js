@@ -34,10 +34,27 @@ async function overview(req, res) {
       req.db.query('SELECT COUNT(*) FROM onec_units'),
       req.db.query('SELECT COUNT(*) FROM onec_modules'),
       req.db.query(
-        `SELECT
-           COUNT(*) FILTER (WHERE status = 'present') AS present,
-           COUNT(*) AS total
-         FROM onec_attendance WHERE date >= CURRENT_DATE - INTERVAL '30 days'`
+        `WITH cohort_logs AS (
+           SELECT l.cohort_id, COUNT(*) AS days_marked
+           FROM onec_cohort_attendance_logs l
+           WHERE l.date >= CURRENT_DATE - INTERVAL '30 days'
+           GROUP BY l.cohort_id
+         ),
+         total_possible AS (
+           SELECT COALESCE(SUM(c.days_marked * (
+             SELECT COUNT(*) FROM onec_learners WHERE cohort_id = c.cohort_id AND status = 'active'
+           )), 0) AS total
+           FROM cohort_logs c
+         ),
+         total_absences AS (
+           SELECT COUNT(*) AS absences
+           FROM onec_attendance
+           WHERE date >= CURRENT_DATE - INTERVAL '30 days'
+         )
+         SELECT 
+           total_possible.total,
+           (total_possible.total - total_absences.absences) AS present
+         FROM total_possible, total_absences`
       ),
       req.db.query(`SELECT COUNT(*) FROM onec_assignments WHERE due_date >= CURRENT_DATE`),
       req.db.query(`SELECT COUNT(*) FROM onec_exam_submissions WHERE status = 'submitted'`),
@@ -93,23 +110,19 @@ async function attendance(req, res) {
 
     const result = await req.db.query(
       `SELECT l.id AS learner_id, l.first_name, l.last_name, l.registry_no, c.name AS cohort_name,
-              COUNT(a.*) FILTER (WHERE a.status = 'present') AS present_count,
-              COUNT(a.*) FILTER (WHERE a.status = 'absent') AS absent_count,
-              COUNT(a.*) FILTER (WHERE a.status = 'late') AS late_count,
-              COUNT(a.*) FILTER (WHERE a.status = 'excused') AS excused_count,
-              COUNT(a.*) AS total_marked
+              COALESCE((SELECT COUNT(*) FROM onec_cohort_attendance_logs cl WHERE cl.cohort_id = l.cohort_id AND cl.date BETWEEN $1 AND $2), 0)::int AS total_marked,
+              COALESCE((SELECT COUNT(*) FROM onec_attendance a WHERE a.learner_id = l.id AND a.date BETWEEN $1 AND $2), 0)::int AS exception_count
        FROM onec_learners l
        JOIN onec_cohorts c ON l.cohort_id = c.id
-       LEFT JOIN onec_attendance a ON a.learner_id = l.id AND a.date BETWEEN $1 AND $2
        WHERE l.status = 'active'${cohortFilter}
-       GROUP BY l.id, l.first_name, l.last_name, l.registry_no, c.name
        ORDER BY c.name, l.last_name`,
       params
     );
 
     const data = result.rows.map((row) => ({
       ...row,
-      attendance_rate: row.total_marked > 0 ? Math.round((row.present_count / row.total_marked) * 1000) / 10 : null
+      present_count: row.total_marked - row.exception_count,
+      attendance_rate: row.total_marked > 0 ? Math.round(((row.total_marked - row.exception_count) / row.total_marked) * 1000) / 10 : null
     }));
 
     res.json({ data, from: fromDate, to: toDate });
@@ -270,7 +283,7 @@ async function dashboardAll(req, res) {
   const [teacherActivity, studentActivity, staffActivity, attendanceToday] = await Promise.all([
     req.db.query(`
       SELECT
-        (SELECT COUNT(*) FROM onec_attendance WHERE date >= CURRENT_DATE - INTERVAL '7 days') AS attendance_marked,
+        (SELECT COUNT(*) FROM onec_cohort_attendance_logs WHERE date >= CURRENT_DATE - INTERVAL '7 days') AS attendance_marked,
         (SELECT COUNT(*) FROM onec_learner_scores s JOIN onec_evaluation_schedules es ON s.eval_schedule_id = es.id
            WHERE es.eval_date >= CURRENT_DATE - INTERVAL '7 days') AS scores_graded,
         (SELECT COUNT(*) FROM onec_assignment_submissions WHERE graded_at >= CURRENT_DATE - INTERVAL '7 days') AS assignments_graded
@@ -285,8 +298,40 @@ async function dashboardAll(req, res) {
         (SELECT COUNT(*) FROM onec_notices WHERE created_at >= CURRENT_DATE - INTERVAL '7 days') AS notices_posted,
         (SELECT COUNT(*) FROM onec_broadcasts WHERE created_at >= CURRENT_DATE - INTERVAL '7 days') AS broadcasts_sent
     `),
-    req.db.query(`SELECT status, COUNT(*)::int AS count FROM onec_attendance WHERE date = CURRENT_DATE GROUP BY status`)
+    req.db.query(`
+      WITH marked_today AS (
+        SELECT cohort_id FROM onec_cohort_attendance_logs WHERE date = CURRENT_DATE
+      ),
+      total_students AS (
+        SELECT COUNT(*) AS total
+        FROM onec_learners
+        WHERE status = 'active' AND cohort_id IN (SELECT cohort_id FROM marked_today)
+      ),
+      exceptions AS (
+        SELECT status, COUNT(*)::int AS count
+        FROM onec_attendance
+        WHERE date = CURRENT_DATE
+        GROUP BY status
+      )
+      SELECT 'total_possible' AS status, COALESCE(MAX(total_students.total), 0)::int AS count FROM total_students
+      UNION ALL
+      SELECT status, count FROM exceptions
+    `)
   ]);
+
+  const attToday = attendanceToday.rows;
+  const totalPossible = Number(attToday.find(r => r.status === 'total_possible')?.count || 0);
+  const absents = Number(attToday.find(r => r.status === 'absent')?.count || 0);
+  const lates = Number(attToday.find(r => r.status === 'late')?.count || 0);
+  const excused = Number(attToday.find(r => r.status === 'excused')?.count || 0);
+  const present = totalPossible - (absents + lates + excused);
+
+  const formattedAttendanceToday = [
+    { status: 'present', count: present },
+    { status: 'absent', count: absents },
+    { status: 'late', count: lates },
+    { status: 'excused', count: excused }
+  ];
 
   res.json({
     data: {
@@ -294,7 +339,7 @@ async function dashboardAll(req, res) {
       teacherActivity: teacherActivity.rows[0],
       studentActivity: studentActivity.rows[0],
       staffActivity: staffActivity.rows[0],
-      attendanceToday: attendanceToday.rows
+      attendanceToday: formattedAttendanceToday
     }
   });
 }
@@ -488,12 +533,47 @@ async function analytics(req, res) {
       overdueLoansForFines
     ] = await Promise.all([
       req.db.query(`
-        SELECT date::text AS date, COUNT(*) FILTER (WHERE status = 'present') AS present, COUNT(*) AS total
-        FROM onec_attendance
-        WHERE date >= CURRENT_DATE - INTERVAL '13 days'
-        GROUP BY date ORDER BY date
+        WITH marked_dates AS (
+          SELECT date, cohort_id FROM onec_cohort_attendance_logs WHERE date >= CURRENT_DATE - INTERVAL '13 days'
+        ),
+        date_totals AS (
+          SELECT m.date, COALESCE(SUM((SELECT COUNT(*) FROM onec_learners WHERE cohort_id = m.cohort_id AND status = 'active')), 0) as total
+          FROM marked_dates m
+          GROUP BY m.date
+        ),
+        date_exceptions AS (
+          SELECT date, COUNT(*) AS exceptions
+          FROM onec_attendance
+          WHERE date >= CURRENT_DATE - INTERVAL '13 days'
+          GROUP BY date
+        )
+        SELECT 
+          d.date::text AS date, 
+          d.total::int AS total, 
+          (d.total - COALESCE(e.exceptions, 0))::int AS present
+        FROM date_totals d
+        LEFT JOIN date_exceptions e ON d.date = e.date
+        ORDER BY d.date
       `),
-      req.db.query(`SELECT status, COUNT(*)::int AS count FROM onec_attendance WHERE date = CURRENT_DATE GROUP BY status`),
+      req.db.query(`
+        WITH marked_today AS (
+          SELECT cohort_id FROM onec_cohort_attendance_logs WHERE date = CURRENT_DATE
+        ),
+        total_students AS (
+          SELECT COUNT(*) AS total
+          FROM onec_learners
+          WHERE status = 'active' AND cohort_id IN (SELECT cohort_id FROM marked_today)
+        ),
+        exceptions AS (
+          SELECT status, COUNT(*)::int AS count
+          FROM onec_attendance
+          WHERE date = CURRENT_DATE
+          GROUP BY status
+        )
+        SELECT 'total_possible' AS status, COALESCE(MAX(total_students.total), 0)::int AS count FROM total_students
+        UNION ALL
+        SELECT status, count FROM exceptions
+      `),
       req.db.query(`
         SELECT c.name AS cohort_name, ROUND(AVG(s.score_obtained / NULLIF(es.max_score, 0) * 100)::numeric, 1) AS avg_percentage
         FROM onec_learner_scores s
@@ -556,6 +636,20 @@ async function analytics(req, res) {
       rate: row.total > 0 ? Math.round((row.present / row.total) * 1000) / 10 : null
     }));
 
+    const attToday = attendanceToday.rows;
+    const totalPossible = Number(attToday.find(r => r.status === 'total_possible')?.count || 0);
+    const absents = Number(attToday.find(r => r.status === 'absent')?.count || 0);
+    const lates = Number(attToday.find(r => r.status === 'late')?.count || 0);
+    const excused = Number(attToday.find(r => r.status === 'excused')?.count || 0);
+    const present = totalPossible - (absents + lates + excused);
+
+    const formattedAttendanceToday = [
+      { status: 'present', count: present },
+      { status: 'absent', count: absents },
+      { status: 'late', count: lates },
+      { status: 'excused', count: excused }
+    ];
+
     const staffAttendanceTotal = Number(staffAttendance30d.rows[0].total);
     const staffAttendancePresent = Number(staffAttendance30d.rows[0].present);
 
@@ -567,7 +661,7 @@ async function analytics(req, res) {
     res.json({
       data: {
         attendanceTrend: attendanceTrendData,
-        attendanceToday: attendanceToday.rows,
+        attendanceToday: formattedAttendanceToday,
         performanceByCohort: performanceByCohort.rows,
         examPassRates: examPassRates.rows,
         staffAttendanceRate30d: staffAttendanceTotal > 0 ? Math.round((staffAttendancePresent / staffAttendanceTotal) * 1000) / 10 : null,

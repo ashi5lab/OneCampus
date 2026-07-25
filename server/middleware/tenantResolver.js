@@ -59,7 +59,7 @@ async function tenantResolver(req, res, next) {
     next();
   } catch (error) {
     console.error('Tenant resolution error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 }
 

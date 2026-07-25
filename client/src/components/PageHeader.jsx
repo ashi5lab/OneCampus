@@ -42,7 +42,7 @@ export function useAutoBack(back) {
 function InfoTooltip({ text }) {
   if (!text) return null;
   return (
-    <button type="button" onClick={() => alert(text)} className="flex flex-shrink-0 items-center text-ink-400 sm:hidden" title={text}>
+    <button type="button" onClick={() => showToast.info(text)} className="flex flex-shrink-0 items-center text-ink-400 sm:hidden" title={text}>
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
@@ -66,8 +66,10 @@ function InfoTooltip({ text }) {
 // sub-view (local state, not a route) that wants "back" to collapse that
 // sub-view instead of leaving the page. Everywhere else, omit both and it
 // does the right thing automatically.
-import { useEffect } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { showToast } from '../lib/toast';
 import { useTopbarStore } from '../stores/useTopbarStore';
+import { useEffect } from 'react';
 
 export function PageHeader({ eyebrow, title, subtitle, actions, tabs, back, onBack, className = '' }) {
   const { showBack, goBack } = useAutoBack(back);

@@ -142,29 +142,45 @@ async function markBulk(req, res) {
     // Use a transaction so all records succeed or none do
     await req.db.query('BEGIN');
     try {
+      // 1. Log that attendance was taken for this cohort today
+      await req.db.query(`
+        INSERT INTO onec_cohort_attendance_logs (cohort_id, date, marked_by)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (cohort_id, date) DO UPDATE SET marked_by = EXCLUDED.marked_by
+      `, [cohort_id, date, marked_by]);
+
       for (const rec of records) {
         const { learner_id, status, remarks } = rec;
 
-        // Check for existing record (same upsert logic as single mark)
-        const existing = await req.db.query(
-          `SELECT id FROM onec_attendance WHERE learner_id = $1 AND date = $2 AND allocation_id IS NULL`,
-          [learner_id, date]
-        );
-
-        let result;
-        if (existing.rows.length > 0) {
-          result = await req.db.query(
-            'UPDATE onec_attendance SET status = $1, remarks = $2, marked_by = $3, cohort_id = $4 WHERE id = $5 RETURNING *',
-            [status, remarks || null, marked_by, cohort_id, existing.rows[0].id]
+        if (status === 'present') {
+          // 2. Exception-based: if present, ensure no exception record exists
+          await req.db.query(
+            `DELETE FROM onec_attendance WHERE learner_id = $1 AND date = $2 AND allocation_id IS NULL`,
+            [learner_id, date]
           );
+          results.push({ learner_id, status: 'present', implicit: true });
         } else {
-          result = await req.db.query(
-            `INSERT INTO onec_attendance (learner_id, cohort_id, allocation_id, date, status, remarks, marked_by)
-             VALUES ($1, $2, NULL, $3, $4, $5, $6) RETURNING *`,
-            [learner_id, cohort_id, date, status, remarks || null, marked_by]
+          // 3. Upsert exception record (absent, late, excused)
+          const existing = await req.db.query(
+            `SELECT id FROM onec_attendance WHERE learner_id = $1 AND date = $2 AND allocation_id IS NULL`,
+            [learner_id, date]
           );
+
+          let result;
+          if (existing.rows.length > 0) {
+            result = await req.db.query(
+              'UPDATE onec_attendance SET status = $1, remarks = $2, marked_by = $3, cohort_id = $4 WHERE id = $5 RETURNING *',
+              [status, remarks || null, marked_by, cohort_id, existing.rows[0].id]
+            );
+          } else {
+            result = await req.db.query(
+              `INSERT INTO onec_attendance (learner_id, cohort_id, allocation_id, date, status, remarks, marked_by)
+               VALUES ($1, $2, NULL, $3, $4, $5, $6) RETURNING *`,
+              [learner_id, cohort_id, date, status, remarks || null, marked_by]
+            );
+          }
+          results.push(result.rows[0]);
         }
-        results.push(result.rows[0]);
       }
       await req.db.query('COMMIT');
     } catch (txErr) {

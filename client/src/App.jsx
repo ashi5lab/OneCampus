@@ -58,7 +58,7 @@ import { ActivitiesPage } from './features/activities/components/ActivitiesPage'
 export default function App() {
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster position="bottom-right" />
       <Routes>
         {/* Public landing page (includes login modal) — no tenant session needed */}
       <Route path="/" element={<LandingPage />} />
