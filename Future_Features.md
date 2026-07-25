@@ -10,3 +10,6 @@ This document tracks features that have been ideated or partially designed but a
   - Parent/Guardian Phone Number
   - Parent/Guardian WhatsApp Number
 - **Global Notifications:** Implement a global reusable `Toast` component for all success and failure notifications (replacing native `alert`).
+
+## Discipline & Behavior
+- **Behavior Point Mechanics:** Add more diverse point scenarios, including mechanisms for students to proactively increase their score (e.g., consistent attendance streaks, exceptional academic performance, extracurricular participation).

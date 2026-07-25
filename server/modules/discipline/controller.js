@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
+const { parsePagination } = require('../../lib/pagination');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
 
 // Accepts user_id (onec_users.id) — the value UserSearchSelect always
@@ -18,7 +19,10 @@ const recordSchema = z.object({
 // regardless of the ?learner_id= query param.
 async function getAll(req, res) {
   try {
-    const { learner_id, severity } = req.query;
+    const { pagination, error } = parsePagination(req.query);
+    if (error) return res.status(400).json({ error: 'Invalid pagination parameters', details: error });
+
+    const { learner_id, search, cohort_id, severity, from_date, to_date } = req.query;
     const conditions = [];
     const params = [];
 
@@ -30,29 +34,65 @@ async function getAll(req, res) {
       params.push(learner_id);
       conditions.push(`d.learner_id = $${params.length}`);
     }
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(l.first_name ILIKE $${params.length} OR l.last_name ILIKE $${params.length} OR l.registry_no ILIKE $${params.length})`);
+    }
+    if (cohort_id) {
+      params.push(cohort_id);
+      conditions.push(`l.cohort_id = $${params.length}`);
+    }
     if (severity) {
       params.push(severity);
       conditions.push(`d.severity = $${params.length}`);
     }
+    if (from_date) {
+      params.push(from_date);
+      conditions.push(`d.incident_date >= $${params.length}`);
+    }
+    if (to_date) {
+      params.push(to_date);
+      conditions.push(`d.incident_date <= $${params.length}`);
+    }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const baseQuery = `FROM onec_discipline_records d
+       LEFT JOIN onec_users u ON d.reported_by = u.id
+       LEFT JOIN onec_learners l ON d.learner_id = l.id
+       ${where}`;
+
+    if (!pagination) {
+      const result = await req.db.query(
+        `SELECT d.id, d.learner_id, d.incident_date::text AS incident_date, d.severity, d.description, d.action_taken,
+                d.reported_by, d.created_at, u.username AS reported_by_username,
+                l.first_name AS learner_first_name, l.last_name AS learner_last_name, l.registry_no AS learner_registry_no
+         ${baseQuery}
+         ORDER BY d.incident_date DESC, d.id DESC`,
+        params
+      );
+      return res.json({ data: result.rows });
+    }
+
+    const countResult = await req.db.query(`SELECT COUNT(*) ${baseQuery}`, params);
+    const total = parseInt(countResult.rows[0].count, 10);
+    const { page, pageSize, limit, offset } = pagination;
+
     const result = await req.db.query(
-      // incident_date cast to text — node-postgres otherwise parses DATE
-      // columns into JS Date objects, which the frontend's plain string
-      // comparisons/formatting don't expect (see the Invalid Date bug this
-      // exact pattern caused in the calendar module).
       `SELECT d.id, d.learner_id, l.user_id AS learner_user_id,
               d.incident_date::text AS incident_date, d.severity, d.description, d.action_taken,
               d.reported_by, d.created_at, u.username AS reported_by_username,
               l.first_name AS learner_first_name, l.last_name AS learner_last_name, l.registry_no AS learner_registry_no
-       FROM onec_discipline_records d
-       LEFT JOIN onec_users u ON d.reported_by = u.id
-       LEFT JOIN onec_learners l ON d.learner_id = l.id
-       ${where}
-       ORDER BY d.incident_date DESC, d.id DESC`,
-      params
+       ${baseQuery}
+       ORDER BY d.incident_date DESC, d.id DESC
+       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, limit, offset]
     );
-    res.json({ data: result.rows });
+
+    res.json({
+      data: result.rows,
+      meta: { total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });

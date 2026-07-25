@@ -1269,9 +1269,199 @@ The edit pre-fill had the same bug in reverse: reading back `record.learner_id` 
 ### Generalisation Note
 
 Any other feature that uses `UserSearchSelect` to pick a learner and then sends the result as `learner_id` to the server has the same bug. **All such API payloads must use `user_id`; the server resolves to role-table IDs internally.** Affected modules to audit: certificates, assignments, evaluations, PTM bookings, kindergarten activity.
+## Entry 014 — Build Learner Behaviour Page in Student Profile
+
+**Date:** 2026-07-25
+**Time:** ~23:00 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "let us build behaviour page in student profile this is how the layout and all is needed - make sure we use the topbar as title and all. read rules.md , prd file and agent_log and proceed."
+
+---
+
+### Architecture & Approach
+
+- Integrated the requested layout for a new "Behaviour" page inside the student profile (`/app/learners/:id/behaviour`).
+- Utilized the existing global `PageHeader` component.
+- Derived a scoring logic based on `onec_discipline_records.severity`:
+  - `positive`: +5 points
+  - `minor` (Warning): 0 points
+  - `major` (Negative): -3 points
+- Base term score starts at 100% and is clamped between 0 and 100.
+- Implemented a 4-tab filter for the timeline (All, Positive, Negative, Warnings).
+
+---
+
+### Changes Made
+
+- **`client/src/features/learners/components/LearnerBehaviourPage.jsx`** [NEW]: Built the new behaviour page with the requested stats grid, premium gradient banner, tab filters, and vertical timeline list.
+- **`client/src/App.jsx`**: Registered the `<Route path="learners/:id/behaviour" element={<LearnerBehaviourPage />} />` route.
+- **`client/src/features/learners/components/LearnerProfilePage.jsx`**: Wrapped the "Behavior Summary" layout card in a `<Link>` pointing to the new behaviour page instead of acting as a static div.
+
+---
+
+### Expected Outcome
+
+- Navigating to a student's profile and clicking "Behavior Summary" opens the new Behaviour page.
+- The Behaviour page displays the student's avatar and name in a premium purple header.
+- The stats cards count positive and negative notes, warnings, and an overall percentage score.
+- The tabs successfully filter the timeline below.
 
 ---
 
 *Log entry authored by Antigravity Agent*
 *Session: 1038c693-05cb-5db2-aad9-142777098a43*
 *Timestamp: 2026-07-25T23:30 IST*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T23:00 IST*
+
+---
+
+## Entry 015 — Show "No records yet" on Behavior Empty State
+
+**Date:** 2026-07-25
+**Time:** ~23:36 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "if no records for behavior - show no records yet."
+
+---
+
+### Changes Made
+
+- **`LearnerProfilePage.jsx`**: 
+  - Imported `useDisciplineRecords` to fetch actual discipline data instead of using a hardcoded placeholder for the behavior summary card on the Overview tab.
+  - Dynamically calculated the Behavior Score using the same logic implemented in `LearnerBehaviourPage` (Positive = +5, Negative = -3, clamped between 0 and 100).
+  - Added an empty state to the summary card: If the student has 0 records, it now displays a grey "No records yet." badge instead of a hardcoded "4.8 / 5 Good" badge.
+- **`LearnerBehaviourPage.jsx`**:
+  - Updated the timeline's empty state text from "No records found." to "No records yet." to match the user's explicit wording request.
+
+---
+
+### Expected Outcome
+
+- When viewing a student profile with no discipline records, the Overview tab's Behavior Summary card shows "No records yet."
+- When navigating into the full Behaviour Page for a student with no records, the timeline clearly states "No records yet."
+- For students *with* records, the Overview card now correctly reflects their dynamic score (e.g. "100% Good", "65% Poor") based on actual data.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T23:36 IST*
+
+---
+
+## Entry 016 — Adjusted Behavior Scoring Mechanics
+
+**Date:** 2026-07-25
+**Time:** ~23:55 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "Also I think we can change this structure - positive note gets +5, minor gets -2, major gets -10. we can add more points scenarios later in future like how students can increase their score ( add this to future featues.md for now chanhe the point structure."
+
+---
+
+### Changes Made
+
+- **`LearnerBehaviourPage.jsx`**: 
+  - Updated `SEVERITY_META` point values: Positive (+5), Minor/Warning (-2), Major/Negative (-10).
+  - Updated the string labels to reflect the new scores.
+- **`LearnerProfilePage.jsx`**:
+  - Updated the static `behaviorStats` calculation loop to correctly subtract 2 points for minor incidents and 10 points for major incidents.
+- **`DisciplineFormPage.jsx`**:
+  - Updated the dropdown option labels in `SEVERITY_OPTIONS` to explicitly show the new point values `(+5 pts)`, `(-2 pts)`, and `(-10 pts)`.
+- **`Future_Features.md`**:
+  - Added a new section for "Discipline & Behavior" capturing the concept of diverse proactive point mechanics (e.g. streaks, extracurricular participation).
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T23:55 IST*
+
+---
+
+## Entry 017 — Discipline Records Filtering & Server Pagination
+
+**Date:** 2026-07-26
+**Time:** ~00:05 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "add search , filter (based on class), incident severity, date range (from and to), pagination to the discipline records page"
+
+---
+
+### Changes Made
+
+#### 1. Backend API (`server/modules/discipline/controller.js`)
+- Refactored `getAll` to support optional query parameters: `search`, `cohort_id`, `severity`, `from_date`, and `to_date`.
+- Implemented robust `ILIKE` pattern matching for learner `first_name`, `last_name`, and `registry_no` to power the search.
+- Added standard OneCampus server-side pagination utilizing the `parsePagination` lib helper.
+- Modified the return payload to `res.json({ data, meta })` when pagination is requested.
+
+#### 2. API Client & Hooks
+- **`disciplineApi.js`**: Introduced a `withQuery` helper to parse JS objects into URL query parameters. Added a `listPage` method to preserve the `meta` pagination payload (unlike standard `list` which strips it).
+- **`useDiscipline.js`**: Created and exported a new `useDisciplineRecordsPage` hook dedicated to server-paginated data requests.
+
+#### 3. Frontend UI (`client/src/features/discipline/components/DisciplinePage.jsx`)
+- Built a comprehensive filter bar UI at the top of the page featuring:
+  - Text input for Search (student name/roll)
+  - Select dropdown for Class (`useCohorts`)
+  - Select dropdown for Severity (Positive, Minor, Major)
+  - Date inputs for Date Range (`from_date` to `to_date`)
+- Integrated local state variables for all filters and bound them to the new `useDisciplineRecordsPage` hook.
+- Upgraded the `DataTable` implementation on this page to accept the `serverPagination` prop, wiring it up to the API's returned `meta` data to enable the pagination footer controls.
+
+---
+
+### Expected Outcome
+- The main Discipline log page now initially loads only the first 10 records, radically improving load times for large datasets.
+- Users can search, filter by cohort, severity, and date range, and the data table will seamlessly update and paginate the resulting subset of data.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-26T00:05 IST*
+
+---
+
+## Entry 018 — Fix Discipline API 500 Error
+
+**Date:** 2026-07-26
+**Time:** ~00:08 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### Issue
+The `/api/v1/discipline?page=1&pageSize=10` endpoint was returning a 500 Internal Server Error due to a `TypeError: pagination is not a function`.
+
+### Cause
+In `server/modules/discipline/controller.js`, the `parsePagination` return object was incorrectly invoked as `pagination(total)` instead of destructured directly as an object (`const { page, pageSize, limit, offset } = pagination;`).
+
+### Fix
+Removed the `(total)` call and correctly destructured the pagination bounds. The query now successfully resolves the requested slice of records.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-26T00:08 IST*

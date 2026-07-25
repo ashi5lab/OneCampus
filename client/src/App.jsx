@@ -12,6 +12,7 @@ import { SuperAdminInboxPage } from './features/superAdmin/components/SuperAdmin
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { LearnersPage } from './features/learners/components/LearnersPage';
 import { LearnerProfilePage } from './features/learners/components/LearnerProfilePage';
+import { LearnerBehaviourPage } from './features/learners/components/LearnerBehaviourPage';
 import { InstructorsPage } from './features/instructors/components/InstructorsPage';
 import { InstructorProfilePage } from './features/instructors/components/InstructorProfilePage';
 import { CohortsPage } from './features/cohorts/components/CohortsPage';
@@ -143,6 +144,7 @@ export default function App() {
             child's profile; the endpoint itself enforces that (see
             server/modules/learners/controller.js's getProfile). */}
         <Route path="learners/:id" element={<LearnerProfilePage />} />
+        <Route path="learners/:id/behaviour" element={<LearnerBehaviourPage />} />
         <Route
           path="instructors"
           element={
