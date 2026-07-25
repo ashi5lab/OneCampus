@@ -48,6 +48,7 @@ import { TimetablePage } from './features/timetable/components/TimetablePage';
 import { BulkUploadPage } from './features/bulkUpload/components/BulkUploadPage';
 import { StaffAttendancePage } from './features/staffAttendance/components/StaffAttendancePage';
 import { DisciplinePage } from './features/discipline/components/DisciplinePage';
+import { DisciplineFormPage } from './features/discipline/components/DisciplineFormPage';
 import { PtmPage } from './features/ptm/components/PtmPage';
 import { AlumniPage } from './features/alumni/components/AlumniPage';
 import { VisitorLogPage } from './features/visitors/components/VisitorLogPage';
@@ -296,14 +297,32 @@ export default function App() {
             </RequirePermission>
           }
         />
-        <Route
-          path="discipline"
-          element={
-            <RequirePermission permission="discipline.view">
-              <DisciplinePage />
-            </RequirePermission>
-          }
-        />
+        <Route path="discipline">
+          <Route
+            index
+            element={
+              <RequirePermission permission="discipline.view">
+                <DisciplinePage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="new"
+            element={
+              <RequirePermission permission="discipline.log">
+                <DisciplineFormPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path=":id/edit"
+            element={
+              <RequirePermission permission="discipline.log">
+                <DisciplineFormPage />
+              </RequirePermission>
+            }
+          />
+        </Route>
         <Route
           path="ptm"
           element={

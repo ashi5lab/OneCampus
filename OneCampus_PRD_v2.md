@@ -14,6 +14,9 @@ OneCampus aims to become the simplest and most enjoyable school management platf
 - Feature toggle support
 - Permission-based system
 
+## Global UI Components
+- **UserSearchSelect**: For any user selection input (student, teacher, guardian, staff), the `<UserSearchSelect />` autocomplete component MUST be used instead of standard HTML dropdowns. Users are fetched via `useAllUsers()` and filtered by `roles`. Supports layout toggles via `showUsername`, `showClass`, and `showRole` boolean props (all default to true).
+
 ## Users
 - Student
 - Parent / Guardian

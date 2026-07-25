@@ -659,6 +659,11 @@ In JSX, `{expression}` is closed by the first bare `}` the parser encounters. Th
 **Date:** 2026-07-25
 **Time:** ~22:00 IST
 **Session ID:** `1038c693-05cb-5db2-aad9-142777098a43`
+## Entry 006 — Dashboard Quick-Action Buttons: Mark Attendance Now & Log Discipline
+
+**Date:** 2026-07-25
+**Time:** ~21:54 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
 
 ---
 
@@ -744,7 +749,7 @@ Estimated effort: 2–3 weeks. Every module touched. Data migration must run on 
 
 ---
 
-## Entry 006 — Revised: User ID Display Strategy (No DB Migration)
+## Entry 007 — Revised: User ID Display Strategy (No DB Migration)
 
 **Date:** 2026-07-25
 **Time:** ~22:30 IST
@@ -780,9 +785,418 @@ The backend keeps all role-table IDs exactly as they are (`learner_id`, `instruc
 ### Outcome
 
 Entry 005 scope (9 DB tables, 15 server modules, 30+ frontend files) is **not being implemented**. The only actionable frontend task is to ensure the student profile card shows `user_id` rather than `learner_id` when displaying an ID to the user.
+> "lets add a button in dashboard just below today at glance with a lightning icon Mark Attendance now in green color. This take user to attendance page - as in the image - when clicked attendance page. another button is Log Discipline record - when clicked open the discipline pages log incident modal."
+
+A reference screenshot was provided showing two side-by-side cards:
+- Left: Green card, lightning bolt icon, "Mark Attendance Now" / "Quickly mark student attendance"
+- Right: Orange card, shield+plus icon, "Log Discipline" / "Record student behavior"
+Both placed directly below the header stats area, above "Today at a glance".
+
+---
+
+### Investigation Steps
+
+1. Identified that instructor/admin users land on `TeacherDashboard` (via `DashboardPage.jsx` routing: `TEACHER_ROLES = ['instructor', 'admin']`).
+2. Examined `TeacherDashboard.jsx` — found the header stats block and "Today at a glance" section. The insertion point is between them.
+3. Examined `DisciplinePage.jsx` — the "Log Incident" modal is controlled by `showForm` state. To trigger it from the dashboard, the cleanest approach is a `?openLog=1` URL param that `DisciplinePage` reads on mount.
+4. Confirmed the discipline route is `/app/discipline` (from `App.jsx` line 300).
+
+---
+
+### Changes Made
+
+#### 1. `client/src/features/dashboard/components/TeacherDashboard.jsx`
+
+- Added `Zap` and `ChevronRight` to lucide-react imports.
+- Inserted a `grid grid-cols-2 gap-3` quick-action row immediately after the `<div className="px-4 ...">` opening, before "Today at a glance":
+  - **Mark Attendance Now**: green bg (`#e8f9ee`), green border (`#c3edcf`), green filled icon (`#22c55e`), navigates to `/app/attendance`
+  - **Log Discipline**: orange bg (`#fff7ed`), orange border (`#fed7aa`), orange icon (`#f97316`), navigates to `/app/discipline?openLog=1`
+
+#### 2. `client/src/features/discipline/components/DisciplinePage.jsx`
+
+- Added `useEffect` to imports.
+- Added `useSearchParams` from `react-router-dom`.
+- Added a `useEffect` that runs on mount: if `canLog` is true and `?openLog=1` is in the URL, calls `setShowForm(true)` and immediately clears the param via `setSearchParams({}, { replace: true })` so a page refresh doesn't re-trigger the modal.
+
+---
+
+### Files Changed
+
+| File | Action | Change |
+|---|---|---|
+| `client/src/features/dashboard/components/TeacherDashboard.jsx` | MODIFIED | Added two quick-action shortcut cards below the TeacherHeader |
+| `client/src/features/discipline/components/DisciplinePage.jsx` | MODIFIED | Added ?openLog=1 URL param handler to auto-open incident modal |
+
+---
+
+### No Database Changes
+
+This was a frontend-only change. No server code, migrations, or database operations were performed.
+
+---
+
+### Expected Outcome
+
+- Instructors/admins see two side-by-side action cards on their dashboard home, directly below the header stats.
+- Tapping "Mark Attendance Now" navigates to `/app/attendance` (the class picker).
+- Tapping "Log Discipline" navigates to `/app/discipline` and the "Log Incident" modal opens automatically.
+- After modal closes (or on refresh), the `?openLog=1` param is gone — the modal does not re-open.
 
 ---
 
 *Log entry authored by Antigravity Agent*
 *Session: 1038c693-05cb-5db2-aad9-142777098a43*
 *Timestamp: 2026-07-25T22:30 IST*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T21:54 IST*
+
+---
+
+## Entry 008 — TeacherDashboard: Replace All Mock Data with Live API Data
+
+**Date:** 2026-07-25
+**Time:** ~22:03 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "yes. do that."
+
+(In response to the agent identifying that all data in TeacherDashboard was hardcoded mock data and asking whether to wire up real data.)
+
+---
+
+### Investigation
+
+Checked all relevant hooks and API shapes:
+
+| Hook | File | Data shape |
+|---|---|---|
+| `useLearners()` | `features/learners/hooks/useLearners.js` | `data[]` or `{ data[] }` array of learner records |
+| `useCohorts()` | `features/cohorts/hooks/useCohorts.js` | array of cohort records |
+| `useMyTimetable()` | `features/timetable/hooks/useTimetable.js` | `{ data[] }` — instructor's own allocations across all cohorts |
+| `useCohortAttendanceLogs(date)` | `features/attendance/hooks/useAttendance.js` | `{ data[] }` — log rows per cohort for a date |
+| `useAssignments()` | `features/assignments/hooks/useAssignments.js` | assignments list |
+| `useNotices()` | `features/notices/hooks/useNotices.js` | notices list |
+| `useAgenda(from, to)` | `features/calendar/hooks/useCalendar.js` | expanded calendar events in range |
+
+Also examined the timetable server controller to understand the `schedule_data` field shape:
+- `schedule_data.days` → array of day names e.g. `["Monday", "Wednesday"]`
+- `schedule_data.hour` → `"HH:MM-HH:MM"` string e.g. `"09:00-09:45"`
+
+---
+
+### Changes Made
+
+**File:** `client/src/features/dashboard/components/TeacherDashboard.jsx` — **Full rewrite**
+
+Every hardcoded array replaced with live data. Key logic added:
+
+#### Header Stats
+- Students: `useLearners().data.length` (total enrolled students)
+- Classes: `useCohorts().data.length` (total classes)
+
+#### Today at a Glance cards
+- **My Classes**: total cohort count from `useCohorts()`
+- **Attendance Marked**: `useCohortAttendanceLogs(today)` — counts `is_partial=false` logs vs today's scheduled class count
+- **Assignments To Grade**: `useAssignments()` — counts assignments where `ungraded_count > 0`
+- **Today's Classes**: count of timetable allocations for today's day name; "Next:" subtitle shows the start time of the next non-completed slot
+
+#### Today's Schedule
+- Source: `useMyTimetable()` — instructor's personal cross-cohort allocations
+- Filter: `schedule_data.days.includes(todayDayName)`
+- Sort: by `schedule_data.hour` start time (string comparison on `HH:MM`)
+- Status derived live from wall-clock time:
+  - `nowMins >= endMins` → **Completed**
+  - `nowMins >= startMins` → **Next**
+  - otherwise → **Upcoming**
+- Empty state: "No classes scheduled for today."
+
+#### Recent Notices
+- Source: `useNotices()` — first 3 results
+- Shows real notice title + `timeAgo(created_at)` (Just now / X min ago / X hr ago / Xd ago)
+- Empty state: "No notices yet."
+
+#### Upcoming Events
+- Source: `useAgenda(today, today+30days)` — next 3 events
+- Renders real date (month + day number from `event.date`), real title, real time if `start_time` present
+- Empty state: "No upcoming events."
+
+#### Utility helpers added (pure functions, no external deps)
+- `todayIso()` — local `YYYY-MM-DD` string
+- `timeAgo(isoString)` — human-readable relative time
+- `formatHour(hourStr)` — converts `"09:00-09:45"` to `{ start: "09:00 AM", end: "09:45 AM" }`
+- `slotStatus(hourStr)` — returns `Completed | Next | Upcoming` from current time
+
+---
+
+### Files Changed
+
+| File | Action |
+|---|---|
+| `client/src/features/dashboard/components/TeacherDashboard.jsx` | **Full rewrite** — removed all mock data, wired all hooks |
+
+---
+
+### No Database Changes
+
+Frontend-only change. All APIs already existed and return the required data.
+
+---
+
+### Expected Outcome
+
+| Section | Before | After |
+|---|---|---|
+| Header: Students | Hardcoded "1,248" | Real enrolled student count |
+| Header: Classes | Hardcoded "48" | Real cohort count |
+| Glance: My Classes | Hardcoded "4" | Real cohort count |
+| Glance: Attendance Marked | Hardcoded "3/4" | Real "marked/total" from today's logs |
+| Glance: Assignments To Grade | Hardcoded "8" | Real count of assignments with ungraded submissions |
+| Glance: Today's Classes | Hardcoded "2" | Real count from instructor's timetable for today |
+| Today's Schedule | Fake Class 8A/10A/9B | Real instructor allocations for today, live status |
+| Recent Notices | Fake notices from May | Real notices from DB, with time-ago |
+| Upcoming Events | Fake May events | Real calendar events from today → +30 days |
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T22:03 IST*
+
+---
+
+## Entry 009 — Replace Discipline Incident Modal with Dedicated Form Page
+
+**Date:** 2026-07-25
+**Time:** ~22:26 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "lets implement a change in Discipline page - when user clicks log incident (rename it to log new record) instead of opening modal open a page (keep back button, title to topbar - log new record) - keep the UI similar to this (but don't conider the colour and all - use our current theme colour and use the topbar for title - use this as a reference to see how we should place the fields)"
+
+A screenshot was provided showing a two-section form layout ("Incident Information" and "Incident Details").
+
+---
+
+### Investigation
+
+- The existing `IncidentFormModal.jsx` handles both creating and editing incidents via a modal overlay on `DisciplinePage.jsx`.
+- The dashboard shortcut `?openLog=1` opens this modal directly.
+- Moving to a dedicated page requires new routes (`/app/discipline/new` and `/app/discipline/:id/edit`), and modifying `App.jsx` to nest the discipline routes.
+
+---
+
+### Changes Made
+
+#### 1. Created `DisciplineFormPage.jsx`
+- Replicated the form state and logic from `IncidentFormModal`.
+- Handled edit mode by reading the `:id` param from `react-router-dom` and pre-filling state using data from `useDisciplineRecords()`.
+- Implemented a two-section layout matching the screenshot structure:
+  - **Incident Information**: Grid layout containing Student (select), Date, and Severity.
+  - **Incident Details**: Stacked layout containing Description and Action Taken.
+- Used the global `PageHeader` with `backTo="/app/discipline"` to show the title ("Log New Record" / "Edit Record") in the topbar.
+
+#### 2. Updated Routing in `App.jsx`
+- Converted `<Route path="discipline">` to a nested group.
+- Added `index` route for the list view.
+- Added `new` and `:id/edit` routes pointing to `DisciplineFormPage`.
+
+#### 3. Removed `IncidentFormModal.jsx`
+- Deleted the file since the form is now fully handled by the new page.
+
+#### 4. Updated `DisciplinePage.jsx`
+- Removed all modal state (`showForm`, `editingRecord`, `?openLog=1` useEffect).
+- Updated the create button text to **"+ Log New Record"** and set it to navigate to `/app/discipline/new`.
+- Updated the table Edit action to navigate to `/app/discipline/${row.id}/edit`.
+
+#### 5. Updated `TeacherDashboard.jsx`
+- Updated the "Log Discipline" quick action card to route directly to `/app/discipline/new` instead of relying on the `?openLog=1` parameter.
+
+---
+
+### Files Changed
+
+| File | Action | Description |
+|---|---|---|
+| `client/src/features/discipline/components/DisciplineFormPage.jsx` | **NEW** | Added new dedicated form page for creating and editing records. |
+| `client/src/features/discipline/components/IncidentFormModal.jsx` | **DELETED** | Removed unused modal component. |
+| `client/src/App.jsx` | MODIFIED | Added `/new` and `/:id/edit` nested routes for discipline. |
+| `client/src/features/discipline/components/DisciplinePage.jsx` | MODIFIED | Removed modal usage, changed buttons to navigate to form routes. |
+| `client/src/features/dashboard/components/TeacherDashboard.jsx` | MODIFIED | Updated quick action button to route to new page. |
+
+---
+
+### Expected Outcome
+
+- Clicking **Log Discipline** from the dashboard, or **+ Log New Record** from the discipline list, navigates the user to `/app/discipline/new`.
+- The new page uses a clean, two-section layout matching the project's standard theme (cards, borders, standard input fields) and places the title and back button into the global topbar.
+- Clicking **Edit** on a table row navigates to `/app/discipline/:id/edit` and pre-fills the data correctly.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T22:26 IST*
+
+---
+
+## Entry 010 — Switch Discipline Form to Reusable UserSearchSelect
+
+**Date:** 2026-07-25
+**Time:** ~22:32 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "instead of selecting student from dropdown - use the student autocomplete search - i think we have a reusable component - add this to the PRD and rules - for any user search or selection including student, teacher, guarding always reuse this autocomplete search component (name the exam component name and note it in the PRD and rules md file"
+
+---
+
+### Investigation
+
+- Located the autocomplete component: `client/src/components/UserSearchSelect.jsx`.
+- Verified its usage in other features (e.g., Library, Messages, Cohorts).
+- Discovered it requires the `useAllUsers()` hook from `client/src/features/profile/hooks/useProfile.js` (instead of `useLearners()`) because the component expects specific mapped fields like `role` and `name` which are unified in the global users directory endpoint.
+
+---
+
+### Changes Made
+
+#### 1. Code Changes
+- **`DisciplineFormPage.jsx`**:
+  - Removed standard `<select>` input for the student.
+  - Replaced it with `<UserSearchSelect>` component.
+  - Replaced `useLearners()` with `useAllUsers()`.
+  - Passed `roles={['learner']}` to filter the search results to only students.
+
+#### 2. Documentation Rules Added
+- **`Rules.md`**: Added a rule under *Reusable Components* specifying that `<UserSearchSelect />` must be used for any user selection input and documenting its API requirements (`useAllUsers()` and `roles` prop).
+- **`OneCampus_PRD_v2.md`**: Added a new section *Global UI Components* explicitly mandating the use of `<UserSearchSelect />` across the app for student, teacher, guardian, and staff selection.
+
+---
+
+### Files Changed
+
+| File | Action | Description |
+|---|---|---|
+| `client/src/features/discipline/components/DisciplineFormPage.jsx` | MODIFIED | Replaced standard select with UserSearchSelect. |
+| `Rules.md` | MODIFIED | Added rule mandating UserSearchSelect. |
+| `OneCampus_PRD_v2.md` | MODIFIED | Added component standard to PRD. |
+
+---
+
+### Expected Outcome
+
+- When creating or editing a discipline record, the "Student" field is now an autocomplete searchable dropdown showing the student's name, username, and role badge.
+- Future agent sessions are now explicitly instructed by the `Rules.md` and PRD to reuse this component.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T22:32 IST*
+
+---
+
+## Entry 011 — Enhance UserSearchSelect UI and Backend Query
+
+**Date:** 2026-07-25
+**Time:** ~22:40 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "make a small change to theUserSearchSelect - it should show name (class) and a second line with small font grey colour username - all these keep as props - we can hide or show - by default show all - if mentioned false for username - hide it, false for class - hide it, mentioned false for role (L or T ) - hide it."
+
+---
+
+### Investigation
+
+- **Frontend (`UserSearchSelect.jsx`)**: Needs to support three new toggle props (`showUsername`, `showClass`, `showRole`) and render a two-line layout.
+- **Backend (`userDirectory.js`)**: The global user query `listUsersWithNames` did not fetch the cohort (class) name. It needed to join `onec_cohorts` to expose `cohort_name` for learners.
+
+---
+
+### Changes Made
+
+#### 1. Backend: Included Class Name
+- **File**: `server/lib/userDirectory.js`
+- **Change**: Added `LEFT JOIN onec_cohorts c ON l.cohort_id = c.id` and added `c.name AS cohort_name` to the SELECT list of the global user directory query.
+
+#### 2. Frontend: Component UI Enhancements
+- **File**: `client/src/components/UserSearchSelect.jsx`
+- **Props Added**: `showUsername` (default `true`), `showClass` (default `true`), `showRole` (default `true`).
+- **Logic**:
+  - The `label` (which shows in the input and is used for searching) is now formatted as `Name (Class)` if the user is a learner and `showClass` is true.
+  - The dropdown list rendering (`renderOption`) was updated to a Flex column layout.
+  - The username is rendered on a second line in small grey font (`text-[11px] text-ink-500 font-medium`) if `showUsername` is true.
+  - The `RoleBadge` rendering is wrapped in `if (showRole)`.
+
+---
+
+### Files Changed
+
+| File | Action | Description |
+|---|---|---|
+| `server/lib/userDirectory.js` | MODIFIED | Joined `onec_cohorts` to expose `cohort_name` for learners. |
+| `client/src/components/UserSearchSelect.jsx` | MODIFIED | Added UI props, two-line dropdown layout, and class name formatting. |
+
+---
+
+### Expected Outcome
+
+- When using the `UserSearchSelect` component (like in the Discipline form), the selected text and search items now say e.g., "John Doe (Class 8A)".
+- Inside the dropdown, under "John Doe (Class 8A)", the username is displayed in small grey text.
+- Developers can pass `showUsername={false}`, `showClass={false}`, or `showRole={false}` to hide any of these elements.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T22:40 IST*
+
+---
+
+## Entry 012 — Document UserSearchSelect Props in PRD and Rules
+
+**Date:** 2026-07-25
+**Time:** ~22:44 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "note the usersearchselect change to PRD file and rules"
+
+---
+
+### Changes Made
+
+- **`Rules.md`**: Updated the `UserSearchSelect` bullet point under *Reusable Components* to document the new `showUsername`, `showClass`, and `showRole` boolean props (all default to `true`).
+- **`OneCampus_PRD_v2.md`**: Updated the `UserSearchSelect` bullet point under *Global UI Components* to reflect the same layout toggle capabilities.
+
+---
+
+### Files Changed
+
+| File | Action | Description |
+|---|---|---|
+| `Rules.md` | MODIFIED | Documented new UI toggle props. |
+| `OneCampus_PRD_v2.md` | MODIFIED | Documented new UI toggle props. |
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T22:44 IST*
