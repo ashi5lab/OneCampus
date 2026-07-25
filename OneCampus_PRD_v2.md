@@ -378,6 +378,18 @@ Notifications:
 - Firebase
 - Twilio
 
+## Identifier Architecture
+
+### User ID as the Universal Display Identifier
+
+OneCampus uses role-specific tables (`onec_learners`, `onec_instructors`, `onec_staff`) with their own auto-increment IDs. The `onec_users` table holds authentication for all users and has its own `id` column (`user_id`).
+
+**Backend**: Role-table IDs (`learner_id`, `instructor_id`, etc.) are kept as-is across all DB tables and server modules. No migration is planned.
+
+**Frontend display rule**: Whenever an ID must be surfaced in the UI (e.g., for quick lookup or debugging), always show **`user_id`** (`onec_users.id`) — never `learner_id` or other role-table IDs. The student profile must display `user_id` as the visible system identifier. This prevents confusion between the two ID spaces and provides a single, consistent reference point across all user types (students, teachers, staff).
+
+---
+
 ## Final Goal
 Deliver a premium, modern, education-focused platform that feels as intuitive as WhatsApp while remaining scalable for schools of any size.
 
