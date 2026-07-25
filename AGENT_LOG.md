@@ -842,3 +842,141 @@ Frontend-only change. All APIs already existed and return the required data.
 *Log entry authored by Antigravity Agent*
 *Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
 *Timestamp: 2026-07-25T22:03 IST*
+
+---
+
+## Entry 005 — Replace Discipline Incident Modal with Dedicated Form Page
+
+**Date:** 2026-07-25
+**Time:** ~22:26 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "lets implement a change in Discipline page - when user clicks log incident (rename it to log new record) instead of opening modal open a page (keep back button, title to topbar - log new record) - keep the UI similar to this (but don't conider the colour and all - use our current theme colour and use the topbar for title - use this as a reference to see how we should place the fields)"
+
+A screenshot was provided showing a two-section form layout ("Incident Information" and "Incident Details").
+
+---
+
+### Investigation
+
+- The existing `IncidentFormModal.jsx` handles both creating and editing incidents via a modal overlay on `DisciplinePage.jsx`.
+- The dashboard shortcut `?openLog=1` opens this modal directly.
+- Moving to a dedicated page requires new routes (`/app/discipline/new` and `/app/discipline/:id/edit`), and modifying `App.jsx` to nest the discipline routes.
+
+---
+
+### Changes Made
+
+#### 1. Created `DisciplineFormPage.jsx`
+- Replicated the form state and logic from `IncidentFormModal`.
+- Handled edit mode by reading the `:id` param from `react-router-dom` and pre-filling state using data from `useDisciplineRecords()`.
+- Implemented a two-section layout matching the screenshot structure:
+  - **Incident Information**: Grid layout containing Student (select), Date, and Severity.
+  - **Incident Details**: Stacked layout containing Description and Action Taken.
+- Used the global `PageHeader` with `backTo="/app/discipline"` to show the title ("Log New Record" / "Edit Record") in the topbar.
+
+#### 2. Updated Routing in `App.jsx`
+- Converted `<Route path="discipline">` to a nested group.
+- Added `index` route for the list view.
+- Added `new` and `:id/edit` routes pointing to `DisciplineFormPage`.
+
+#### 3. Removed `IncidentFormModal.jsx`
+- Deleted the file since the form is now fully handled by the new page.
+
+#### 4. Updated `DisciplinePage.jsx`
+- Removed all modal state (`showForm`, `editingRecord`, `?openLog=1` useEffect).
+- Updated the create button text to **"+ Log New Record"** and set it to navigate to `/app/discipline/new`.
+- Updated the table Edit action to navigate to `/app/discipline/${row.id}/edit`.
+
+#### 5. Updated `TeacherDashboard.jsx`
+- Updated the "Log Discipline" quick action card to route directly to `/app/discipline/new` instead of relying on the `?openLog=1` parameter.
+
+---
+
+### Files Changed
+
+| File | Action | Description |
+|---|---|---|
+| `client/src/features/discipline/components/DisciplineFormPage.jsx` | **NEW** | Added new dedicated form page for creating and editing records. |
+| `client/src/features/discipline/components/IncidentFormModal.jsx` | **DELETED** | Removed unused modal component. |
+| `client/src/App.jsx` | MODIFIED | Added `/new` and `/:id/edit` nested routes for discipline. |
+| `client/src/features/discipline/components/DisciplinePage.jsx` | MODIFIED | Removed modal usage, changed buttons to navigate to form routes. |
+| `client/src/features/dashboard/components/TeacherDashboard.jsx` | MODIFIED | Updated quick action button to route to new page. |
+
+---
+
+### Expected Outcome
+
+- Clicking **Log Discipline** from the dashboard, or **+ Log New Record** from the discipline list, navigates the user to `/app/discipline/new`.
+- The new page uses a clean, two-section layout matching the project's standard theme (cards, borders, standard input fields) and places the title and back button into the global topbar.
+- Clicking **Edit** on a table row navigates to `/app/discipline/:id/edit` and pre-fills the data correctly.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T22:26 IST*
+
+---
+
+## Entry 006 — Switch Discipline Form to Reusable UserSearchSelect
+
+**Date:** 2026-07-25
+**Time:** ~22:32 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "instead of selecting student from dropdown - use the student autocomplete search - i think we have a reusable component - add this to the PRD and rules - for any user search or selection including student, teacher, guarding always reuse this autocomplete search component (name the exam component name and note it in the PRD and rules md file"
+
+---
+
+### Investigation
+
+- Located the autocomplete component: `client/src/components/UserSearchSelect.jsx`.
+- Verified its usage in other features (e.g., Library, Messages, Cohorts).
+- Discovered it requires the `useAllUsers()` hook from `client/src/features/profile/hooks/useProfile.js` (instead of `useLearners()`) because the component expects specific mapped fields like `role` and `name` which are unified in the global users directory endpoint.
+
+---
+
+### Changes Made
+
+#### 1. Code Changes
+- **`DisciplineFormPage.jsx`**:
+  - Removed standard `<select>` input for the student.
+  - Replaced it with `<UserSearchSelect>` component.
+  - Replaced `useLearners()` with `useAllUsers()`.
+  - Passed `roles={['learner']}` to filter the search results to only students.
+
+#### 2. Documentation Rules Added
+- **`Rules.md`**: Added a rule under *Reusable Components* specifying that `<UserSearchSelect />` must be used for any user selection input and documenting its API requirements (`useAllUsers()` and `roles` prop).
+- **`OneCampus_PRD_v2.md`**: Added a new section *Global UI Components* explicitly mandating the use of `<UserSearchSelect />` across the app for student, teacher, guardian, and staff selection.
+
+---
+
+### Files Changed
+
+| File | Action | Description |
+|---|---|---|
+| `client/src/features/discipline/components/DisciplineFormPage.jsx` | MODIFIED | Replaced standard select with UserSearchSelect. |
+| `Rules.md` | MODIFIED | Added rule mandating UserSearchSelect. |
+| `OneCampus_PRD_v2.md` | MODIFIED | Added component standard to PRD. |
+
+---
+
+### Expected Outcome
+
+- When creating or editing a discipline record, the "Student" field is now an autocomplete searchable dropdown showing the student's name, username, and role badge.
+- Future agent sessions are now explicitly instructed by the `Rules.md` and PRD to reuse this component.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-25T22:32 IST*

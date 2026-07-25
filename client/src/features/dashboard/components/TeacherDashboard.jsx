@@ -196,7 +196,7 @@ export function TeacherDashboard() {
 
           <button
             type="button"
-            onClick={() => navigate('/app/discipline?openLog=1')}
+            onClick={() => navigate('/app/discipline/new')}
             className="flex items-center gap-3 bg-[#fff7ed] rounded-2xl px-4 py-3.5 shadow-sm border border-[#fed7aa] active:scale-[0.98] transition-transform text-left w-full"
           >
             <div className="w-10 h-10 rounded-xl bg-[#f97316] flex items-center justify-center flex-shrink-0 shadow-sm">
