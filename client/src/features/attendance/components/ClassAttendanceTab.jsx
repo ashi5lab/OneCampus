@@ -14,5 +14,5 @@ export function ClassAttendanceTab({ cohortId }) {
   
   useMarkActivityContextViewed('attendance_global');
 
-  return isMarker ? <AttendanceRoster lockedCohortId={cohortId} /> : <MyAttendanceView />;
+  return isMarker ? <AttendanceRoster lockedCohortId={cohortId} embedded /> : <MyAttendanceView />;
 }
