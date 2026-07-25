@@ -7,6 +7,8 @@ import { PageHeader, useAutoBack } from '../../../components/PageHeader';
 import { ProfilePictureUploader } from '../../profile/components/ProfilePictureUploader';
 import { Avatar } from '../../../components/Avatar';
 import { useLearnerProfile, useUpdateLearner, useDeleteLearner } from '../hooks/useLearners';
+import { useDisciplineRecords } from '../../discipline/hooks/useDiscipline';
+import { LearnerBehaviourPage } from './LearnerBehaviourPage';
 import { LearnerForm } from './LearnerForm';
 import { certificatesApi } from '../../certificates/services/certificatesApi';
 import toast from 'react-hot-toast';
@@ -129,6 +131,7 @@ export function LearnerProfilePage() {
   const { t } = useConfig();
   const { profile: ownProfile, can } = useAuth();
   const { data, isLoading, error } = useLearnerProfile(learnerId);
+  const { data: disciplineRecords } = useDisciplineRecords(learnerId);
   const updateLearner = useUpdateLearner();
   const deleteLearner = useDeleteLearner();
   const [tab, setTab] = useState('overview');
@@ -155,6 +158,22 @@ export function LearnerProfilePage() {
       pct: Math.round((d.score / d.max) * 100)
     })).slice(0, 5); // show top 5 for the card
   }, [data?.scores]);
+
+  const behaviorStats = useMemo(() => {
+    const records = Array.isArray(disciplineRecords) ? disciplineRecords : disciplineRecords?.data || [];
+    if (records.length === 0) return { score: 100, count: 0 };
+    
+    let score = 100;
+    records.forEach(r => {
+      if (r.severity === 'positive') score += 5;
+      if (r.severity === 'minor') score -= 2;
+      if (r.severity === 'major') score -= 10;
+    });
+    return { 
+      score: Math.max(0, Math.min(100, score)),
+      count: records.length
+    };
+  }, [disciplineRecords]);
 
   if (isLoading) return <div className="p-8 text-center text-sm text-ink-500">Loading…</div>;
   if (error) return <div className="rounded border border-border bg-surface p-8 text-center text-sm font-semibold text-danger">{error.message}</div>;
@@ -243,9 +262,13 @@ export function LearnerProfilePage() {
                     <p className="text-indigo-100/90 text-[13px] font-medium leading-relaxed">
                       {learner.cohort_name || 'No Class Assigned'}
                     </p>
-                    <p className="text-indigo-100/90 text-[13px] font-medium leading-relaxed">
+                    <p className="text-indigo-100/90 text-[13px] font-medium leading-relaxed mb-2">
                       Roll No. {learner.id}
                     </p>
+                    <div className="inline-flex items-center gap-1.5 bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide">
+                      <Smile className="w-3.5 h-3.5" />
+                      {behaviorStats.count === 0 ? 'No records yet' : behaviorStats.score >= 90 ? 'Excellent Behaviour' : behaviorStats.score >= 70 ? 'Good Behaviour' : 'Needs Improvement'}
+                    </div>
                   </div>
                 </div>
 
@@ -453,14 +476,24 @@ export function LearnerProfilePage() {
                   </div>
 
                   {/* Behavior Summary */}
-                  <div className="bg-surface rounded-2xl shadow-sm border border-border p-5 flex items-center justify-between cursor-pointer hover:bg-surface-muted transition-colors">
+                  <div onClick={() => setTab('behavior')} className="bg-surface rounded-2xl shadow-sm border border-border p-5 flex items-center justify-between cursor-pointer hover:bg-surface-muted transition-colors">
                     <div>
                       <h2 className="text-base font-extrabold text-ink-900 mb-1">Behavior Summary</h2>
                       <div className="flex items-center gap-3">
-                        <span className="bg-emerald-50 text-emerald-700 text-sm font-bold px-2 py-1 rounded-md flex items-center gap-1.5">
-                          <Smile className="w-4 h-4" /> 4.8 / 5 Good
-                        </span>
-                        <span className="text-xs text-ink-500 font-medium hidden sm:inline-block">No incidents reported this month.</span>
+                        {behaviorStats.count === 0 ? (
+                          <span className="bg-surface-muted text-ink-600 border border-border text-sm font-bold px-2 py-1 rounded-md flex items-center gap-1.5">
+                            No records yet.
+                          </span>
+                        ) : (
+                          <span className={`text-sm font-bold px-2 py-1 rounded-md flex items-center gap-1.5 ${
+                            behaviorStats.score >= 90 ? 'bg-emerald-50 text-emerald-700' :
+                            behaviorStats.score >= 70 ? 'bg-orange-50 text-orange-700' :
+                            'bg-red-50 text-red-700'
+                          }`}>
+                            <Smile className="w-4 h-4" /> {behaviorStats.score}% {behaviorStats.score >= 90 ? 'Good' : behaviorStats.score >= 70 ? 'Average' : 'Poor'}
+                          </span>
+                        )}
+                        <span className="text-xs text-ink-500 font-medium hidden sm:inline-block">View detailed behaviour and discipline records.</span>
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-ink-400" />
@@ -520,6 +553,10 @@ export function LearnerProfilePage() {
                 </div>
               )}
               
+              {tab === 'behavior' && (
+                <LearnerBehaviourPage learnerId={learnerId} asTab={true} />
+              )}
+              
               {tab === 'more' && (
                 <div className="space-y-4">
                   <button onClick={() => idCardsApi.downloadLearnerCard(learnerId, learner.registry_no)} className="w-full bg-surface rounded-xl shadow-sm border border-border p-4 flex items-center justify-between hover:bg-surface-muted transition-colors text-left">
@@ -551,7 +588,7 @@ export function LearnerProfilePage() {
             </div>
 
             {/* Right Column / Sidebar */}
-            <div className="w-full xl:w-[320px] shrink-0 flex flex-col gap-5">
+            <div className={`w-full xl:w-[320px] shrink-0 flex-col gap-5 ${tab === 'overview' ? 'flex' : 'hidden xl:flex'}`}>
               
               {/* Parent & Guardian */}
               <div className="bg-surface rounded-2xl shadow-sm border border-border p-5">

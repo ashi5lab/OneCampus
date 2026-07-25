@@ -6,10 +6,17 @@ import { PageHeader } from '../../../components/PageHeader';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 
 const SEVERITY_OPTIONS = [
-  { value: 'positive', label: 'Positive note' },
-  { value: 'minor', label: 'Minor incident' },
-  { value: 'major', label: 'Major incident' }
+  { value: 'positive', label: 'Positive note (+5 pts)', classes: 'bg-emerald-50 text-emerald-900 font-medium' },
+  { value: 'minor', label: 'Minor incident (-2 pts)', classes: 'bg-orange-50 text-orange-900 font-medium' },
+  { value: 'major', label: 'Major incident (-10 pts)', classes: 'bg-red-50 text-red-900 font-medium' }
 ];
+
+function getSeverityClasses(val) {
+  if (val === 'positive') return 'bg-emerald-50 text-emerald-900 border-emerald-200';
+  if (val === 'minor') return 'bg-orange-50 text-orange-900 border-orange-200';
+  if (val === 'major') return 'bg-red-50 text-red-900 border-red-200';
+  return '';
+}
 
 function todayIso() {
   const now = new Date();
@@ -109,9 +116,9 @@ export function DisciplineFormPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <label className="block">
               <div className="mb-1.5 text-xs font-semibold text-ink-700">Severity</div>
-              <select className="input w-full" value={severity} onChange={(e) => setSeverity(e.target.value)}>
+              <select className={`input w-full transition-colors ${getSeverityClasses(severity)}`} value={severity} onChange={(e) => setSeverity(e.target.value)}>
                 {SEVERITY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  <option key={opt.value} value={opt.value} className={opt.classes}>{opt.label}</option>
                 ))}
               </select>
             </label>

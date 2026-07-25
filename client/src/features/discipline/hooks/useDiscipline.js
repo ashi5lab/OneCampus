@@ -2,7 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { disciplineApi } from '../services/disciplineApi';
 
 export function useDisciplineRecords(learnerId) {
-  return useQuery({ queryKey: ['discipline', learnerId || 'all'], queryFn: () => disciplineApi.list(learnerId) });
+  return useQuery({ queryKey: ['discipline', learnerId || 'all'], queryFn: () => disciplineApi.list({ learner_id: learnerId }) });
+}
+
+export function useDisciplineRecordsPage({ page = 1, pageSize = 10, filters = {} } = {}) {
+  return useQuery({
+    queryKey: ['discipline', 'page', page, pageSize, filters],
+    queryFn: () => disciplineApi.listPage({ ...filters, page, pageSize })
+  });
 }
 
 function useInvalidatingMutation(mutationFn) {

@@ -21,7 +21,7 @@ import { useState } from 'react';
 // e.g. useLearnersPage). This is what large/growing rosters (Students,
 // Teachers, Staff, Guardians) use so a page load only pulls the ~10 rows
 // it's about to show instead of the entire table every time.
-export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records found.', pageSize = 10, mobileCompact = false, serverPagination = null }) {
+export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records found.', pageSize = 10, mobileCompact = false, serverPagination = null, rowClassName }) {
   const [internalPage, setInternalPage] = useState(1);
 
   const isEmpty = serverPagination ? serverPagination.total === 0 : rows.length === 0;
@@ -57,7 +57,7 @@ export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records fo
       {mobileCompact ? (
         <div className="overflow-hidden rounded border border-border bg-surface md:hidden">
           {paginatedRows.map((row, i) => (
-            <div key={rowKey(row)} className={`flex items-center gap-2 px-4 py-3 ${i > 0 ? 'border-t border-surface-muted' : ''}`}>
+            <div key={rowKey(row)} className={`flex items-center gap-2 px-4 py-3 ${i > 0 ? 'border-t border-surface-muted' : ''} ${rowClassName ? rowClassName(row) : ''}`}>
               <div className="min-w-0 flex-1 text-[14px] font-medium text-ink-900">{primaryColumn.render(row)}</div>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="flex-shrink-0 text-ink-500">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
@@ -68,7 +68,7 @@ export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records fo
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 md:hidden">
           {paginatedRows.map((row) => (
-            <div key={rowKey(row)} className="rounded border border-border bg-surface p-3">
+            <div key={rowKey(row)} className={`rounded border border-border p-3 ${rowClassName ? rowClassName(row) : 'bg-surface'}`}>
               <div className="text-[14px] font-semibold leading-snug text-ink-900">{primaryColumn.render(row)}</div>
               {restColumns.length > 0 && (
                 <div className="mt-3 space-y-2 border-t border-surface-muted pt-3">
@@ -106,7 +106,7 @@ export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records fo
           </thead>
           <tbody>
             {paginatedRows.map((row) => (
-              <tr key={rowKey(row)} className="transition-colors hover:bg-surface-muted/60">
+              <tr key={rowKey(row)} className={`transition-colors hover:bg-surface-muted/60 ${rowClassName ? rowClassName(row) : ''}`}>
                 {columns.map((col) => (
                   <td
                     key={col.key}
