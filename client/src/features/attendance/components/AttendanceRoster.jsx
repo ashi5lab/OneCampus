@@ -4,6 +4,7 @@ import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useAttendanceForCohortDate, useMarkAttendance } from '../hooks/useAttendance';
 import { Avatar } from '../../../components/Avatar';
+import { PageHeader } from '../../../components/PageHeader';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Calendar, ChevronDown, Search, Eye } from 'lucide-react';
 
@@ -41,7 +42,9 @@ const STATUS_OPTIONS = [
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 
-export function AttendanceRoster({ lockedCohortId }) {
+// embedded=true: used inside ClassAttendanceTab (class channel tab) — the
+// channel's own PageHeader owns the topbar, so skip overriding it here.
+export function AttendanceRoster({ lockedCohortId, embedded = false }) {
   const navigate = useNavigate();
   const { can } = useAuth();
   const canMark = can('attendance.mark');
@@ -143,26 +146,16 @@ export function AttendanceRoster({ lockedCohortId }) {
 
   return (
     <div className="bg-[#f8f9fe] min-h-screen pb-32 font-body relative">
-      {/* Header */}
-      <div className="bg-[#5a4fcf] text-white pt-10 pb-6 px-6 rounded-b-[40px] shadow-sm">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('/app/attendance')}
-            className="p-2 -ml-2 rounded-full hover:bg-white/10 transition"
-          >
-            <ChevronLeft className="w-6 h-6 text-white" />
-          </button>
-          <div className="text-center">
-            <h1 className="text-[18px] font-bold">Class Attendance</h1>
-            {selectedCohort && (
-              <p className="text-[13px] text-white/80 mt-0.5">{selectedCohort.name}</p>
-            )}
-          </div>
-          <button className="w-10 h-10 bg-white/15 rounded-2xl flex items-center justify-center hover:bg-white/25 transition">
-            <Calendar className="w-5 h-5 text-white" />
-          </button>
-        </div>
-      </div>
+      {/* Set the topbar title only when used as a standalone page, not when
+          embedded inside a class channel tab (which has its own PageHeader). */}
+      {!embedded && (
+        <PageHeader
+          title="Class Attendance"
+          subtitle={selectedCohort?.name}
+          back={true}
+          onBack={() => navigate('/app/attendance')}
+        />
+      )}
 
       {/* Main Content */}
       <div className="px-4 mt-4 space-y-3">
