@@ -654,7 +654,12 @@ In JSX, `{expression}` is closed by the first bare `}` the parser encounters. Th
 
 ---
 
-## Entry 003 — Dashboard Quick-Action Buttons: Mark Attendance Now & Log Discipline
+## Entry 005 — Universal user_id Architecture Decision [IN PROGRESS]
+
+**Date:** 2026-07-25
+**Time:** ~22:00 IST
+**Session ID:** `1038c693-05cb-5db2-aad9-142777098a43`
+## Entry 006 — Dashboard Quick-Action Buttons: Mark Attendance Now & Log Discipline
 
 **Date:** 2026-07-25
 **Time:** ~21:54 IST
@@ -664,6 +669,122 @@ In JSX, `{expression}` is closed by the first bare `}` the parser encounters. Th
 
 ### User Request
 
+> "let's not confuse over this - we only need user id for all users - no learner_id or no teacher_id or no staff_id - only user id. give me a plan - what all changes are required - will this affect anywhere - add these to rules, prd and agent_logs"
+
+**Context:** Triggered by discipline record bug where `learner_id = 1187` was stored but `onec_learners.id = 560` and `onec_users.id = 1187` — the wrong ID type was used. User decision: unify all person references to use `onec_users.id` (user_id) everywhere.
+
+---
+
+### Root Cause of Current Bug
+
+The discipline record for "student 1 (S2)" was saved with `learner_id = 1187` which is the `onec_users.id`, not `onec_learners.id = 560`. The FK constraint `onec_discipline_records.learner_id REFERENCES onec_learners(id)` rejected updates because 1187 is not a valid `onec_learners.id`. This confusion between role-table IDs and user IDs motivated the architectural decision.
+
+---
+
+### Decision
+
+Replace all role-specific ID references (`learner_id → onec_learners.id`, `instructor_id → onec_instructors.id`, `staff_id → onec_staff.id`) in all record/junction tables with `user_id → onec_users.id`.
+
+Role-specific tables (`onec_learners`, `onec_instructors`, `onec_staff`) still exist for profile data (cohort, registry number, qualifications, etc.) but are no longer used as FK targets in other tables.
+
+---
+
+### Affected Tables (DB migrations required)
+
+| Table | Old Column | New Column |
+|---|---|---|
+| `onec_attendance` | `learner_id → onec_learners.id` | `user_id → onec_users.id` |
+| `onec_discipline_records` | `learner_id → onec_learners.id` | `user_id → onec_users.id` |
+| `onec_learner_scores` | `learner_id → onec_learners.id` | `user_id → onec_users.id` |
+| `onec_certificates` | `learner_id → onec_learners.id` | `user_id → onec_users.id` |
+| `onec_assignments` submissions | `learner_id → onec_learners.id` | `user_id → onec_users.id` |
+| `onec_online_exam_submissions` | `learner_id → onec_learners.id` | `user_id → onec_users.id` |
+| `onec_learner_guardian_map` | `learner_id → onec_learners.id` | `user_id → onec_users.id` |
+| `onec_ptm_bookings` | `learner_id → onec_learners.id` | `user_id → onec_users.id` |
+| `onec_timetable` | `instructor_id → onec_instructors.id` | `user_id → onec_users.id` |
+| `onec_instructor_module_cohort_links` | `instructor_id → onec_instructors.id` | `user_id → onec_users.id` |
+
+---
+
+### Affected Server Modules (15)
+
+attendance, discipline, learners, instructors, staff, certificates, evaluations, assignments, onlineExams, guardians, guardianLinks, ptm, timetable, reports, activity
+
+---
+
+### Affected Frontend Files (30+)
+
+All files referencing `learner_id` or `instructor_id` in forms, API calls, and navigation.
+
+---
+
+### Implementation Strategy
+
+Do module by module, NOT all at once:
+1. `onec_discipline_records` — start here (smallest, already has bug)
+2. `onec_attendance` — next (core module, high impact)
+3. `onec_learner_scores`, `onec_certificates` — academic records
+4. `onec_assignments`, `onec_online_exam_submissions` — exam/assignment
+5. `onec_learner_guardian_map`, `onec_ptm_bookings` — relationships
+6. Instructor tables last (lower priority)
+
+Each table migration:
+```sql
+ALTER TABLE onec_xxx ADD COLUMN user_id INT REFERENCES onec_users(id);
+UPDATE onec_xxx x SET user_id = l.user_id FROM onec_learners l WHERE l.id = x.learner_id;
+ALTER TABLE onec_xxx ALTER COLUMN user_id SET NOT NULL;
+ALTER TABLE onec_xxx DROP COLUMN learner_id;
+```
+
+---
+
+### Risk Level: High
+Estimated effort: 2–3 weeks. Every module touched. Data migration must run on live DB without data loss.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*
+*Timestamp: 2026-07-25T22:00 IST*
+
+---
+
+## Entry 007 — Revised: User ID Display Strategy (No DB Migration)
+
+**Date:** 2026-07-25
+**Time:** ~22:30 IST
+**Session:** 1038c693-05cb-5db2-aad9-142777098a43
+
+---
+
+### User Request
+
+> "or we can plan it in a different way - we can keep the architecture as it is - going forwards also keep same flow - but we just don't need to show learner_id and all anywhere.. they will just work in backend - instead we can show user_id in student profile for quick checks and all."
+
+---
+
+### Decision
+
+**Entry 005 plan is CANCELLED.** No DB migration will be performed.
+
+The backend keeps all role-table IDs exactly as they are (`learner_id`, `instructor_id`, etc. in all tables and server modules). No renaming, no column drops, no data migration.
+
+**The only change**: The student profile UI must display `user_id` (from `onec_users.id`) as the visible system identifier instead of exposing `learner_id`. This gives staff/admins a single, consistent ID to reference across all user types without any backend risk.
+
+---
+
+### Files Updated This Entry
+
+| File | Action | Change |
+|---|---|---|
+| `Rules.md` | MODIFIED | Added Rule 8 — universal identifier display (show user_id in UI, keep backend as-is) |
+| `OneCampus_PRD_v2.md` | MODIFIED | Added "Identifier Architecture" section documenting this display rule |
+
+---
+
+### Outcome
+
+Entry 005 scope (9 DB tables, 15 server modules, 30+ frontend files) is **not being implemented**. The only actionable frontend task is to ensure the student profile card shows `user_id` rather than `learner_id` when displaying an ID to the user.
 > "lets add a button in dashboard just below today at glance with a lightning icon Mark Attendance now in green color. This take user to attendance page - as in the image - when clicked attendance page. another button is Log Discipline record - when clicked open the discipline pages log incident modal."
 
 A reference screenshot was provided showing two side-by-side cards:
@@ -724,12 +845,14 @@ This was a frontend-only change. No server code, migrations, or database operati
 ---
 
 *Log entry authored by Antigravity Agent*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*
+*Timestamp: 2026-07-25T22:30 IST*
 *Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
 *Timestamp: 2026-07-25T21:54 IST*
 
 ---
 
-## Entry 004 — TeacherDashboard: Replace All Mock Data with Live API Data
+## Entry 008 — TeacherDashboard: Replace All Mock Data with Live API Data
 
 **Date:** 2026-07-25
 **Time:** ~22:03 IST
@@ -845,7 +968,7 @@ Frontend-only change. All APIs already existed and return the required data.
 
 ---
 
-## Entry 005 — Replace Discipline Incident Modal with Dedicated Form Page
+## Entry 009 — Replace Discipline Incident Modal with Dedicated Form Page
 
 **Date:** 2026-07-25
 **Time:** ~22:26 IST
@@ -923,7 +1046,7 @@ A screenshot was provided showing a two-section form layout ("Incident Informati
 
 ---
 
-## Entry 006 — Switch Discipline Form to Reusable UserSearchSelect
+## Entry 010 — Switch Discipline Form to Reusable UserSearchSelect
 
 **Date:** 2026-07-25
 **Time:** ~22:32 IST
@@ -983,7 +1106,7 @@ A screenshot was provided showing a two-section form layout ("Incident Informati
 
 ---
 
-## Entry 007 — Enhance UserSearchSelect UI and Backend Query
+## Entry 011 — Enhance UserSearchSelect UI and Backend Query
 
 **Date:** 2026-07-25
 **Time:** ~22:40 IST
@@ -1044,7 +1167,7 @@ A screenshot was provided showing a two-section form layout ("Incident Informati
 
 ---
 
-## Entry 008 — Document UserSearchSelect Props in PRD and Rules
+## Entry 012 — Document UserSearchSelect Props in PRD and Rules
 
 **Date:** 2026-07-25
 **Time:** ~22:44 IST

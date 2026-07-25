@@ -17,6 +17,8 @@ router.post('/fcm-token', controller.saveFcmToken);
 // Admin-side password reset — the only /profile routes that touch a user
 // other than the caller, hence the only permission-gated ones here.
 router.get('/users', requirePermission('users.manage_passwords'), controller.listUsers);
+router.get('/users/report', requirePermission('users.manage_passwords'), controller.getUsersReport);
+router.patch('/users/:userId/role', requirePermission('users.manage_passwords'), controller.changeUserRole);
 router.put('/users/:userId/password', requirePermission('users.manage_passwords'), controller.adminChangePassword);
 router.post('/users/:userId/force-logout', requirePermission('users.manage_passwords'), controller.forceLogoutUser);
 

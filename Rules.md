@@ -33,3 +33,4 @@ These rules apply to every agent session working on OneCampus:
 5. **Rules specified by the user** — Any explicit rule or instruction given by the user must be documented in this file (`Rules.md`).
 6. **Commit and push after every significant change set** — Do not leave working changes uncommitted. Use descriptive commit messages.
 7. **Never leave tasks half-finished** — If a session must end mid-task, mark the AGENT_LOG entry as `[IN PROGRESS]` and document exactly what remains.
+8. **Universal identifier display** — The backend keeps its role-table IDs (`learner_id`, `instructor_id`, etc.) as-is. Do NOT attempt to migrate or rename DB columns. However, the **student profile UI must display `user_id`** (the `onec_users.id`) for quick identification and debugging — not `learner_id`. Never expose `learner_id` or other role-table IDs in the UI; only use `user_id` when an ID needs to be surfaced to users.
