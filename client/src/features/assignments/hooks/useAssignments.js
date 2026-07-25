@@ -88,6 +88,23 @@ export function useUpsertGrade(assignmentId) {
   });
 }
 
+// ─── Learner submission hooks (self-view) ────────────────────────────────────
+export function useSubmissions(assignmentId) {
+  return useQuery({
+    queryKey: [...KEY, assignmentId, 'submissions'],
+    queryFn: () => assignmentsApi.listSubmissions(assignmentId),
+    enabled: !!assignmentId,
+  });
+}
+
+export function useSubmitAssignment(assignmentId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => assignmentsApi.submit(assignmentId, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...KEY, assignmentId, 'submissions'] }),
+  });
+}
+
 export function useCompleteValuation() {
   const qc = useQueryClient();
   return useMutation({
