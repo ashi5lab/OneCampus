@@ -1,50 +1,97 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentsApi } from '../services/assignmentsApi';
 
-export function useAssignments() {
-  return useQuery({ queryKey: ['assignments'], queryFn: assignmentsApi.list });
+const KEY = ['assignments'];
+
+function invalidate(qc, extraKeys = []) {
+  qc.invalidateQueries({ queryKey: KEY });
+  extraKeys.forEach(k => qc.invalidateQueries({ queryKey: k }));
 }
 
-function useAssignmentsMutation(mutationFn) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assignments'] })
+// ─── List (server-paginated) ─────────────────────────────────────────────────
+export function useAssignments(filters = {}) {
+  return useQuery({
+    queryKey: [...KEY, filters],
+    queryFn: () => assignmentsApi.list(filters),
+    keepPreviousData: true,
   });
 }
 
+// ─── Single ──────────────────────────────────────────────────────────────────
+export function useAssignment(id) {
+  return useQuery({
+    queryKey: [...KEY, id],
+    queryFn: () => assignmentsApi.get(id),
+    enabled: !!id,
+  });
+}
+
+// ─── Mutations ───────────────────────────────────────────────────────────────
 export function useCreateAssignment() {
-  return useAssignmentsMutation(assignmentsApi.create);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: assignmentsApi.create,
+    onSuccess: () => invalidate(qc),
+  });
 }
 
 export function useUpdateAssignment() {
-  return useAssignmentsMutation(({ id, payload }) => assignmentsApi.update(id, payload));
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => assignmentsApi.update(id, payload),
+    onSuccess: (_, { id }) => invalidate(qc, [[...KEY, id]]),
+  });
 }
 
 export function useDeleteAssignment() {
-  return useAssignmentsMutation(assignmentsApi.remove);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: assignmentsApi.remove,
+    onSuccess: () => invalidate(qc),
+  });
 }
 
-export function useSubmissions(assignmentId) {
+export function useDuplicateAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: assignmentsApi.duplicate,
+    onSuccess: () => invalidate(qc),
+  });
+}
+
+export function useTogglePublish() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, publish }) => assignmentsApi.togglePublish(id, publish),
+    onSuccess: (_, { id }) => invalidate(qc, [[...KEY, id]]),
+  });
+}
+
+// ─── Valuation ───────────────────────────────────────────────────────────────
+export function useValuationStudents(assignmentId, params = {}) {
   return useQuery({
-    queryKey: ['assignments', assignmentId, 'submissions'],
-    queryFn: () => assignmentsApi.listSubmissions(assignmentId),
-    enabled: assignmentId !== undefined && assignmentId !== null
+    queryKey: [...KEY, assignmentId, 'valuation', params],
+    queryFn: () => assignmentsApi.getValuationStudents(assignmentId, params),
+    enabled: !!assignmentId,
+    keepPreviousData: true,
   });
 }
 
-export function useSubmitAssignment(assignmentId) {
-  const queryClient = useQueryClient();
+export function useUpsertGrade(assignmentId) {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload) => assignmentsApi.submit(assignmentId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assignments', assignmentId, 'submissions'] })
+    mutationFn: (payload) => assignmentsApi.upsertGrade(assignmentId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...KEY, assignmentId, 'valuation'] });
+      qc.invalidateQueries({ queryKey: [...KEY, assignmentId] });
+    },
   });
 }
 
-export function useGradeSubmission(assignmentId) {
-  const queryClient = useQueryClient();
+export function useCompleteValuation() {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ submissionId, payload }) => assignmentsApi.grade(submissionId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assignments', assignmentId, 'submissions'] })
+    mutationFn: assignmentsApi.completeValuation,
+    onSuccess: (_, id) => invalidate(qc, [[...KEY, id]]),
   });
 }
