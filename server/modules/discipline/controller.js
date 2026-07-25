@@ -2,8 +2,11 @@ const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
 
+// Accepts user_id (onec_users.id) — the value UserSearchSelect always
+// returns. The controller resolves to onec_learners.id before insert so
+// callers never have to know which ID space the FK uses.
 const recordSchema = z.object({
-  learner_id: z.number().int(),
+  user_id: z.number().int(),
   incident_date: z.string(), // YYYY-MM-DD
   severity: z.enum(['minor', 'major', 'positive']),
   description: z.string().min(1, 'Description is required'),
@@ -38,7 +41,8 @@ async function getAll(req, res) {
       // columns into JS Date objects, which the frontend's plain string
       // comparisons/formatting don't expect (see the Invalid Date bug this
       // exact pattern caused in the calendar module).
-      `SELECT d.id, d.learner_id, d.incident_date::text AS incident_date, d.severity, d.description, d.action_taken,
+      `SELECT d.id, d.learner_id, l.user_id AS learner_user_id,
+              d.incident_date::text AS incident_date, d.severity, d.description, d.action_taken,
               d.reported_by, d.created_at, u.username AS reported_by_username,
               l.first_name AS learner_first_name, l.last_name AS learner_last_name, l.registry_no AS learner_registry_no
        FROM onec_discipline_records d
@@ -60,15 +64,20 @@ async function create(req, res) {
     const parsed = recordSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { learner_id, incident_date, severity, description, action_taken } = parsed.data;
-    const reported_by = req.user.userId;
+    const { user_id, incident_date, severity, description, action_taken } = parsed.data;
 
+    // Resolve onec_users.id → onec_learners.id (the FK this table uses)
+    const learnerRow = await req.db.query('SELECT id FROM onec_learners WHERE user_id = $1', [user_id]);
+    if (learnerRow.rows.length === 0) return res.status(400).json({ error: 'Learner profile not found for this user' });
+    const learner_id = learnerRow.rows[0].id;
+
+    const reported_by = req.user.userId;
     const result = await req.db.query(
       `INSERT INTO onec_discipline_records (learner_id, incident_date, severity, description, action_taken, reported_by)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
       [learner_id, incident_date, severity, description, action_taken ?? null, reported_by]
     );
-    logAudit(req, 'discipline.record_logged', { record_id: result.rows[0].id, learner_id, severity });
+    logAudit(req, 'discipline.record_logged', { record_id: result.rows[0].id, learner_id, user_id, severity });
     res.status(201).json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
@@ -83,7 +92,12 @@ async function update(req, res) {
     const parsed = recordSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
-    const { learner_id, incident_date, severity, description, action_taken } = parsed.data;
+    const { user_id, incident_date, severity, description, action_taken } = parsed.data;
+
+    // Resolve onec_users.id → onec_learners.id (same as create)
+    const learnerRow = await req.db.query('SELECT id FROM onec_learners WHERE user_id = $1', [user_id]);
+    if (learnerRow.rows.length === 0) return res.status(400).json({ error: 'Learner profile not found for this user' });
+    const learner_id = learnerRow.rows[0].id;
 
     const existing = await req.db.query('SELECT reported_by FROM onec_discipline_records WHERE id = $1', [id]);
     if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
@@ -92,13 +106,13 @@ async function update(req, res) {
     }
 
     const result = await req.db.query(
-      `UPDATE onec_discipline_records 
+      `UPDATE onec_discipline_records
        SET learner_id = $1, incident_date = $2, severity = $3, description = $4, action_taken = $5
        WHERE id = $6 RETURNING *`,
       [learner_id, incident_date, severity, description, action_taken ?? null, id]
     );
-    
-    logAudit(req, 'discipline.record_updated', { record_id: result.rows[0].id, learner_id, severity });
+
+    logAudit(req, 'discipline.record_updated', { record_id: result.rows[0].id, learner_id, user_id, severity });
     res.json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
