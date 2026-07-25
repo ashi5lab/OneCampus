@@ -1,4 +1,5 @@
 import { SearchSelect } from './SearchSelect';
+import { MultiSearchSelect } from './MultiSearchSelect';
 import { RoleBadge } from './RoleBadge';
 
 // Reusable "search across all users, optionally filtered by role" picker —
@@ -42,6 +43,49 @@ export function UserSearchSelect({
     <SearchSelect
       options={options}
       value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      emptyMessage="No matching users."
+      renderOption={(option) => (
+        <span className="flex items-center justify-between gap-2 w-full">
+          <span className="flex flex-col truncate">
+            <span className="truncate">{option.label}</span>
+            {showUsername && option.username !== option.label && (
+              <span className="text-[11px] text-ink-500 font-medium truncate">{option.username}</span>
+            )}
+          </span>
+          {showRole && <RoleBadge role={option.role} />}
+        </span>
+      )}
+    />
+  );
+}
+
+// Multi-select variant — same user pool + rendering as UserSearchSelect,
+// but allows selecting multiple users (values = array of user ids).
+export function MultiUserSearchSelect({
+  users,
+  roles,
+  values = [],
+  onChange,
+  placeholder = 'Search by name…',
+  disabled = false,
+  showUsername = true,
+  showClass = true,
+  showRole = true,
+}) {
+  const pool = roles?.length ? users.filter((u) => roles.includes(u.role)) : users;
+  const options = pool.map((u) => {
+    let nameStr = u.name || u.username;
+    if (showClass && u.cohort_name) nameStr += ` (${u.cohort_name})`;
+    return { value: u.id, label: nameStr, username: u.username, role: u.role };
+  });
+
+  return (
+    <MultiSearchSelect
+      options={options}
+      values={values}
       onChange={onChange}
       placeholder={placeholder}
       disabled={disabled}
