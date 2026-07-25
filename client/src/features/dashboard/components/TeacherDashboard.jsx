@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Users, CheckCircle2, ClipboardList, CalendarDays,
   GraduationCap, Plus, CalendarCheck, ShieldAlert,
-  Zap, ChevronRight, Bell, AlertCircle
+  Zap, ChevronRight, Bell, AlertCircle, Clock, XCircle
 } from 'lucide-react';
 import { TeacherHeader } from '../../../components/TeacherHeader';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -112,9 +112,36 @@ export function TeacherDashboard() {
   const totalClasses   = todaySchedule.length || (typeof classCount === 'number' ? classCount : 0);
   const attendanceText = totalClasses > 0 ? `${markedCount}/${totalClasses}` : `${markedCount}`;
 
+  let attendanceColor = 'text-gray-600 bg-gray-50';
+  let AttendanceIcon = CheckCircle2;
+
+  if (totalClasses > 0) {
+    if (markedCount >= totalClasses) {
+      attendanceColor = 'text-emerald-600 bg-emerald-50';
+      AttendanceIcon = CheckCircle2;
+    } else if (markedCount > 0) {
+      attendanceColor = 'text-orange-600 bg-orange-50';
+      AttendanceIcon = Clock;
+    } else {
+      attendanceColor = 'text-red-600 bg-red-50';
+      AttendanceIcon = XCircle;
+    }
+  } else if (markedCount > 0) {
+    attendanceColor = 'text-emerald-600 bg-emerald-50';
+    AttendanceIcon = CheckCircle2;
+  }
+
   // Assignments: count ones the instructor created that have ungraded submissions
   const assignments = assignmentsData?.data ?? assignmentsData ?? [];
   const toGradeCount = assignments.filter((a) => (a.ungraded_count ?? 0) > 0).length;
+
+  let assignmentsColor = 'text-emerald-600 bg-emerald-50';
+  let AssignmentsIcon = CheckCircle2;
+
+  if (toGradeCount > 0) {
+    assignmentsColor = 'text-orange-600 bg-orange-50';
+    AssignmentsIcon = ClipboardList;
+  }
 
   // Notices: newest 3
   const notices = (noticesData?.data ?? noticesData ?? []).slice(0, 3);
@@ -129,19 +156,20 @@ export function TeacherDashboard() {
       icon: Users,
       value: String(typeof classCount === 'number' ? classCount : '—'),
       label: 'My Classes',
-      color: 'text-indigo-600 bg-indigo-50'
+      color: 'text-indigo-600 bg-indigo-50',
+      path: '/app/cohorts'
     },
     {
-      icon: CheckCircle2,
+      icon: AttendanceIcon,
       value: attendanceText,
       label: 'Attendance Marked',
-      color: 'text-emerald-600 bg-emerald-50'
+      color: attendanceColor
     },
     {
-      icon: ClipboardList,
+      icon: AssignmentsIcon,
       value: toGradeCount > 0 ? String(toGradeCount) : '0',
       label: 'Assignments To Grade',
-      color: 'text-indigo-600 bg-indigo-50'
+      color: assignmentsColor
     },
     {
       icon: CalendarDays,
@@ -216,8 +244,13 @@ export function TeacherDashboard() {
           <div className="flex flex-col gap-2.5 md:flex-row md:overflow-x-auto md:pb-2 md:scroll-smooth md:[&::-webkit-scrollbar]:hidden md:[-ms-overflow-style:none] md:[scrollbar-width:none]">
             {glanceCards.map((card, idx) => {
               const Icon = card.icon;
+              const CardWrapper = card.path ? Link : 'div';
               return (
-                <div key={idx} className="bg-white rounded-2xl p-3 md:p-4 shadow-sm md:min-w-[140px] flex-shrink-0 flex items-center md:flex-col md:items-start md:justify-between border border-gray-100 gap-3 md:gap-0">
+                <CardWrapper 
+                  key={idx} 
+                  to={card.path}
+                  className={`bg-white rounded-2xl p-3 md:p-4 shadow-sm md:min-w-[140px] flex-shrink-0 flex items-center md:flex-col md:items-start md:justify-between border border-gray-100 gap-3 md:gap-0 block ${card.path ? 'cursor-pointer hover:border-indigo-200 transition-colors active:scale-[0.98]' : ''}`}
+                >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center md:mb-3 flex-shrink-0 ${card.color}`}>
                     <Icon className="w-5 h-5" />
                   </div>
@@ -228,7 +261,7 @@ export function TeacherDashboard() {
                     </div>
                     <div className="text-[18px] md:text-2xl font-bold text-gray-900 ml-2 md:ml-0 md:mt-1">{card.value}</div>
                   </div>
-                </div>
+                </CardWrapper>
               );
             })}
           </div>
