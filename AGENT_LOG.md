@@ -462,3 +462,140 @@ The DB column persists independently of git. A separate SQL revert (above) is re
 *Log entry authored by Antigravity Agent*
 *Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
 *Timestamp: 2026-07-25T20:31 IST*
+
+---
+
+## Entry 003 — Attendance Data Breakage (Exception-Model Mismatch) [COMPLETE]
+
+**Date:** 2026-07-25
+**Time:** ~21:00 IST
+**Session ID:** `1038c693-05cb-5db2-aad9-142777098a43`
+
+---
+
+### User Request
+
+> "after the recent changes complete data seem to be broken - also the contents like reports, attendance marked data (in student profile page) and all is broken - some are showing days present -15/1 This month, and all. read the PRD of changes done recently regarding attendance and fix this ... check the agent_log.md - it has a unfinished task regarding attendance of class showing as pending - fix this by analysing properly. give me a plan and execute once I approve"
+> "update all logs and operations and tasks in the AGENT_LOG.md - if any PRD related changes or updates, note it in OneCampus_PRD_v2.md. any rules that I specify should be marked in Rules.md"
+
+---
+
+### Root Cause Analysis
+
+Main branch introduced an **exception-based attendance model** (`markBulk` commits `bdfaa51`, `d2089f6`). Under this model:
+
+- `onec_attendance` stores **only non-present exceptions** (absent / late / excused)
+- `onec_cohort_attendance_logs` has one row per (cohort, date) = "attendance was taken"
+- **Present** is computed: `present = logged_days - exception_count`
+
+Several parts of the codebase still assumed the **old explicit model** (where `status='present'` rows existed in `onec_attendance`). This caused:
+
+1. **"Days present -15/1 This month"** — `MyAttendanceView` counted `status='present'` rows from `onec_attendance` (always 0 in exception model), then divided by `meta.total` (number of exception rows) — nonsense result.
+2. **`attendanceRate30d = 0%` on learner dashboards** — `reports/controller.js` ran `COUNT FILTER WHERE status = 'present'` in `onec_attendance` — always returned 0.
+3. **Guardian dashboard broken similarly** — same query pattern.
+4. **Class cards showing "Pending" / "--/--"** — `getLogs` endpoint and `useCohortAttendanceLogs` hook were in unstaged changes that the user discarded (per Entry 002). The class picker had no live data source for Marked/Pending state.
+5. **HomeInsightsPage attendance card** — showed hardcoded "13/15 days" subtitle regardless of real data.
+
+---
+
+### Files Investigated
+
+- `server/modules/reports/controller.js` — learner + guardian attendance queries
+- `server/modules/attendance/controller.js` — getLogs (was missing), markBulk
+- `server/modules/attendance/routes.js` — route registration
+- `client/src/features/attendance/services/attendanceApi.js`
+- `client/src/features/attendance/hooks/useAttendance.js`
+- `client/src/features/attendance/components/AttendancePage.jsx`
+- `client/src/features/attendance/components/MyAttendanceView.jsx`
+- `client/src/features/home/components/HomeInsightsPage.jsx`
+- `server/modules/learners/controller.js` — `getProfile` (already correct on main, no change needed)
+- All root MD files: `AGENT_LOG.md`, `Future_Features.md`, `OneCampus_PRD_v2.md`, `Rules.md`
+
+---
+
+### Changes Made
+
+#### 1. `server/modules/attendance/controller.js`
+**Added** `getLogs(req, res)` function — queries `onec_cohort_attendance_logs` for a given date, joins with cohort + user tables, computes `present_count = total_learners - absent - late - excused`. Added to `module.exports`.
+
+#### 2. `server/modules/attendance/routes.js`
+**Added** route: `router.get('/logs', requirePermission('attendance.view'), controller.getLogs);`
+
+#### 3. `server/modules/reports/controller.js`
+**Fixed** learner dashboard stats:
+- BEFORE: `COUNT(*) FILTER (WHERE status = 'present') FROM onec_attendance` → always 0
+- AFTER: `COUNT(*) FROM onec_cohort_attendance_logs WHERE cohort_id = $2 AND date >= ...` for `marked_30d`, then `COUNT(*) FROM onec_attendance WHERE status IN ('absent','late','excused')` for `exceptions_30d`
+- `present_30d = marked_30d - exceptions_30d`, `attendanceRate30d = present_30d / marked_30d * 100`
+
+**Fixed** guardian per-child stats identically.
+
+#### 4. `client/src/features/attendance/services/attendanceApi.js`
+**Added** `getLogs(date)` method: `GET /attendance/logs?date=...`
+
+#### 5. `client/src/features/attendance/hooks/useAttendance.js`
+**Added** `useCohortAttendanceLogs(date)` hook export using `['attendance', 'logs', date]` query key.
+
+#### 6. `client/src/features/attendance/components/AttendancePage.jsx`
+**Rewritten** `AttendancePicker`:
+- Added `todayIso()` helper
+- Fetches `logsData` from `useCohortAttendanceLogs(today)`
+- Builds `logsMap` (cohort_id → log entry) for O(1) lookup
+- Class cards: Status = "Marked" (green) / "Pending" (orange) based on `logsMap`
+- Class cards: Present count = `${log.present_count}/${log.total_learners}` when marked, else "--/--"
+
+#### 7. `client/src/features/home/components/HomeInsightsPage.jsx`
+**Fixed** attendance stat card:
+- Label: `'Attendance This Week'` → `'Attendance (30 days)'`
+- Value fallback: `'87%'` → `'—'`
+- Subtitle: hardcoded `'Present • 13 / 15 days'` → dynamic `Present • ${present_30d} / ${marked_30d} days`
+
+#### 8. `client/src/features/attendance/components/MyAttendanceView.jsx`
+**Rewritten**:
+- Now imports and uses `useDashboardReport` for accurate stats
+- Stats cards show `attendanceRate30d`, `present_30d`, `marked_30d` from dashboard report
+- Table still shows exception records (absent/late/excused) — correct under exception model
+- Empty message: "No absences or exceptions recorded yet."
+- 4th stat card: "Exceptions" (count of exception rows, i.e. non-present records)
+
+---
+
+### Commit
+
+`8fa81be` — `fix(attendance): fix exception-based model data breakage`
+Branch: `claude/attendance-search-class-list-i50jbb`
+
+---
+
+### Database Operations
+
+None in this session. The `is_partial` column migration was already applied in Entry 001.
+
+---
+
+### Expected Outcomes
+
+| Feature | Before | After |
+|---|---|---|
+| Learner attendance rate (dashboard) | 0% always | Correct % based on logged days |
+| "Present • X / Y days" (HomeInsightsPage) | Hardcoded 13/15 | Real data from dashboard report |
+| Class picker — Marked/Pending badge | Always "Pending" | Live from `/attendance/logs` endpoint |
+| Class picker — Present count | Always "--/--" | `${present}/${total}` when marked |
+| MyAttendanceView stats | Computed from exception rows (wrong) | From dashboard report (correct) |
+| Guardian dashboard per-child stats | 0% always | Correct % |
+
+---
+
+### Rules Specified by User This Session
+
+> "read all md files in root before doing any tasks"
+> "Keep adding new features and changes to PRD"
+> "agent log must be updated with all inputs, ops, actions, tasks done (including file changes, DB updates)"
+> "any future features should be noted in Future_Features.md"
+> "attendance requirements must be in PRD"
+> "any rules that I specify should be marked in Rules.md"
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*
+*Timestamp: 2026-07-25T21:00 IST*

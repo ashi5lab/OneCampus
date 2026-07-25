@@ -21,3 +21,15 @@ This document outlines the core rules and reusable components for maintaining a 
 
 ## 4. Charts & Visualizations
 - Avoid bulky third-party charting libraries for simple UI elements. Use custom lightweight SVG components (e.g., line charts, doughnut charts) tailored to the exact mockup design to ensure premium aesthetics and fast load times.
+
+## 5. Agent Workflow Rules
+
+These rules apply to every agent session working on OneCampus:
+
+1. **Read all root MD files first** — Before starting any task, read `AGENT_LOG.md`, `OneCampus_PRD_v2.md`, `Future_Features.md`, and `Rules.md` to understand the current state of the project.
+2. **Update AGENT_LOG.md** — Every session must append a new numbered entry documenting: user's exact input, files investigated, root causes, every file changed (with before/after snippets), DB operations, and expected outcomes. Never overwrite past entries.
+3. **Update OneCampus_PRD_v2.md** — Any new features, changes to existing modules, or architectural decisions must be noted in the PRD.
+4. **Update Future_Features.md** — Any feature requested by the user but deferred to a later session must be added here with context.
+5. **Rules specified by the user** — Any explicit rule or instruction given by the user must be documented in this file (`Rules.md`).
+6. **Commit and push after every significant change set** — Do not leave working changes uncommitted. Use descriptive commit messages.
+7. **Never leave tasks half-finished** — If a session must end mid-task, mark the AGENT_LOG entry as `[IN PROGRESS]` and document exactly what remains.
