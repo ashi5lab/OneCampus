@@ -32,6 +32,7 @@ import { NoticesPage } from './features/notices/components/NoticesPage';
 import { LibraryPage } from './features/library/components/LibraryPage';
 import { AssignmentsPage } from './features/assignments/components/AssignmentsPage';
 import { AssignmentDetailPage } from './features/assignments/components/AssignmentDetailPage';
+import { AssignmentFormPage } from './features/assignments/components/AssignmentFormPage';
 import { OnlineExamDetailPage } from './features/onlineExams/components/OnlineExamDetailPage';
 import { ExamsPage } from './features/exams/components/ExamsPage';
 import { ReportsPage } from './features/reports/components/ReportsPage';
@@ -241,7 +242,9 @@ export default function App() {
         <Route path="notices" element={<NoticesPage />} />
         <Route path="library" element={<LibraryPage />} />
         <Route path="assignments" element={<AssignmentsPage />} />
+        <Route path="assignments/new" element={<AssignmentFormPage />} />
         <Route path="assignments/:id" element={<AssignmentDetailPage />} />
+        <Route path="assignments/:id/edit" element={<AssignmentFormPage />} />
         <Route path="online-exams/:id" element={<OnlineExamDetailPage />} />
         <Route
           path="reports"

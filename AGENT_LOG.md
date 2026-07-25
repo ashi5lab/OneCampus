@@ -1537,3 +1537,55 @@ The underlying mathematical model for behavior scoring has been decoupled from a
 *Log entry authored by Antigravity Agent*
 *Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
 *Timestamp: 2026-07-26T00:50 IST*
+
+---
+
+### Assignment Module — Full Implementation
+
+**Time:** ~10:00 IST
+**Session ID:** `1038c693-05cb-5db2-aad9-142777098a43`
+
+---
+
+### User Request
+
+> Implement the complete Assignment Module for OneCampus. Assignment List page with search/filter/pagination, dedicated Create/Edit form page, Assignment Detail page with student valuation. Subject must be a dropdown, classes must be autocomplete multi-select, and there must be an option to assign to specific students (multi-select, class not applicable). Create a PR and push at small intervals with a task tracker MD file.
+
+---
+
+### Architectural Additions
+
+1. **DB Migration (`server/migrations/040_extend_assignments.sql`):**
+   - Added columns to `onec_assignments`: `status`, `eval_type`, `passing_marks`, `pass_grade`, `instructions`, `target_type`
+   - New join tables: `onec_assignment_cohorts` (multi-class), `onec_assignment_target_students` (specific students)
+   - Extended `onec_assignment_submissions`: `grade_value`, `status`
+   - Migrated existing `cohort_id` data into join table
+
+2. **Server Controller (`server/modules/assignments/controller.js` — full rewrite):**
+   - `listAssignments`: server-paginated, search, filter by class/status/date, role-scoped
+   - `getAssignment`: single with grading stats
+   - `createAssignment` / `updateAssignment`: handles class vs specific_students target_type
+   - `duplicateAssignment`, `togglePublish`, `completeValuation`
+   - `getValuationStudents`: paginated student list with submission data, row_number as roll_no
+   - `upsertGrade`: ON CONFLICT upsert, auto-advances status to grading_in_progress
+   - Helpers: `resolveUserIdsToLearnerIds`, `syncAssignmentCohorts`, `syncTargetStudents`
+
+3. **Client — New Components:**
+   - `MultiSearchSelect.jsx`: chip-based multi-select combobox with inline search, keyboard navigation
+   - `AssignmentStatusBadge.jsx` + `PublishBadge`
+   - `AssignmentFormPage.jsx`: dedicated full page (NOT modal) at `/assignments/new` and `/assignments/:id/edit`
+   - Rewritten `AssignmentsPage.jsx`: search, filter (class/status/date), server pagination, DataTable
+   - Rewritten `AssignmentDetailPage.jsx`: tabs (Overview/Students), inline valuation with autosave
+
+4. **Client — API + Hooks:**
+   - Full `assignmentsApi.js` rewrite covering all endpoints
+   - Full `useAssignments.js` rewrite: useAssignments, useAssignment, useCreateAssignment, useUpdateAssignment, useDeleteAssignment, useDuplicateAssignment, useTogglePublish, useValuationStudents, useUpsertGrade, useCompleteValuation
+
+5. **Routing (`App.jsx`):**
+   - Added `/app/assignments/new` and `/app/assignments/:id/edit` routes
+
+---
+
+*Log entry authored by Claude Code*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*
+*Timestamp: 2026-07-25T10:00 IST*
