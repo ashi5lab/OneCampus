@@ -33,6 +33,7 @@ import { LibraryPage } from './features/library/components/LibraryPage';
 import { AssignmentsPage } from './features/assignments/components/AssignmentsPage';
 import { AssignmentDetailPage } from './features/assignments/components/AssignmentDetailPage';
 import { AssignmentFormPage } from './features/assignments/components/AssignmentFormPage';
+import { AssignmentSuccessPage } from './features/assignments/components/AssignmentSuccessPage';
 import { OnlineExamDetailPage } from './features/onlineExams/components/OnlineExamDetailPage';
 import { ExamsPage } from './features/exams/components/ExamsPage';
 import { ReportsPage } from './features/reports/components/ReportsPage';
@@ -245,6 +246,7 @@ export default function App() {
         <Route path="assignments/new" element={<AssignmentFormPage />} />
         <Route path="assignments/:id" element={<AssignmentDetailPage />} />
         <Route path="assignments/:id/edit" element={<AssignmentFormPage />} />
+        <Route path="assignments/:id/success" element={<AssignmentSuccessPage />} />
         <Route path="online-exams/:id" element={<OnlineExamDetailPage />} />
         <Route
           path="reports"

@@ -612,6 +612,29 @@ async function submit(req, res) {
   }
 }
 
+// ─── activity log for a single assignment ────────────────────────────────────
+async function getActivity(req, res) {
+  try {
+    const { id } = req.params;
+    const { limit = 50, offset = 0 } = req.query;
+    const result = await req.db.query(
+      `SELECT al.id, al.action, al.details, al.created_at,
+              u.username, u.first_name, u.last_name
+       FROM onec_audit_logs al
+       LEFT JOIN onec_users u ON u.id = al.user_id
+       WHERE (al.details->>'assignment_id')::int = $1
+          OR (al.details->>'source_id')::int = $1
+       ORDER BY al.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [id, limit, offset]
+    );
+    res.json({ activity: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 // ─── grade (legacy — single submission update by submission id) ───────────────
 
 async function grade(req, res) {
@@ -636,5 +659,5 @@ async function grade(req, res) {
 module.exports = {
   listAssignments, getAssignment, createAssignment, updateAssignment,
   deleteAssignment, duplicateAssignment, togglePublish, getValuationStudents,
-  upsertGrade, completeValuation, listSubmissions, submit, grade,
+  upsertGrade, completeValuation, getActivity, listSubmissions, submit, grade,
 };

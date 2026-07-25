@@ -22,6 +22,9 @@ router.patch('/:id/complete', requirePermission('assignments.grade'),  controlle
 router.get('/:id/valuation',  requirePermission('assignments.grade'),  controller.getValuationStudents);
 router.post('/:id/grade',     requirePermission('assignments.grade'),  controller.upsertGrade);
 
+// Activity log
+router.get('/:id/activity',   requirePermission('assignments.view'),   controller.getActivity);
+
 // Learner submission (kept for learner self-view)
 router.get('/:id/submissions',                 requirePermission('assignments.view'),   controller.listSubmissions);
 router.post('/:id/submissions',                requirePermission('assignments.submit'), controller.submit);

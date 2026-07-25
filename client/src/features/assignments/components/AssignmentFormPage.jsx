@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +10,7 @@ import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useAllUsers } from '../../profile/hooks/useProfile';
 import { useAssignment, useCreateAssignment, useUpdateAssignment } from '../hooks/useAssignments';
 import { PageHeader } from '../../../components/PageHeader';
+import { Spinner } from '../../../components/Spinner';
 import { SearchSelect } from '../../../components/SearchSelect';
 import { MultiSearchSelect } from '../../../components/MultiSearchSelect';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
@@ -119,9 +120,9 @@ export function AssignmentFormPage() {
   const targetType = watch('target_type');
   const evalType = watch('eval_type');
 
-  const moduleOptions = (modulesData?.modules ?? []).map(m => ({ value: m.id, label: m.name }));
-  const cohortOptions = (cohortsData?.cohorts ?? []).map(c => ({ value: c.id, label: c.name }));
-  const allUsers = allUsersData?.users ?? [];
+  const moduleOptions = (modulesData?.data ?? []).map(m => ({ value: m.id, label: m.name }));
+  const cohortOptions = (cohortsData?.data ?? []).map(c => ({ value: c.id, label: c.name }));
+  const allUsers = allUsersData?.data ?? [];
   const learnerOptions = allUsers
     .filter(u => u.role === 'learner')
     .map(u => ({
@@ -149,8 +150,8 @@ export function AssignmentFormPage() {
     } else {
       createAssignment.mutate(payload, {
         onSuccess: (res) => {
-          showToast.success('Assignment created!');
-          navigate(`/app/assignments/${res.id ?? res.assignment?.id}`);
+          const newId = res.id ?? res.assignment?.id;
+          navigate(asDraft ? `/app/assignments/${newId}` : `/app/assignments/${newId}/success`);
         },
         onError: e => showToast.error(e.message),
       });
@@ -370,17 +371,19 @@ export function AssignmentFormPage() {
               type="button"
               disabled={isPending}
               onClick={handleSubmit(v => onSubmit(v, true))}
-              className="rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-ink-700 hover:bg-surface-muted disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-ink-700 hover:bg-surface-muted disabled:opacity-50"
             >
+              {isPending && <Spinner size="sm" />}
               Save as Draft
             </button>
           )}
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink disabled:opacity-50"
           >
-            {isPending ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Assignment'}
+            {isPending && <Spinner size="sm" />}
+            {isEdit ? 'Save Changes' : 'Create Assignment'}
           </button>
           <button
             type="button"

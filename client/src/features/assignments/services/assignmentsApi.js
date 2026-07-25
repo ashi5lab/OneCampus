@@ -15,6 +15,7 @@ export const assignmentsApi = {
     apiClient.post(`/assignments/${id}/grade`, payload).then(r => r.data),
   completeValuation: (id) =>
     apiClient.patch(`/assignments/${id}/complete`).then(r => r.data),
+  getActivity: (id) => apiClient.get(`/assignments/${id}/activity`).then(r => r.data),
   listSubmissions: (id) => apiClient.get(`/assignments/${id}/submissions`).then(r => r.data),
   submit: (id, payload) =>
     apiClient.post(`/assignments/${id}/submissions`, payload).then(r => r.data),

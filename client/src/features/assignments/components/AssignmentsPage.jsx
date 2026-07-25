@@ -5,6 +5,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { DataTable } from '../../../components/DataTable';
 import { PageHeader } from '../../../components/PageHeader';
 import { SearchSelect } from '../../../components/SearchSelect';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { useAssignments, useDeleteAssignment, useDuplicateAssignment } from '../hooks/useAssignments';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { AssignmentStatusBadge, PublishBadge } from './AssignmentStatusBadge';
@@ -29,6 +30,7 @@ export function AssignmentsPage() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [page, setPage] = useState(1);
+  const [confirmDelete, setConfirmDelete] = useState(null); // row to delete
   const pageSize = 20;
 
   const filters = { search, cohort_id: cohortId || undefined, status: status || undefined, from_date: fromDate || undefined, to_date: toDate || undefined, page, page_size: pageSize };
@@ -41,13 +43,12 @@ export function AssignmentsPage() {
   const assignments = data?.assignments ?? [];
   const total = data?.total ?? 0;
 
-  const cohortOptions = (cohortsData?.cohorts ?? []).map(c => ({ value: String(c.id), label: c.name }));
+  const cohortOptions = (cohortsData?.data ?? []).map(c => ({ value: String(c.id), label: c.name }));
 
-  function handleDelete(row) {
-    if (!window.confirm(`Delete "${row.title}"?`)) return;
-    deleteAssignment.mutate(row.id, {
-      onSuccess: () => showToast.success('Assignment deleted.'),
-      onError: (e) => showToast.error(e.message),
+  function handleDeleteConfirmed() {
+    deleteAssignment.mutate(confirmDelete.id, {
+      onSuccess: () => { showToast.success('Assignment deleted.'); setConfirmDelete(null); },
+      onError: (e) => { showToast.error(e.message); setConfirmDelete(null); },
     });
   }
 
@@ -103,7 +104,7 @@ export function AssignmentsPage() {
                 Duplicate
               </button>
               <button
-                onClick={() => handleDelete(row)}
+                onClick={() => setConfirmDelete(row)}
                 className="text-xs font-semibold text-danger hover:opacity-80"
               >
                 Delete
@@ -186,6 +187,16 @@ export function AssignmentsPage() {
           mobileCompact
         />
       </div>
+
+      {confirmDelete && (
+        <ConfirmDialog
+          message={`Delete "${confirmDelete.title}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={handleDeleteConfirmed}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   );
 }
