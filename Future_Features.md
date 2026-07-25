@@ -13,3 +13,4 @@ This document tracks features that have been ideated or partially designed but a
 
 ## Discipline & Behavior
 - **Behavior Point Mechanics:** Add more diverse point scenarios, including mechanisms for students to proactively increase their score (e.g., consistent attendance streaks, exceptional academic performance, extracurricular participation).
+- **Custom Badge System:** Add functionality to allow teachers/admins to create and award custom visual badges to students' profiles for specific achievements or behavior milestones.

@@ -161,16 +161,16 @@ export function LearnerProfilePage() {
 
   const behaviorStats = useMemo(() => {
     const records = Array.isArray(disciplineRecords) ? disciplineRecords : disciplineRecords?.data || [];
-    if (records.length === 0) return { score: 100, count: 0 };
+    if (records.length === 0) return { score: 800, count: 0 };
     
-    let score = 100;
+    let score = 800;
     records.forEach(r => {
       if (r.severity === 'positive') score += 5;
       if (r.severity === 'minor') score -= 2;
       if (r.severity === 'major') score -= 10;
     });
     return { 
-      score: Math.max(0, Math.min(100, score)),
+      score: Math.max(300, Math.min(850, score)),
       count: records.length
     };
   }, [disciplineRecords]);
@@ -267,7 +267,7 @@ export function LearnerProfilePage() {
                     </p>
                     <div className="inline-flex items-center gap-1.5 bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide">
                       <Smile className="w-3.5 h-3.5" />
-                      {behaviorStats.count === 0 ? 'No records yet' : behaviorStats.score >= 90 ? 'Excellent Behaviour' : behaviorStats.score >= 70 ? 'Good Behaviour' : 'Needs Improvement'}
+                      Behavior Score: {behaviorStats.score}
                     </div>
                   </div>
                 </div>

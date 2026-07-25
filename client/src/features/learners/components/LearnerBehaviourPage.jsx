@@ -62,7 +62,7 @@ export function LearnerBehaviourPage({ learnerId: propLearnerId, asTab = false }
     let positive = 0;
     let negative = 0;
     let warnings = 0;
-    let score = 100;
+    let score = 800;
 
     records.forEach(r => {
       const meta = SEVERITY_META[r.severity];
@@ -74,7 +74,7 @@ export function LearnerBehaviourPage({ learnerId: propLearnerId, asTab = false }
       }
     });
 
-    score = Math.max(0, Math.min(100, score));
+    score = Math.max(300, Math.min(850, score));
 
     return { positive, negative, warnings, score };
   }, [records]);

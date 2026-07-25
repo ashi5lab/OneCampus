@@ -1465,3 +1465,39 @@ Removed the `(total)` call and correctly destructured the pagination bounds. The
 *Log entry authored by Antigravity Agent*
 *Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
 *Timestamp: 2026-07-26T00:08 IST*
+
+---
+
+## Entry 014 — Behavior Score Refactor to Credit Score Model
+
+**Date:** 2026-07-26
+**Time:** ~00:30 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "lets keep behaviour score in a different way - lets keep score like credit score - default score is 800 for all users. on each updates this score gets + and - ."
+
+---
+
+### Architectural Shift
+
+The underlying mathematical model for behavior scoring has been decoupled from a standard academic percentage (0-100) and moved to a "credit score" emulation model (300-850 range).
+
+#### Changes Made
+- **`LearnerBehaviourPage.jsx` & `LearnerProfilePage.jsx`**:
+  - The starting base score is now **800** (was 100).
+  - The calculated score is now mathematically clamped via `Math.max(300, Math.min(850, score))` to enforce strict credit-score-like bounds.
+  - The visual badge threshold logic was rescaled:
+    - `>= 800`: Excellent Behaviour
+    - `>= 700`: Good Behaviour
+    - `>= 600`: Average Behaviour
+    - `< 600`: Needs Improvement
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-26T00:30 IST*
