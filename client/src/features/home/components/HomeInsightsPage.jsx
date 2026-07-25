@@ -93,9 +93,11 @@ export function HomeInsightsPage() {
     : [
         {
           icon: <ClipboardList className="w-5 h-5 text-emerald-600 stroke-[2.2]" />,
-          label: 'Attendance This Week',
-          value: report?.stats?.attendanceRate30d != null ? `${report.stats.attendanceRate30d}%` : '87%',
-          subtitle: 'Present • 13 / 15 days',
+          label: 'Attendance (30 days)',
+          value: report?.stats?.attendanceRate30d != null ? `${report.stats.attendanceRate30d}%` : '—',
+          subtitle: report?.stats?.marked_30d > 0
+            ? `Present • ${report.stats.present_30d} / ${report.stats.marked_30d} days`
+            : 'No attendance logged yet',
           color: 'emerald',
           viewAllTo: '/app/attendance',
           sparkline: true

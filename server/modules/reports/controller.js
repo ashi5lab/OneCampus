@@ -402,9 +402,12 @@ async function dashboardMine(req, res) {
 
     const [stats, academicByModule, dueAssignments, upcomingExams, ownLeave] = await Promise.all([
       req.db.query(
+        // Exception-based model: present = logged days − exception records.
+        // onec_cohort_attendance_logs counts days attendance was taken for
+        // the learner's cohort; onec_attendance only stores non-present rows.
         `SELECT
-           (SELECT COUNT(*) FILTER (WHERE status = 'present') FROM onec_attendance WHERE learner_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days') AS present_30d,
-           (SELECT COUNT(*) FROM onec_attendance WHERE learner_id = $1 AND date >= CURRENT_DATE - INTERVAL '30 days') AS marked_30d,
+           (SELECT COUNT(*) FROM onec_cohort_attendance_logs WHERE cohort_id = $2 AND date >= CURRENT_DATE - INTERVAL '30 days') AS marked_30d,
+           (SELECT COUNT(*) FROM onec_attendance WHERE learner_id = $1 AND status IN ('absent','late','excused') AND date >= CURRENT_DATE - INTERVAL '30 days') AS exceptions_30d,
            (SELECT COUNT(*) FROM onec_assignments a WHERE a.cohort_id = $2 AND a.due_date >= CURRENT_DATE) AS assignments_open,
            (SELECT COUNT(*) FROM onec_online_exams e WHERE e.cohort_id = $2 AND e.published = true) AS exams_published`,
         [learner.id, learner.cohort_id]
@@ -464,7 +467,13 @@ async function dashboardMine(req, res) {
     return res.json({
       data: {
         scope: 'learner',
-        stats: { ...row, attendanceRate30d: row.marked_30d > 0 ? Math.round((row.present_30d / row.marked_30d) * 1000) / 10 : null },
+        stats: {
+          ...row,
+          present_30d: Math.max(0, Number(row.marked_30d) - Number(row.exceptions_30d)),
+          attendanceRate30d: row.marked_30d > 0
+            ? Math.round(((Number(row.marked_30d) - Number(row.exceptions_30d)) / Number(row.marked_30d)) * 1000) / 10
+            : null
+        },
         academicByModule: academicByModule.rows,
         pendingActions
       }
@@ -476,19 +485,22 @@ async function dashboardMine(req, res) {
     if (!learnerIds || learnerIds.length === 0) return res.json({ data: { scope: 'guardian', children: [] } });
 
     const result = await req.db.query(
-      `SELECT l.id, l.first_name, l.last_name,
-              COUNT(a.*) FILTER (WHERE a.status = 'present' AND a.date >= CURRENT_DATE - INTERVAL '30 days') AS present_30d,
-              COUNT(a.*) FILTER (WHERE a.date >= CURRENT_DATE - INTERVAL '30 days') AS marked_30d
+      `SELECT l.id, l.first_name, l.last_name, l.cohort_id,
+              (SELECT COUNT(*) FROM onec_cohort_attendance_logs WHERE cohort_id = l.cohort_id AND date >= CURRENT_DATE - INTERVAL '30 days') AS marked_30d,
+              (SELECT COUNT(*) FROM onec_attendance a WHERE a.learner_id = l.id AND a.status IN ('absent','late','excused') AND a.date >= CURRENT_DATE - INTERVAL '30 days') AS exceptions_30d
        FROM onec_learners l
-       LEFT JOIN onec_attendance a ON a.learner_id = l.id
-       WHERE l.id = ANY($1::int[])
-       GROUP BY l.id, l.first_name, l.last_name`,
+       WHERE l.id = ANY($1::int[])`,
       [learnerIds]
     );
-    const children = result.rows.map((row) => ({
-      ...row,
-      attendanceRate30d: row.marked_30d > 0 ? Math.round((row.present_30d / row.marked_30d) * 1000) / 10 : null
-    }));
+    const children = result.rows.map((row) => {
+      const marked = Number(row.marked_30d);
+      const exceptions = Number(row.exceptions_30d);
+      return {
+        ...row,
+        present_30d: Math.max(0, marked - exceptions),
+        attendanceRate30d: marked > 0 ? Math.round(((marked - exceptions) / marked) * 1000) / 10 : null
+      };
+    });
     return res.json({ data: { scope: 'guardian', children } });
   }
 

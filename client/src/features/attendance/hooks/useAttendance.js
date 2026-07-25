@@ -44,6 +44,17 @@ export function useMarkAttendance() {
   });
 }
 
+// Per-cohort "marked/pending" status for a given date — powers the class
+// picker cards. Returns an array of { cohort_id, present_count, absent_count,
+// late_count, total_learners } for cohorts whose attendance was logged.
+export function useCohortAttendanceLogs(date) {
+  return useQuery({
+    queryKey: ['attendance', 'logs', date],
+    queryFn: () => attendanceApi.getLogs(date),
+    enabled: !!date
+  });
+}
+
 export function useMarkAttendanceBulk() {
   const queryClient = useQueryClient();
   return useMutation({

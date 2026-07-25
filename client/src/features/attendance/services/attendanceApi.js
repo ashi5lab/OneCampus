@@ -21,6 +21,11 @@ export const attendanceApi = {
     if (cohortIds.length > 0) params.set('cohort_ids', cohortIds.join(','));
     return apiClient.get(`/attendance/absentee-report?${params.toString()}`).then((res) => res.data);
   },
+  getLogs: (date) => {
+    const params = new URLSearchParams();
+    if (date) params.set('date', date);
+    return apiClient.get(`/attendance/logs?${params.toString()}`).then((res) => res.data);
+  },
   mark: (payload) => apiClient.post('/attendance', payload).then((res) => res.data),
   markBulk: (payload) => apiClient.post('/attendance/bulk', payload).then((res) => res.data)
 };
