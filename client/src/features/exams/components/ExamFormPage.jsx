@@ -8,21 +8,20 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useModules } from '../../modules/hooks/useModules';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners } from '../../learners/hooks/useLearners';
-import { useAssignment, useCreateAssignment, useUpdateAssignment } from '../hooks/useAssignments';
+import { useInstructors } from '../../instructors/hooks/useInstructors';
+import { useExam, useCreateExam, useUpdateExam } from '../hooks/useExams';
 import { PageHeader } from '../../../components/PageHeader';
 import { Spinner } from '../../../components/Spinner';
 import { SearchSelect } from '../../../components/SearchSelect';
 import { MultiSearchSelect } from '../../../components/MultiSearchSelect';
 import { MultiUserSearchSelect, UserSearchSelect } from '../../../components/UserSearchSelect';
-import { useInstructors } from '../../instructors/hooks/useInstructors';
 import { showToast } from '../../../lib/toast';
 
-// ─── Zod schema ──────────────────────────────────────────────────────────────
 const schema = z.object({
-  title:        z.string().min(1, 'Title is required'),
+  title:        z.string().min(1, 'Exam name is required'),
   description:  z.string().optional(),
   module_id:    z.coerce.number({ invalid_type_error: 'Choose a subject' }).int().positive('Choose a subject'),
-  due_date:     z.string().min(1, 'Due date is required'),
+  exam_date:    z.string().min(1, 'Exam date is required'),
   taken_by:     z.coerce.number().int().optional().nullable(),
   target_type:  z.enum(['class', 'specific_students']),
   cohort_ids:   z.array(z.coerce.number()).optional(),
@@ -44,7 +43,6 @@ const schema = z.object({
   }
 });
 
-// ─── Small helpers ────────────────────────────────────────────────────────────
 function Field({ label, error, children, hint }) {
   return (
     <div className="mb-4">
@@ -58,22 +56,21 @@ function Field({ label, error, children, hint }) {
 
 const GRADE_OPTIONS = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'].map(g => ({ value: g, label: g }));
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-export function AssignmentFormPage() {
+export function ExamFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useConfig();
   const { user } = useAuth();
   const isEdit = !!id;
 
-  const { data: existing, isLoading: loadingExisting } = useAssignment(id);
+  const { data: existing, isLoading: loadingExisting } = useExam(id);
   const { data: modulesData } = useModules();
   const { data: cohortsData } = useCohorts();
   const { data: learnersData } = useLearners();
   const { data: instructorsData } = useInstructors();
 
-  const createAssignment = useCreateAssignment();
-  const updateAssignment = useUpdateAssignment();
+  const createExam = useCreateExam();
+  const updateExam = useUpdateExam();
 
   const {
     register,
@@ -81,14 +78,14 @@ export function AssignmentFormPage() {
     handleSubmit,
     watch,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       title: '',
       description: '',
       module_id: '',
-      due_date: '',
+      exam_date: '',
       taken_by: user?.userId ?? null,
       target_type: 'class',
       cohort_ids: [],
@@ -101,14 +98,13 @@ export function AssignmentFormPage() {
     },
   });
 
-  // Pre-fill form when editing
   useEffect(() => {
     if (isEdit && existing) {
       reset({
         title: existing.title ?? '',
         description: existing.description ?? '',
         module_id: existing.module_id ?? '',
-        due_date: existing.due_date ? existing.due_date.slice(0, 10) : '',
+        exam_date: existing.exam_date ? existing.exam_date.slice(0, 10) : '',
         taken_by: existing.taken_by ?? user?.userId ?? null,
         target_type: existing.target_type ?? 'class',
         cohort_ids: existing.cohort_ids ?? [],
@@ -120,23 +116,25 @@ export function AssignmentFormPage() {
         instructions: existing.instructions ?? '',
       });
     }
-  }, [isEdit, existing, reset]);
+  }, [isEdit, existing, reset, user?.userId]);
 
   const targetType = watch('target_type');
   const evalType = watch('eval_type');
 
   const moduleOptions = (modulesData?.data ?? modulesData ?? []).map(m => ({ value: m.id, label: m.name }));
   const cohortOptions = (cohortsData?.data ?? cohortsData ?? []).map(c => ({ value: c.id, label: c.name }));
-  const allInstructors = (instructorsData ?? []).map(i => ({
-    id: i.user_id,
-    name: `${i.first_name} ${i.last_name}`,
-    role: 'instructor'
-  }));
-  const allUsers = (learnersData?.data ?? learnersData ?? []).map(l => ({
+
+  const allStudents = (learnersData?.data ?? learnersData ?? []).map(l => ({
     id: l.user_id,
     name: `${l.first_name} ${l.last_name}`,
     cohort_name: l.cohort_name,
     role: 'learner'
+  }));
+
+  const allInstructors = (instructorsData?.data ?? instructorsData ?? []).map(i => ({
+    id: i.user_id,
+    name: `${i.first_name} ${i.last_name}`,
+    role: 'instructor'
   }));
 
   async function onSubmit(values, asDraft = false) {
@@ -146,33 +144,33 @@ export function AssignmentFormPage() {
     if (payload.target_type === 'specific_students') delete payload.cohort_ids;
 
     if (isEdit) {
-      updateAssignment.mutate(
+      updateExam.mutate(
         { id, payload },
         {
           onSuccess: () => {
-            showToast.success('Assignment updated.');
-            navigate(`/app/assignments/${id}`);
+            showToast.success('Exam updated.');
+            navigate(`/app/exams/${id}`);
           },
           onError: e => showToast.error(e.message),
         }
       );
     } else {
-      createAssignment.mutate(payload, {
+      createExam.mutate(payload, {
         onSuccess: (res) => {
-          const newId = res.id ?? res.assignment?.id;
-          navigate(asDraft ? `/app/assignments/${newId}` : `/app/assignments/${newId}/success`);
+          const newId = res.id ?? res.exam?.id;
+          navigate(asDraft ? `/app/exams/${newId}` : `/app/exams/${newId}/success`);
         },
         onError: e => showToast.error(e.message),
       });
     }
   }
 
-  const isPending = createAssignment.isPending || updateAssignment.isPending;
+  const isPending = createExam.isPending || updateExam.isPending;
 
   if (isEdit && loadingExisting) {
     return (
       <div>
-        <PageHeader back title="Edit Assignment" />
+        <PageHeader back title="Edit Exam" />
         <div className="p-8 text-center text-sm text-ink-500">Loading…</div>
       </div>
     );
@@ -183,8 +181,8 @@ export function AssignmentFormPage() {
       <PageHeader
         back
         onBack={() => navigate(-1)}
-        eyebrow="Assignments"
-        title={isEdit ? 'Edit Assignment' : 'New Assignment'}
+        eyebrow="Exams"
+        title={isEdit ? 'Edit Exam' : 'New Exam'}
       />
 
       <form
@@ -198,58 +196,57 @@ export function AssignmentFormPage() {
             <section className="rounded border border-border bg-surface p-6">
               <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Basics</h2>
 
-          <Field label="Assignment Title" error={errors.title}>
-            <input
-              className="input"
-              placeholder="e.g. Chapter 5 Problem Set"
-              {...register('title')}
-            />
-          </Field>
-
-          <Field label="Subject" error={errors.module_id}>
-            <Controller
-              name="module_id"
-              control={control}
-              render={({ field }) => (
-                <SearchSelect
-                  options={moduleOptions}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Select subject…"
+              <Field label="Exam Name" error={errors.title}>
+                <input
+                  className="input"
+                  placeholder="e.g. Mid-Term Mathematics"
+                  {...register('title')}
                 />
-              )}
-            />
-          </Field>
+              </Field>
 
-          <Field label="Due Date" error={errors.due_date}>
-            <input type="date" className="input" {...register('due_date')} />
-          </Field>
-
-          <Field label="Taken By" error={errors.taken_by}>
-            <Controller
-              name="taken_by"
-              control={control}
-              render={({ field }) => (
-                <UserSearchSelect
-                  users={allInstructors}
-                  roles={['instructor']}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Search instructor…"
-                  showRole={false}
+              <Field label="Subject" error={errors.module_id}>
+                <Controller
+                  name="module_id"
+                  control={control}
+                  render={({ field }) => (
+                    <SearchSelect
+                      options={moduleOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select subject…"
+                    />
+                  )}
                 />
-              )}
-            />
-          </Field>
+              </Field>
 
-          <Field label="Description" error={errors.description}>
-            <textarea
-              className="input resize-none"
-              rows={3}
-              placeholder="Brief description (optional)"
-              {...register('description')}
-            />
-          </Field>
+              <Field label="Date" error={errors.exam_date}>
+                <input type="date" className="input" {...register('exam_date')} />
+              </Field>
+
+              <Field label="Taken By" error={errors.taken_by}>
+                <Controller
+                  name="taken_by"
+                  control={control}
+                  render={({ field }) => (
+                    <UserSearchSelect
+                      users={allInstructors}
+                      roles={['instructor']}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Search instructor…"
+                    />
+                  )}
+                />
+              </Field>
+
+              <Field label="Description" error={errors.description}>
+                <textarea
+                  className="input resize-none"
+                  rows={3}
+                  placeholder="Brief description (optional)"
+                  {...register('description')}
+                />
+              </Field>
             </section>
 
             {/* ── Section: Instructions ───────────────────────────── */}
@@ -272,130 +269,130 @@ export function AssignmentFormPage() {
             <section className="rounded border border-border bg-surface p-6">
               <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Target Audience</h2>
 
-          <Field label="Assign to" error={errors.target_type}>
-            <Controller
-              name="target_type"
-              control={control}
-              render={({ field }) => (
-                <div className="flex gap-3">
-                  {[
-                    { value: 'class', label: 'Class(es)' },
-                    { value: 'specific_students', label: 'Specific Students' },
-                  ].map(opt => (
-                    <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-                      <input
-                        type="radio"
-                        value={opt.value}
-                        checked={field.value === opt.value}
-                        onChange={() => field.onChange(opt.value)}
-                        className="accent-accent"
+              <Field label="Assign to" error={errors.target_type}>
+                <Controller
+                  name="target_type"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="flex gap-3">
+                      {[
+                        { value: 'class', label: 'Class(es)' },
+                        { value: 'specific_students', label: 'Specific Students' },
+                      ].map(opt => (
+                        <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                          <input
+                            type="radio"
+                            value={opt.value}
+                            checked={field.value === opt.value}
+                            onChange={() => field.onChange(opt.value)}
+                            className="accent-accent"
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                />
+              </Field>
+
+              {targetType === 'class' && (
+                <Field label="Classes" error={errors.cohort_ids}>
+                  <Controller
+                    name="cohort_ids"
+                    control={control}
+                    render={({ field }) => (
+                      <MultiSearchSelect
+                        options={cohortOptions}
+                        values={field.value ?? []}
+                        onChange={field.onChange}
+                        placeholder="Search and select classes…"
                       />
-                      {opt.label}
-                    </label>
-                  ))}
-                </div>
+                    )}
+                  />
+                </Field>
               )}
-            />
-          </Field>
 
-          {targetType === 'class' && (
-            <Field label="Classes" error={errors.cohort_ids}>
-              <Controller
-                name="cohort_ids"
-                control={control}
-                render={({ field }) => (
-                  <MultiSearchSelect
-                    options={cohortOptions}
-                    values={field.value ?? []}
-                    onChange={field.onChange}
-                    placeholder="Search and select classes…"
+              {targetType === 'specific_students' && (
+                <Field
+                  label="Students"
+                  error={errors.student_user_ids}
+                  hint="Search and select individual students. Class is not applicable."
+                >
+                  <Controller
+                    name="student_user_ids"
+                    control={control}
+                    render={({ field }) => (
+                      <MultiUserSearchSelect
+                        users={allStudents}
+                        roles={['learner']}
+                        values={field.value ?? []}
+                        onChange={field.onChange}
+                        placeholder="Search students by name…"
+                        showRole={false}
+                      />
+                    )}
                   />
-                )}
-              />
-            </Field>
-          )}
-
-          {targetType === 'specific_students' && (
-            <Field
-              label="Students"
-              error={errors.student_user_ids}
-              hint="Search and select individual students. Class is not applicable."
-            >
-              <Controller
-                name="student_user_ids"
-                control={control}
-                render={({ field }) => (
-                  <MultiUserSearchSelect
-                    users={allUsers}
-                    roles={['learner']}
-                    values={field.value ?? []}
-                    onChange={field.onChange}
-                    placeholder="Search students by name…"
-                    showRole={false}
-                  />
-                )}
-              />
-            </Field>
-          )}
+                </Field>
+              )}
             </section>
 
             {/* ── Section: Evaluation ─────────────────────────────── */}
             <section className="rounded border border-border bg-surface p-6">
               <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Evaluation</h2>
 
-          <Field label="Evaluation Type" error={errors.eval_type}>
-            <Controller
-              name="eval_type"
-              control={control}
-              render={({ field }) => (
-                <div className="flex gap-3">
-                  {[
-                    { value: 'marks', label: 'Marks' },
-                    { value: 'grades', label: 'Grades' },
-                  ].map(opt => (
-                    <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-                      <input
-                        type="radio"
-                        value={opt.value}
-                        checked={field.value === opt.value}
-                        onChange={() => field.onChange(opt.value)}
-                        className="accent-accent"
-                      />
-                      {opt.label}
-                    </label>
-                  ))}
+              <Field label="Evaluation Type" error={errors.eval_type}>
+                <Controller
+                  name="eval_type"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="flex gap-3">
+                      {[
+                        { value: 'marks', label: 'Marks' },
+                        { value: 'grades', label: 'Grades' },
+                      ].map(opt => (
+                        <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                          <input
+                            type="radio"
+                            value={opt.value}
+                            checked={field.value === opt.value}
+                            onChange={() => field.onChange(opt.value)}
+                            className="accent-accent"
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                />
+              </Field>
+
+              {evalType === 'marks' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Max Marks" error={errors.max_score}>
+                    <input type="number" className="input" min={1} {...register('max_score')} />
+                  </Field>
+                  <Field label="Passing Marks" error={errors.passing_marks}>
+                    <input type="number" className="input" min={0} {...register('passing_marks')} />
+                  </Field>
                 </div>
               )}
-            />
-          </Field>
 
-          {evalType === 'marks' && (
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Max Marks" error={errors.max_score}>
-                <input type="number" className="input" min={1} {...register('max_score')} />
-              </Field>
-              <Field label="Passing Marks" error={errors.passing_marks}>
-                <input type="number" className="input" min={0} {...register('passing_marks')} />
-              </Field>
-            </div>
-          )}
-
-          {evalType === 'grades' && (
-            <Field label="Pass Grade" error={errors.pass_grade}>
-              <Controller
-                name="pass_grade"
-                control={control}
-                render={({ field }) => (
-                  <SearchSelect
-                    options={GRADE_OPTIONS}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Minimum passing grade…"
+              {evalType === 'grades' && (
+                <Field label="Pass Grade" error={errors.pass_grade}>
+                  <Controller
+                    name="pass_grade"
+                    control={control}
+                    render={({ field }) => (
+                      <SearchSelect
+                        options={GRADE_OPTIONS}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Minimum passing grade…"
+                      />
+                    )}
                   />
-                )}
-              />
-            </Field>
-          )}
+                </Field>
+              )}
             </section>
           </div>
         </div>
@@ -419,7 +416,7 @@ export function AssignmentFormPage() {
             className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink disabled:opacity-50"
           >
             {isPending && <Spinner size="sm" />}
-            {isEdit ? 'Save Changes' : 'Create Assignment'}
+            {isEdit ? 'Save Changes' : 'Create Exam'}
           </button>
           <button
             type="button"

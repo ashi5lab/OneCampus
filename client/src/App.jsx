@@ -34,8 +34,10 @@ import { AssignmentsPage } from './features/assignments/components/AssignmentsPa
 import { AssignmentDetailPage } from './features/assignments/components/AssignmentDetailPage';
 import { AssignmentFormPage } from './features/assignments/components/AssignmentFormPage';
 import { AssignmentSuccessPage } from './features/assignments/components/AssignmentSuccessPage';
-import { OnlineExamDetailPage } from './features/onlineExams/components/OnlineExamDetailPage';
 import { ExamsPage } from './features/exams/components/ExamsPage';
+import { ExamFormPage } from './features/exams/components/ExamFormPage';
+import { ExamDetailPage } from './features/exams/components/ExamDetailPage';
+import { ExamSuccessPage } from './features/exams/components/ExamSuccessPage';
 import { ReportsPage } from './features/reports/components/ReportsPage';
 import { ProfilePage } from './features/profile/components/ProfilePage';
 import { ManageDashboardAppsPage } from './features/sidebarSettings/components/ManageDashboardAppsPage';
@@ -235,6 +237,10 @@ export default function App() {
           }
         />
         <Route path="exams" element={<ExamsPage />} />
+        <Route path="exams/new" element={<ExamFormPage />} />
+        <Route path="exams/:id" element={<ExamDetailPage />} />
+        <Route path="exams/:id/edit" element={<ExamFormPage />} />
+        <Route path="exams/:id/success" element={<ExamSuccessPage />} />
         <Route path="evaluations/:id" element={<EvaluationDetailPage />} />
         <Route path="evaluations/schedules/:scheduleId/scores" element={<ScoreEntryPage />} />
         <Route path="certificates" element={<CertificatesPage />} />
@@ -247,7 +253,6 @@ export default function App() {
         <Route path="assignments/:id" element={<AssignmentDetailPage />} />
         <Route path="assignments/:id/edit" element={<AssignmentFormPage />} />
         <Route path="assignments/:id/success" element={<AssignmentSuccessPage />} />
-        <Route path="online-exams/:id" element={<OnlineExamDetailPage />} />
         <Route
           path="reports"
           element={

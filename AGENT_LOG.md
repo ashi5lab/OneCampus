@@ -1589,3 +1589,63 @@ The underlying mathematical model for behavior scoring has been decoupled from a
 *Log entry authored by Claude Code*
 *Session: 1038c693-05cb-5db2-aad9-142777098a43*
 *Timestamp: 2026-07-25T10:00 IST*
+
+---
+
+## Entry 019 — Exams Module Implementation + Taken By Field for Assignments
+
+**Date:** 2026-07-25
+**Time:** ~21:30 IST
+**Session ID:** 1038c693-05cb-5db2-aad9-142777098a43
+**Branch:** claude/attendance-search-class-list-i50jbb
+**PR:** https://github.com/ashi5lab/OneCampus/pull/118
+
+### User Request
+> "Take pull from the main - latest. Same as what we did for assignment module - implement for exams module. Remove online exam and any other things we have now. We will reuse the assignment module for exam also with small tweaks. Exams is the title we need. Other all fields are same - make it exam specific - like exam name, subjects, instead of due date make it date, add taken by (teachers name as autocomplete search - use our reusable component usersearchselect) - by default it will be the logged in user. Also - in Assignments we forgot to add taken by, as we are using for exams - add for assignments also same."
+
+### Files Created
+
+1. **`server/migrations/041_add_exams.sql`**
+   - Adds `taken_by INT REFERENCES onec_users(id)` to `onec_assignments`, backfilled from `created_by`
+   - Creates `onec_exams` table: id, title, description, module_id, exam_date DATE, eval_type, max_score, passing_marks, pass_grade, instructions, target_type, status, publish_marks, taken_by, created_by, created_at
+   - Creates `onec_exam_cohorts` (exam_id, cohort_id)
+   - Creates `onec_exam_target_students` (exam_id, learner_id)
+   - Creates `onec_exam_submissions` with UNIQUE(exam_id, learner_id)
+   - Performance indexes on all FK columns
+
+2. **`server/modules/exams/controller.js`** — Full exam CRUD + valuation
+3. **`server/modules/exams/routes.js`** — Gated by `exams.view/manage/grade` permissions
+4. **`client/src/features/exams/services/examsApi.js`**
+5. **`client/src/features/exams/hooks/useExams.js`** — Full React Query hooks
+6. **`client/src/features/exams/components/ExamStatusBadge.jsx`**
+7. **`client/src/features/exams/components/ExamsPage.jsx`**
+8. **`client/src/features/exams/components/ExamFormPage.jsx`**
+9. **`client/src/features/exams/components/ExamDetailPage.jsx`**
+10. **`client/src/features/exams/components/ExamSuccessPage.jsx`**
+11. **`client/src/features/exams/components/ClassExamsTab.jsx`**
+
+### Files Modified
+
+- **`server/server.js`** — Replaced online-exams route with `/api/v1/exams`
+- **`server/modules/assignments/controller.js`** — Added `taken_by` column to schema, INSERT, UPDATE, duplicate
+- **`server/lib/permissions.js`** — Added `exams.view`, `exams.manage`, `exams.grade` to ALL_PERMISSIONS
+- **`client/src/App.jsx`** — Added exams routes; removed online-exams route
+- **`client/src/features/assignments/components/AssignmentFormPage.jsx`** — Added "Taken By" field
+- **`client/src/features/assignments/components/AssignmentDetailPage.jsx`** — Shows `taken_by_name`
+- **`client/src/features/classChannel/components/ClassChannel.jsx`** — Switched to ClassExamsTab
+- **`client/src/lib/sidebarLinks.js`** — Exams gate uses `exams.view`
+
+### Key Design Decisions
+- Exams is a full clone of Assignments with `exam_date` instead of `due_date`
+- `taken_by` defaults to logged-in user (`req.user.userId`) on both Exams and Assignments
+- Online Exams module routes replaced entirely (the old `onlineExams/` client directory left untouched)
+- Fixed parameter collision bug: `updateAssignment` had `taken_by=$12` and `WHERE id=$12` — fixed to `WHERE id=$13`
+
+### Build Status
+Build verified: ✓ 2288 modules transformed, no new errors
+
+---
+
+*Log entry authored by Claude Code*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*
+*Timestamp: 2026-07-25T21:30 IST*

@@ -21,7 +21,7 @@ export const NAV_LINK_DEFS = [
     to: '/app/exams',
     label: () => 'Exams',
     description: () => 'Exam schedule & results',
-    gate: (can, hasModule) => (hasModule('exams') && can('evaluations.view')) || can('online_exams.view')
+    gate: (can, hasModule) => can('exams.view') || (hasModule('exams') && can('evaluations.view'))
   },
   { key: 'certificates', to: '/app/certificates', label: () => 'Certificates', description: () => 'Issue & print certificates', gate: (can, hasModule) => hasModule('certificates') && can('certificates.view') },
   {

@@ -6,11 +6,11 @@ const { hasPermission } = require('../../lib/permissions');
 
 const GRADE_VALUES = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'];
 
-const assignmentSchema = z.object({
-  title:         z.string().min(1, 'Title is required'),
+const examSchema = z.object({
+  title:         z.string().min(1, 'Exam name is required'),
   description:   z.string().optional().nullable(),
   module_id:     z.number().int('Subject is required'),
-  due_date:      z.string().min(1, 'Due date is required'),
+  exam_date:     z.string().min(1, 'Exam date is required'),
   eval_type:     z.enum(['marks', 'grades']).default('marks'),
   max_score:     z.number().optional().nullable(),
   passing_marks: z.number().optional().nullable(),
@@ -41,52 +41,52 @@ async function resolveUserIdsToLearnerIds(db, userIds) {
   return res.rows.map(r => r.id);
 }
 
-async function syncAssignmentCohorts(db, assignmentId, cohortIds) {
-  await db.query('DELETE FROM onec_assignment_cohorts WHERE assignment_id = $1', [assignmentId]);
+async function syncExamCohorts(db, examId, cohortIds) {
+  await db.query('DELETE FROM onec_exam_cohorts WHERE exam_id = $1', [examId]);
   if (cohortIds.length > 0) {
     const vals = cohortIds.map((cid, i) => `($1, $${i + 2})`).join(', ');
     await db.query(
-      `INSERT INTO onec_assignment_cohorts (assignment_id, cohort_id) VALUES ${vals}`,
-      [assignmentId, ...cohortIds]
+      `INSERT INTO onec_exam_cohorts (exam_id, cohort_id) VALUES ${vals}`,
+      [examId, ...cohortIds]
     );
   }
 }
 
-async function syncTargetStudents(db, assignmentId, learnerIds) {
-  await db.query('DELETE FROM onec_assignment_target_students WHERE assignment_id = $1', [assignmentId]);
+async function syncTargetStudents(db, examId, learnerIds) {
+  await db.query('DELETE FROM onec_exam_target_students WHERE exam_id = $1', [examId]);
   if (learnerIds.length > 0) {
     const vals = learnerIds.map((lid, i) => `($1, $${i + 2})`).join(', ');
     await db.query(
-      `INSERT INTO onec_assignment_target_students (assignment_id, learner_id) VALUES ${vals}`,
-      [assignmentId, ...learnerIds]
+      `INSERT INTO onec_exam_target_students (exam_id, learner_id) VALUES ${vals}`,
+      [examId, ...learnerIds]
     );
   }
 }
 
-// Rich base SELECT used by listAssignments and getAssignment
+// Rich base SELECT used by listExams and getExam
 const BASE_SELECT = `
-  SELECT a.id, a.title, a.description, a.module_id, a.due_date::text AS due_date,
-         a.max_score, a.passing_marks, a.pass_grade, a.eval_type, a.status,
-         a.target_type, a.instructions, a.publish_marks, a.created_at, a.created_by, a.taken_by,
+  SELECT e.id, e.title, e.description, e.module_id, e.exam_date::text AS exam_date,
+         e.max_score, e.passing_marks, e.pass_grade, e.eval_type, e.status,
+         e.target_type, e.instructions, e.publish_marks, e.created_at, e.created_by, e.taken_by,
          m.name AS subject_name,
          u.username AS created_by_username,
          COALESCE(inst.first_name || ' ' || inst.last_name, u.username) AS created_by_name,
          COALESCE(tb_inst.first_name || ' ' || tb_inst.last_name, tb_u.username) AS taken_by_name,
          STRING_AGG(DISTINCT c.name, ', ' ORDER BY c.name) AS class_names,
-         ARRAY_AGG(DISTINCT ac.cohort_id) FILTER (WHERE ac.cohort_id IS NOT NULL) AS cohort_ids
-  FROM   onec_assignments a
-  LEFT JOIN onec_modules      m      ON a.module_id  = m.id
-  LEFT JOIN onec_users        u      ON a.created_by = u.id
-  LEFT JOIN onec_instructors  inst   ON inst.user_id  = a.created_by
-  LEFT JOIN onec_users        tb_u   ON a.taken_by    = tb_u.id
-  LEFT JOIN onec_instructors  tb_inst ON tb_inst.user_id = a.taken_by
-  LEFT JOIN onec_assignment_cohorts ac ON ac.assignment_id = a.id
-  LEFT JOIN onec_cohorts    c   ON ac.cohort_id  = c.id
+         ARRAY_AGG(DISTINCT ec.cohort_id) FILTER (WHERE ec.cohort_id IS NOT NULL) AS cohort_ids
+  FROM   onec_exams e
+  LEFT JOIN onec_modules      m      ON e.module_id  = m.id
+  LEFT JOIN onec_users        u      ON e.created_by = u.id
+  LEFT JOIN onec_instructors  inst   ON inst.user_id  = e.created_by
+  LEFT JOIN onec_users        tb_u   ON e.taken_by    = tb_u.id
+  LEFT JOIN onec_instructors  tb_inst ON tb_inst.user_id = e.taken_by
+  LEFT JOIN onec_exam_cohorts ec     ON ec.exam_id    = e.id
+  LEFT JOIN onec_cohorts      c      ON ec.cohort_id  = c.id
 `;
 
-// ─── listAssignments ─────────────────────────────────────────────────────────
+// ─── listExams ───────────────────────────────────────────────────────────────
 
-async function listAssignments(req, res) {
+async function listExams(req, res) {
   try {
     const { pagination, error } = parsePagination(req.query);
     if (error) return res.status(400).json({ error: 'Invalid pagination parameters', details: error });
@@ -104,11 +104,11 @@ async function listAssignments(req, res) {
         : { rows: [] };
       const cid = cohortRes.rows[0]?.cohort_id ?? -1;
       params.push(cid);
-      conditions.push(`ac.cohort_id = $${params.length}`);
+      conditions.push(`ec.cohort_id = $${params.length}`);
     } else if (!canViewAll && req.user.role === 'instructor') {
       if (!req.tenantConfig?.config?.rules?.global_teacher_visibility) {
         params.push(req.user.userId);
-        conditions.push(`(a.created_by = $${params.length} OR ac.cohort_id IN (
+        conditions.push(`(e.created_by = $${params.length} OR e.taken_by = $${params.length} OR ec.cohort_id IN (
           SELECT ic.cohort_id FROM onec_instructor_cohorts ic
           JOIN onec_instructors i ON ic.instructor_id = i.id
           WHERE i.user_id = $${params.length}
@@ -119,33 +119,31 @@ async function listAssignments(req, res) {
     if (search) {
       params.push(`%${search}%`);
       const p = params.length;
-      conditions.push(`(a.title ILIKE $${p} OR m.name ILIKE $${p} OR u.username ILIKE $${p} OR c.name ILIKE $${p})`);
+      conditions.push(`(e.title ILIKE $${p} OR m.name ILIKE $${p} OR u.username ILIKE $${p} OR c.name ILIKE $${p})`);
     }
     if (cohort_id) {
       params.push(cohort_id);
-      conditions.push(`ac.cohort_id = $${params.length}`);
+      conditions.push(`ec.cohort_id = $${params.length}`);
     }
     if (status) {
       params.push(status);
-      conditions.push(`a.status = $${params.length}`);
+      conditions.push(`e.status = $${params.length}`);
     }
     if (from_date) {
       params.push(from_date);
-      conditions.push(`a.due_date >= $${params.length}`);
+      conditions.push(`e.exam_date >= $${params.length}`);
     }
     if (to_date) {
       params.push(to_date);
-      conditions.push(`a.due_date <= $${params.length}`);
+      conditions.push(`e.exam_date <= $${params.length}`);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    const groupBy = 'GROUP BY a.id, m.name, u.username, inst.first_name, inst.last_name, tb_u.username, tb_inst.first_name, tb_inst.last_name';
-
-    const baseQuery = `${BASE_SELECT} LEFT JOIN onec_modules m2 ON m2.id = a.module_id ${where} ${groupBy}`;
+    const groupBy = 'GROUP BY e.id, m.name, u.username, inst.first_name, inst.last_name, tb_u.username, tb_inst.first_name, tb_inst.last_name';
 
     if (!pagination) {
       const result = await req.db.query(
-        `${BASE_SELECT} ${where} ${groupBy} ORDER BY a.created_at DESC`,
+        `${BASE_SELECT} ${where} ${groupBy} ORDER BY e.created_at DESC`,
         params
       );
       return res.json({ data: result.rows });
@@ -154,19 +152,19 @@ async function listAssignments(req, res) {
     const { page, pageSize, limit, offset } = pagination;
 
     const countResult = await req.db.query(
-      `SELECT COUNT(DISTINCT a.id)
-       FROM onec_assignments a
-       LEFT JOIN onec_modules m ON a.module_id = m.id
-       LEFT JOIN onec_users u ON a.created_by = u.id
-       LEFT JOIN onec_assignment_cohorts ac ON ac.assignment_id = a.id
-       LEFT JOIN onec_cohorts c ON ac.cohort_id = c.id
+      `SELECT COUNT(DISTINCT e.id)
+       FROM onec_exams e
+       LEFT JOIN onec_modules m ON e.module_id = m.id
+       LEFT JOIN onec_users u ON e.created_by = u.id
+       LEFT JOIN onec_exam_cohorts ec ON ec.exam_id = e.id
+       LEFT JOIN onec_cohorts c ON ec.cohort_id = c.id
        ${where}`,
       params
     );
     const total = parseInt(countResult.rows[0].count, 10);
 
     const result = await req.db.query(
-      `${BASE_SELECT} ${where} ${groupBy} ORDER BY a.created_at DESC
+      `${BASE_SELECT} ${where} ${groupBy} ORDER BY e.created_at DESC
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, limit, offset]
     );
@@ -178,62 +176,60 @@ async function listAssignments(req, res) {
   }
 }
 
-// ─── getAssignment ───────────────────────────────────────────────────────────
+// ─── getExam ─────────────────────────────────────────────────────────────────
 
-async function getAssignment(req, res) {
+async function getExam(req, res) {
   try {
     const { id } = req.params;
     const result = await req.db.query(
-      `${BASE_SELECT} WHERE a.id = $1 GROUP BY a.id, m.name, u.username, inst.first_name, inst.last_name, tb_u.username, tb_inst.first_name, tb_inst.last_name`,
+      `${BASE_SELECT} WHERE e.id = $1 GROUP BY e.id, m.name, u.username, inst.first_name, inst.last_name, tb_u.username, tb_inst.first_name, tb_inst.last_name`,
       [id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
-    const assignment = result.rows[0];
+    const exam = result.rows[0];
 
-    // Grading stats
     const statsRes = await req.db.query(
       `SELECT COUNT(*) AS total_graded
-       FROM onec_assignment_submissions WHERE assignment_id = $1 AND status = 'graded'`,
+       FROM onec_exam_submissions WHERE exam_id = $1 AND status = 'graded'`,
       [id]
     );
-    assignment.total_graded = parseInt(statsRes.rows[0].total_graded, 10);
+    exam.total_graded = parseInt(statsRes.rows[0].total_graded, 10);
 
-    // Total students count
     let totalStudentsQuery = '';
-    if (assignment.target_type === 'specific_students') {
+    if (exam.target_type === 'specific_students') {
       totalStudentsQuery = `
-        SELECT COUNT(DISTINCT ats.learner_id) AS total_students
-        FROM onec_assignment_target_students ats
-        JOIN onec_learners l ON ats.learner_id = l.id
-        WHERE ats.assignment_id = $1 AND l.status = 'active'
+        SELECT COUNT(DISTINCT ets.learner_id) AS total_students
+        FROM onec_exam_target_students ets
+        JOIN onec_learners l ON ets.learner_id = l.id
+        WHERE ets.exam_id = $1 AND l.status = 'active'
       `;
     } else {
       totalStudentsQuery = `
         SELECT COUNT(DISTINCT l.id) AS total_students
         FROM onec_learners l
-        JOIN onec_assignment_cohorts ac ON ac.cohort_id = l.cohort_id
-        WHERE ac.assignment_id = $1 AND l.status = 'active'
+        JOIN onec_exam_cohorts ec ON ec.cohort_id = l.cohort_id
+        WHERE ec.exam_id = $1 AND l.status = 'active'
       `;
     }
     const totalRes = await req.db.query(totalStudentsQuery, [id]);
-    assignment.total_students = parseInt(totalRes.rows[0].total_students, 10);
+    exam.total_students = parseInt(totalRes.rows[0].total_students, 10);
 
-    res.json({ data: assignment });
+    res.json({ data: exam });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   }
 }
 
-// ─── createAssignment ────────────────────────────────────────────────────────
+// ─── createExam ──────────────────────────────────────────────────────────────
 
-async function createAssignment(req, res) {
+async function createExam(req, res) {
   try {
-    const parsed = assignmentSchema.safeParse(req.body);
+    const parsed = examSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
     const {
-      title, description, module_id, due_date, eval_type,
+      title, description, module_id, exam_date, eval_type,
       max_score, passing_marks, pass_grade, instructions,
       target_type, cohort_ids, student_user_ids, taken_by, status,
     } = parsed.data;
@@ -246,12 +242,12 @@ async function createAssignment(req, res) {
     }
 
     const result = await req.db.query(
-      `INSERT INTO onec_assignments
-         (title, description, module_id, due_date, eval_type, max_score, passing_marks,
+      `INSERT INTO onec_exams
+         (title, description, module_id, exam_date, eval_type, max_score, passing_marks,
           pass_grade, instructions, target_type, status, taken_by, created_by)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        RETURNING id`,
-      [title, description ?? null, module_id, due_date, eval_type,
+      [title, description ?? null, module_id, exam_date, eval_type,
        eval_type === 'marks' ? (max_score ?? 100) : null,
        eval_type === 'marks' ? (passing_marks ?? null) : null,
        eval_type === 'grades' ? (pass_grade ?? null) : null,
@@ -259,17 +255,17 @@ async function createAssignment(req, res) {
        taken_by ?? req.user.userId, req.user.userId]
     );
 
-    const assignmentId = result.rows[0].id;
+    const examId = result.rows[0].id;
 
     if (target_type === 'class') {
-      await syncAssignmentCohorts(req.db, assignmentId, cohort_ids);
+      await syncExamCohorts(req.db, examId, cohort_ids);
     } else {
       const learnerIds = await resolveUserIdsToLearnerIds(req.db, student_user_ids);
-      await syncTargetStudents(req.db, assignmentId, learnerIds);
+      await syncTargetStudents(req.db, examId, learnerIds);
     }
 
-    logAudit(req, 'assignment.created', { assignment_id: assignmentId, title, status });
-    res.status(201).json({ data: { id: assignmentId } });
+    logAudit(req, 'exam.created', { exam_id: examId, title, status });
+    res.status(201).json({ data: { id: examId } });
   } catch (err) {
     console.error(err);
     if (err.code === '23503') return res.status(400).json({ error: 'Subject or cohort does not exist' });
@@ -277,33 +273,33 @@ async function createAssignment(req, res) {
   }
 }
 
-// ─── updateAssignment ────────────────────────────────────────────────────────
+// ─── updateExam ──────────────────────────────────────────────────────────────
 
-async function updateAssignment(req, res) {
+async function updateExam(req, res) {
   try {
     const { id } = req.params;
-    const existing = await req.db.query('SELECT created_by, status FROM onec_assignments WHERE id = $1', [id]);
+    const existing = await req.db.query('SELECT created_by, status FROM onec_exams WHERE id = $1', [id]);
     if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     if (req.user.role !== 'admin' && existing.rows[0].created_by !== req.user.userId) {
-      return res.status(403).json({ error: 'You do not have permission to edit this assignment' });
+      return res.status(403).json({ error: 'You do not have permission to edit this exam' });
     }
 
-    const parsed = assignmentSchema.safeParse(req.body);
+    const parsed = examSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
     const {
-      title, description, module_id, due_date, eval_type,
+      title, description, module_id, exam_date, eval_type,
       max_score, passing_marks, pass_grade, instructions,
       target_type, cohort_ids, student_user_ids, taken_by, status,
     } = parsed.data;
 
     await req.db.query(
-      `UPDATE onec_assignments SET
-         title=$1, description=$2, module_id=$3, due_date=$4, eval_type=$5,
+      `UPDATE onec_exams SET
+         title=$1, description=$2, module_id=$3, exam_date=$4, eval_type=$5,
          max_score=$6, passing_marks=$7, pass_grade=$8, instructions=$9,
          target_type=$10, status=$11, taken_by=$12
        WHERE id=$13`,
-      [title, description ?? null, module_id, due_date, eval_type,
+      [title, description ?? null, module_id, exam_date, eval_type,
        eval_type === 'marks' ? (max_score ?? 100) : null,
        eval_type === 'marks' ? (passing_marks ?? null) : null,
        eval_type === 'grades' ? (pass_grade ?? null) : null,
@@ -312,15 +308,15 @@ async function updateAssignment(req, res) {
     );
 
     if (target_type === 'class') {
-      await syncAssignmentCohorts(req.db, id, cohort_ids);
+      await syncExamCohorts(req.db, id, cohort_ids);
     } else {
       const learnerIds = await resolveUserIdsToLearnerIds(req.db, student_user_ids);
       await syncTargetStudents(req.db, id, learnerIds);
     }
 
-    logAudit(req, 'assignment.updated', { assignment_id: id, title });
+    logAudit(req, 'exam.updated', { exam_id: id, title });
     const updated = await req.db.query(
-      `${BASE_SELECT} WHERE a.id = $1 GROUP BY a.id, m.name, u.username, inst.first_name, inst.last_name, tb_u.username, tb_inst.first_name, tb_inst.last_name`,
+      `${BASE_SELECT} WHERE e.id = $1 GROUP BY e.id, m.name, u.username, inst.first_name, inst.last_name, tb_u.username, tb_inst.first_name, tb_inst.last_name`,
       [id]
     );
     res.json({ data: updated.rows[0] });
@@ -330,18 +326,18 @@ async function updateAssignment(req, res) {
   }
 }
 
-// ─── deleteAssignment ────────────────────────────────────────────────────────
+// ─── deleteExam ──────────────────────────────────────────────────────────────
 
-async function deleteAssignment(req, res) {
+async function deleteExam(req, res) {
   try {
     const { id } = req.params;
-    const existing = await req.db.query('SELECT created_by, title FROM onec_assignments WHERE id = $1', [id]);
+    const existing = await req.db.query('SELECT created_by, title FROM onec_exams WHERE id = $1', [id]);
     if (existing.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     if (req.user.role !== 'admin' && existing.rows[0].created_by !== req.user.userId) {
-      return res.status(403).json({ error: 'You do not have permission to delete this assignment' });
+      return res.status(403).json({ error: 'You do not have permission to delete this exam' });
     }
-    await req.db.query('DELETE FROM onec_assignments WHERE id = $1', [id]);
-    logAudit(req, 'assignment.deleted', { assignment_id: id, title: existing.rows[0].title });
+    await req.db.query('DELETE FROM onec_exams WHERE id = $1', [id]);
+    logAudit(req, 'exam.deleted', { exam_id: id, title: existing.rows[0].title });
     res.json({ data: { id: Number(id) } });
   } catch (err) {
     console.error(err);
@@ -349,39 +345,37 @@ async function deleteAssignment(req, res) {
   }
 }
 
-// ─── duplicateAssignment ─────────────────────────────────────────────────────
+// ─── duplicateExam ───────────────────────────────────────────────────────────
 
-async function duplicateAssignment(req, res) {
+async function duplicateExam(req, res) {
   try {
     const { id } = req.params;
-    const src = await req.db.query('SELECT * FROM onec_assignments WHERE id = $1', [id]);
+    const src = await req.db.query('SELECT * FROM onec_exams WHERE id = $1', [id]);
     if (src.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     const s = src.rows[0];
 
     const result = await req.db.query(
-      `INSERT INTO onec_assignments
-         (title, description, module_id, due_date, eval_type, max_score, passing_marks,
+      `INSERT INTO onec_exams
+         (title, description, module_id, exam_date, eval_type, max_score, passing_marks,
           pass_grade, instructions, target_type, status, taken_by, created_by)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'draft',$11,$12) RETURNING id`,
-      [`${s.title} (Copy)`, s.description, s.module_id, s.due_date, s.eval_type,
+      [`${s.title} (Copy)`, s.description, s.module_id, s.exam_date, s.eval_type,
        s.max_score, s.passing_marks, s.pass_grade, s.instructions, s.target_type,
        s.taken_by, req.user.userId]
     );
     const newId = result.rows[0].id;
 
-    // Copy cohorts
     const cohorts = await req.db.query(
-      'SELECT cohort_id FROM onec_assignment_cohorts WHERE assignment_id = $1', [id]
+      'SELECT cohort_id FROM onec_exam_cohorts WHERE exam_id = $1', [id]
     );
-    await syncAssignmentCohorts(req.db, newId, cohorts.rows.map(r => r.cohort_id));
+    await syncExamCohorts(req.db, newId, cohorts.rows.map(r => r.cohort_id));
 
-    // Copy specific students
     const students = await req.db.query(
-      'SELECT learner_id FROM onec_assignment_target_students WHERE assignment_id = $1', [id]
+      'SELECT learner_id FROM onec_exam_target_students WHERE exam_id = $1', [id]
     );
     await syncTargetStudents(req.db, newId, students.rows.map(r => r.learner_id));
 
-    logAudit(req, 'assignment.duplicated', { source_id: id, new_id: newId });
+    logAudit(req, 'exam.duplicated', { source_id: id, new_id: newId });
     res.status(201).json({ data: { id: newId } });
   } catch (err) {
     console.error(err);
@@ -399,11 +393,11 @@ async function togglePublish(req, res) {
       return res.status(400).json({ error: '`published` (boolean) is required' });
     }
     const result = await req.db.query(
-      'UPDATE onec_assignments SET publish_marks = $1 WHERE id = $2 RETURNING id, publish_marks, status',
+      'UPDATE onec_exams SET publish_marks = $1 WHERE id = $2 RETURNING id, publish_marks, status',
       [published, id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
-    logAudit(req, published ? 'assignment.published' : 'assignment.unpublished', { assignment_id: id });
+    logAudit(req, published ? 'exam.published' : 'exam.unpublished', { exam_id: id });
     res.json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
@@ -421,29 +415,25 @@ async function getValuationStudents(req, res) {
     const pageSize = Math.min(50, parseInt(rawSize) || 20);
     const offset = (page - 1) * pageSize;
 
-    const assignment = await req.db.query(
-      'SELECT target_type FROM onec_assignments WHERE id = $1', [id]
-    );
-    if (assignment.rows.length === 0) return res.status(404).json({ error: 'Not found' });
-    const { target_type } = assignment.rows[0];
+    const exam = await req.db.query('SELECT target_type FROM onec_exams WHERE id = $1', [id]);
+    if (exam.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    const { target_type } = exam.rows[0];
 
-    const conditions = [];
     const params = [id];
-
     let fromJoins;
     let whereClause;
 
     if (target_type === 'specific_students') {
       fromJoins = `
-        FROM onec_assignment_target_students ats
-        JOIN onec_learners l ON ats.learner_id = l.id
+        FROM onec_exam_target_students ets
+        JOIN onec_learners l ON ets.learner_id = l.id
         LEFT JOIN onec_cohorts c ON c.id = l.cohort_id
       `;
-      whereClause = `WHERE ats.assignment_id = $1 AND l.status = 'active'`;
+      whereClause = `WHERE ets.exam_id = $1 AND l.status = 'active'`;
     } else {
       fromJoins = `
         FROM onec_learners l
-        JOIN onec_assignment_cohorts ac ON ac.cohort_id = l.cohort_id AND ac.assignment_id = $1
+        JOIN onec_exam_cohorts ec ON ec.cohort_id = l.cohort_id AND ec.exam_id = $1
         JOIN onec_cohorts c ON c.id = l.cohort_id
       `;
       if (cohort_id) {
@@ -470,8 +460,8 @@ async function getValuationStudents(req, res) {
               s.id AS submission_id, s.score_obtained, s.grade_value, s.feedback,
               COALESCE(s.status, 'pending') AS status
        ${fromJoins}
-       LEFT JOIN onec_assignment_submissions s
-         ON s.assignment_id = $1 AND s.learner_id = l.id
+       LEFT JOIN onec_exam_submissions s
+         ON s.exam_id = $1 AND s.learner_id = l.id
        ${whereClause}
        ORDER BY c.name, l.last_name, l.first_name
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
@@ -494,14 +484,13 @@ async function upsertGrade(req, res) {
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
     const { learner_id, score_obtained, grade_value, feedback } = parsed.data;
-
     const isGraded = score_obtained != null || (grade_value && grade_value.trim() !== '');
 
     const result = await req.db.query(
-      `INSERT INTO onec_assignment_submissions
-         (assignment_id, learner_id, score_obtained, grade_value, feedback, graded_by, graded_at, status)
+      `INSERT INTO onec_exam_submissions
+         (exam_id, learner_id, score_obtained, grade_value, feedback, graded_by, graded_at, status)
        VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
-       ON CONFLICT (assignment_id, learner_id) DO UPDATE SET
+       ON CONFLICT (exam_id, learner_id) DO UPDATE SET
          score_obtained = EXCLUDED.score_obtained,
          grade_value    = EXCLUDED.grade_value,
          feedback       = EXCLUDED.feedback,
@@ -513,9 +502,8 @@ async function upsertGrade(req, res) {
        req.user.userId, isGraded ? 'graded' : 'pending']
     );
 
-    // Auto-advance status to grading_in_progress
     await req.db.query(
-      `UPDATE onec_assignments SET status = 'grading_in_progress'
+      `UPDATE onec_exams SET status = 'grading_in_progress'
        WHERE id = $1 AND status = 'created'`,
       [id]
     );
@@ -532,45 +520,16 @@ async function upsertGrade(req, res) {
 async function completeValuation(req, res) {
   try {
     const { id } = req.params;
-    const assignment = await req.db.query(
-      'SELECT target_type, status FROM onec_assignments WHERE id = $1', [id]
-    );
-    if (assignment.rows.length === 0) return res.status(404).json({ error: 'Not found' });
-
-    const { target_type } = assignment.rows[0];
-
-    // Count ungraded students
-    let ungradedQuery;
-    if (target_type === 'specific_students') {
-      ungradedQuery = `
-        SELECT COUNT(*) FROM onec_assignment_target_students ats
-        LEFT JOIN onec_assignment_submissions s
-          ON s.assignment_id = $1 AND s.learner_id = ats.learner_id
-        WHERE ats.assignment_id = $1
-          AND (s.id IS NULL OR s.status = 'pending')
-      `;
-    } else {
-      ungradedQuery = `
-        SELECT COUNT(*) FROM onec_learners l
-        JOIN onec_assignment_cohorts ac ON ac.cohort_id = l.cohort_id AND ac.assignment_id = $1
-        LEFT JOIN onec_assignment_submissions s
-          ON s.assignment_id = $1 AND s.learner_id = l.id
-        WHERE l.status = 'active'
-          AND (s.id IS NULL OR s.status = 'pending')
-      `;
-    }
-
-    const ungradedRes = await req.db.query(ungradedQuery, [id]);
-    const ungraded = parseInt(ungradedRes.rows[0].count, 10);
-    // Removed strict backend block for ungraded > 0, as the frontend now displays a confirmation warning.
+    const exam = await req.db.query('SELECT target_type, status FROM onec_exams WHERE id = $1', [id]);
+    if (exam.rows.length === 0) return res.status(404).json({ error: 'Not found' });
 
     const result = await req.db.query(
-      `UPDATE onec_assignments SET status = 'completed', publish_marks = TRUE
+      `UPDATE onec_exams SET status = 'completed', publish_marks = TRUE
        WHERE id = $1 RETURNING id, status, publish_marks`,
       [id]
     );
 
-    logAudit(req, 'assignment.valuation_completed', { assignment_id: id });
+    logAudit(req, 'exam.valuation_completed', { exam_id: id });
     res.json({ data: result.rows[0] });
   } catch (err) {
     console.error(err);
@@ -587,9 +546,9 @@ async function listSubmissions(req, res) {
     const isGrader = role === 'admin' || role === 'staff' || role === 'instructor';
 
     let query = `SELECT s.*, l.first_name, l.last_name, l.registry_no, l.user_id AS learner_user_id
-                 FROM onec_assignment_submissions s
+                 FROM onec_exam_submissions s
                  JOIN onec_learners l ON s.learner_id = l.id
-                 WHERE s.assignment_id = $1`;
+                 WHERE s.exam_id = $1`;
     const params = [id];
 
     if (!isGrader) {
@@ -602,8 +561,8 @@ async function listSubmissions(req, res) {
     const result = await req.db.query(query, params);
 
     if (!isGrader) {
-      const assignRes = await req.db.query('SELECT publish_marks FROM onec_assignments WHERE id = $1', [id]);
-      if (!assignRes.rows[0]?.publish_marks) {
+      const examRes = await req.db.query('SELECT publish_marks FROM onec_exams WHERE id = $1', [id]);
+      if (!examRes.rows[0]?.publish_marks) {
         result.rows.forEach(row => { row.score_obtained = null; row.grade_value = null; row.feedback = null; });
       }
     }
@@ -615,36 +574,8 @@ async function listSubmissions(req, res) {
   }
 }
 
-// ─── submit (learner submits text) ───────────────────────────────────────────
+// ─── getActivity ─────────────────────────────────────────────────────────────
 
-async function submit(req, res) {
-  try {
-    const { id } = req.params;
-    const ownLearnerId = await getOwnLearnerId(req);
-    if (!ownLearnerId) return res.status(403).json({ error: 'Only learners can submit assignments' });
-
-    const { submission_text } = req.body;
-    if (!submission_text || !submission_text.trim()) {
-      return res.status(400).json({ error: 'Submission text is required' });
-    }
-
-    const result = await req.db.query(
-      `INSERT INTO onec_assignment_submissions (assignment_id, learner_id, submission_text, submitted_at)
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (assignment_id, learner_id) DO UPDATE SET
-         submission_text = EXCLUDED.submission_text,
-         submitted_at    = EXCLUDED.submitted_at
-       RETURNING *`,
-      [id, ownLearnerId, submission_text]
-    );
-    res.json({ data: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-}
-
-// ─── activity log for a single assignment ────────────────────────────────────
 async function getActivity(req, res) {
   try {
     const { id } = req.params;
@@ -653,7 +584,7 @@ async function getActivity(req, res) {
       `SELECT al.id, al.action, al.details, al.created_at, u.username
        FROM onec_audit_logs al
        LEFT JOIN onec_users u ON u.id = al.user_id
-       WHERE (al.details->>'assignment_id')::int = $1
+       WHERE (al.details->>'exam_id')::int = $1
           OR (al.details->>'source_id')::int = $1
        ORDER BY al.created_at DESC
        LIMIT $2 OFFSET $3`,
@@ -666,29 +597,8 @@ async function getActivity(req, res) {
   }
 }
 
-// ─── grade (legacy — single submission update by submission id) ───────────────
-
-async function grade(req, res) {
-  try {
-    const { submissionId } = req.params;
-    const { score_obtained, feedback } = req.body;
-    const result = await req.db.query(
-      `UPDATE onec_assignment_submissions
-       SET score_obtained=$1, feedback=$2, graded_by=$3, graded_at=NOW(), status='graded'
-       WHERE id=$4 RETURNING *`,
-      [score_obtained, feedback ?? null, req.user.userId, submissionId]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
-    logAudit(req, 'assignment.graded', { submission_id: result.rows[0].id, score_obtained });
-    res.json({ data: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-}
-
 module.exports = {
-  listAssignments, getAssignment, createAssignment, updateAssignment,
-  deleteAssignment, duplicateAssignment, togglePublish, getValuationStudents,
-  upsertGrade, completeValuation, getActivity, listSubmissions, submit, grade,
+  listExams, getExam, createExam, updateExam,
+  deleteExam, duplicateExam, togglePublish, getValuationStudents,
+  upsertGrade, completeValuation, getActivity, listSubmissions,
 };

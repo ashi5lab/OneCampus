@@ -6,7 +6,7 @@ import { ModuleBadge } from '../../../components/ModuleBadge';
 import { PageHeader } from '../../../components/PageHeader';
 import { ClassChatTab } from './ClassChatTab';
 import { ClassAssignmentsTab } from '../../assignments/components/ClassAssignmentsTab';
-import { ClassExamsTab } from '../../onlineExams/components/ClassExamsTab';
+import { ClassExamsTab } from '../../exams/components/ClassExamsTab';
 import { ClassTimetableTab } from '../../timetable/components/ClassTimetableTab';
 import { ClassAttendanceTab } from '../../attendance/components/ClassAttendanceTab';
 import { ClassMembersTab } from './ClassMembersTab';
@@ -26,7 +26,7 @@ const TAB_DEFS = [
   { key: 'chat', label: 'Chat', moduleKey: 'messages' },
   { key: 'members', label: 'Members', moduleKey: 'cohorts' },
   { key: 'assignments', label: 'Assignments', moduleKey: 'assignments', gate: (can) => can('assignments.view') },
-  { key: 'exams', label: 'Exams', moduleKey: 'exams', gate: (can) => can('online_exams.view') },
+  { key: 'exams', label: 'Exams', moduleKey: 'exams', gate: (can) => can('exams.view') },
   { key: 'timetable', label: 'Timetable', moduleKey: 'timetable', gate: (can) => can('timetable.view') },
   { key: 'attendance', label: 'Attendance', moduleKey: 'attendance', gate: (can, hasModule) => hasModule('attendance') && can('attendance.view') },
   { key: 'documents', label: 'Documents', moduleKey: 'messages' }
