@@ -54,7 +54,7 @@ function Field({ label, error, children, hint }) {
   );
 }
 
-const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'D', 'F'].map(g => ({ value: g, label: g }));
+const GRADE_OPTIONS = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'].map(g => ({ value: g, label: g }));
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function AssignmentFormPage() {

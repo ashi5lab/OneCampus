@@ -20,7 +20,7 @@ import { AssignmentStatusBadge, PublishBadge } from './AssignmentStatusBadge';
 import { SubmissionForm } from './SubmissionForm';
 import { showToast } from '../../../lib/toast';
 
-const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'D', 'F'].map(g => ({
+const GRADE_OPTIONS = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'].map(g => ({
   value: g,
   label: g,
 }));
