@@ -23,3 +23,23 @@ export function useRemoveProfilePicture(invalidateKey) {
     }
   });
 }
+
+export function useUploadLearnerProfilePicture(learnerId, invalidateKey) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file) => profileApi.uploadLearnerPicture(learnerId, file),
+    onSuccess: () => {
+      if (invalidateKey) queryClient.invalidateQueries({ queryKey: invalidateKey });
+    }
+  });
+}
+
+export function useRemoveLearnerProfilePicture(learnerId, invalidateKey) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => profileApi.removeLearnerPicture(learnerId),
+    onSuccess: () => {
+      if (invalidateKey) queryClient.invalidateQueries({ queryKey: invalidateKey });
+    }
+  });
+}

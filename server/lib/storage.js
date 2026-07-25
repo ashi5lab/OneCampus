@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL } = require('../config/env');
 
 const isConfigured = Boolean(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_BUCKET_NAME);
@@ -51,4 +51,23 @@ async function uploadBuffer(buffer, { folder, publicId, resourceType, transforma
   };
 }
 
-module.exports = { isConfigured, uploadBuffer, s3Client };
+async function deleteFile(fileUrlOrKey) {
+  if (!isConfigured || !fileUrlOrKey) return;
+  try {
+    // Extract key if a full URL is provided (e.g. /api/v1/storage/onecampus/...)
+    let key = fileUrlOrKey;
+    if (key.includes('/api/v1/storage/')) {
+      key = key.split('/api/v1/storage/')[1];
+    }
+    
+    const command = new DeleteObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+    });
+    await s3Client.send(command);
+  } catch (err) {
+    console.error('Failed to delete file from R2:', err);
+  }
+}
+
+module.exports = { isConfigured, uploadBuffer, deleteFile, s3Client };

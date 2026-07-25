@@ -7,6 +7,12 @@ export const profileApi = {
     return uploadFile('/profile/picture', formData).then((res) => res.data);
   },
   removePicture: () => apiClient.delete('/profile/picture').then((res) => res.data),
+  uploadLearnerPicture: (learnerId, file) => {
+    const formData = new FormData();
+    formData.append('picture', file);
+    return uploadFile(`/profile/picture/learner/${learnerId}`, formData).then((res) => res.data);
+  },
+  removeLearnerPicture: (learnerId) => apiClient.delete(`/profile/picture/learner/${learnerId}`).then((res) => res.data),
   me: () => apiClient.get('/profile/me').then((res) => res.data),
   changePassword: (payload) => apiClient.put('/profile/password', payload).then((res) => res.data),
   getNotificationPreferences: () => apiClient.get('/profile/notification-preferences').then((res) => res.data),

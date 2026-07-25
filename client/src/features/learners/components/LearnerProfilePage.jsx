@@ -10,6 +10,7 @@ import { useLearnerProfile, useUpdateLearner, useDeleteLearner } from '../hooks/
 import { useDisciplineRecords } from '../../discipline/hooks/useDiscipline';
 import { LearnerBehaviourPage } from './LearnerBehaviourPage';
 import { LearnerForm } from './LearnerForm';
+import { useUploadLearnerProfilePicture, useRemoveLearnerProfilePicture } from '../../profile/hooks/useProfilePicture';
 import { certificatesApi } from '../../certificates/services/certificatesApi';
 import toast from 'react-hot-toast';
 import { evaluationsApi } from '../../evaluations/services/evaluationsApi';
@@ -144,6 +145,9 @@ export function LearnerProfilePage() {
   const canManage = can('learners.manage');
   const canManageGuardianLinks = can('guardian_links.manage');
 
+  const uploadLearnerPic = useUploadLearnerProfilePicture(learnerId, ['learners', learnerId, 'profile']);
+  const removeLearnerPic = useRemoveLearnerProfilePicture(learnerId, ['learners', learnerId, 'profile']);
+
   // Get subjects overview for the academic performance card
   const subjectScores = useMemo(() => {
     if (!data?.scores) return [];
@@ -239,28 +243,26 @@ export function LearnerProfilePage() {
                 
                 {/* Left: Avatar & Info */}
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                  <div className="relative shrink-0">
-                    <div className="w-24 h-24 md:w-[104px] md:h-[104px] rounded-full border-[3px] border-white shadow-md overflow-hidden flex items-center justify-center bg-white/10 relative mt-4 md:mt-0">
-                      {isOwnProfile ? (
-                        <ProfilePictureUploader
-                          name={`${learner.first_name} ${learner.last_name}`}
-                          pictureUrl={learner.profile_picture_url}
-                          invalidateKey={['learners', learnerId, 'profile']}
-                        />
-                      ) : (
-                        <Avatar name={`${learner.first_name} ${learner.last_name}`} src={learner.profile_picture_url} size={128} className="w-full h-full" />
-                      )}
-                    </div>
+                  <div className="relative shrink-0 mt-4 md:mt-0">
+                    <ProfilePictureUploader
+                      name={`${learner.first_name} ${learner.last_name}`}
+                      pictureUrl={learner.profile_picture_url}
+                      invalidateKey={['learners', learnerId, 'profile']}
+                      customUpload={canManage && !isOwnProfile ? uploadLearnerPic : undefined}
+                      customRemove={canManage && !isOwnProfile ? removeLearnerPic : undefined}
+                      readOnly={!isOwnProfile && !canManage}
+                      containerClassName="w-24 h-24 md:w-[104px] md:h-[104px] rounded-full border-[3px] border-white shadow-md flex items-center justify-center bg-white/10"
+                    />
                   </div>
                   <div className="text-center md:text-left pt-2">
                     <h1 className="text-2xl md:text-[28px] font-extrabold flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3 mb-1">
                       {learner.first_name} {learner.last_name}
-                      <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide whitespace-nowrap">
-                        {learner.registry_no}
-                      </span>
                     </h1>
                     <p className="text-indigo-100/90 text-[13px] font-medium leading-relaxed">
-                      {learner.cohort_name || 'No Class Assigned'}
+                      Reg.No: {learner.registry_no}
+                    </p>
+                    <p className="text-indigo-100/90 text-[13px] font-medium leading-relaxed">
+                      Class: {learner.cohort_name || 'Unassigned'}
                     </p>
                     <p className="text-indigo-100/90 text-[13px] font-medium leading-relaxed mb-2">
                       Roll No. {learner.id}

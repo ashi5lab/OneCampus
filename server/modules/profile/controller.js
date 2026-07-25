@@ -1,7 +1,7 @@
 const multer = require('multer');
 const bcrypt = require('bcrypt');
 const { z } = require('zod');
-const { isConfigured, uploadBuffer } = require('../../lib/storage');
+const { isConfigured, uploadBuffer, deleteFile } = require('../../lib/storage');
 const { logAudit } = require('../../lib/audit');
 const { listUsersWithNames } = require('../../lib/userDirectory');
 const { revokeAllUserTokens } = require('../../lib/refreshTokens');
@@ -41,10 +41,13 @@ async function uploadProfilePicture(req, res) {
   }
 
   try {
+    // Get existing profile picture URL
+    const existing = await req.db.query('SELECT profile_picture_url FROM onec_users WHERE id = $1', [req.user.userId]);
+    const oldUrl = existing.rows[0]?.profile_picture_url;
+
     const folder = `onecampus/${req.tenantSchema}/profile-pictures`;
     const result = await uploadBuffer(req.file.buffer, {
       folder,
-      publicId: `user-${req.user.userId}`,
       mimetype: req.file.mimetype
     });
 
@@ -52,6 +55,11 @@ async function uploadProfilePicture(req, res) {
       result.secure_url,
       req.user.userId
     ]);
+
+    // Delete the old file from R2 after a successful upload
+    if (oldUrl) {
+      await deleteFile(oldUrl);
+    }
 
     res.json({ data: { profile_picture_url: result.secure_url } });
   } catch (err) {
@@ -62,7 +70,71 @@ async function uploadProfilePicture(req, res) {
 
 async function removeProfilePicture(req, res) {
   try {
+    const existing = await req.db.query('SELECT profile_picture_url FROM onec_users WHERE id = $1', [req.user.userId]);
+    const oldUrl = existing.rows[0]?.profile_picture_url;
+
     await req.db.query('UPDATE onec_users SET profile_picture_url = NULL WHERE id = $1', [req.user.userId]);
+    
+    if (oldUrl) {
+      await deleteFile(oldUrl);
+    }
+
+    res.json({ data: { profile_picture_url: null } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// Allows staff/admins/teachers to update a student's profile picture
+async function uploadLearnerProfilePicture(req, res) {
+  if (!isConfigured) return res.status(503).json({ error: 'Image uploads are not configured' });
+  if (!req.file) return res.status(400).json({ error: 'No image file provided' });
+
+  try {
+    const learnerId = Number(req.params.id);
+    const learnerRes = await req.db.query('SELECT user_id FROM onec_learners WHERE id = $1', [learnerId]);
+    if (learnerRes.rows.length === 0) return res.status(404).json({ error: 'Learner not found' });
+    const userId = learnerRes.rows[0].user_id;
+
+    const existing = await req.db.query('SELECT profile_picture_url FROM onec_users WHERE id = $1', [userId]);
+    const oldUrl = existing.rows[0]?.profile_picture_url;
+
+    const folder = `onecampus/${req.tenantSchema}/profile-pictures`;
+    const result = await uploadBuffer(req.file.buffer, {
+      folder,
+      mimetype: req.file.mimetype
+    });
+
+    await req.db.query('UPDATE onec_users SET profile_picture_url = $1 WHERE id = $2', [result.secure_url, userId]);
+    
+    if (oldUrl) {
+      await deleteFile(oldUrl);
+    }
+
+    res.json({ data: { profile_picture_url: result.secure_url } });
+  } catch (err) {
+    console.error('Learner profile picture upload error:', err);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+}
+
+async function removeLearnerProfilePicture(req, res) {
+  try {
+    const learnerId = Number(req.params.id);
+    const learnerRes = await req.db.query('SELECT user_id FROM onec_learners WHERE id = $1', [learnerId]);
+    if (learnerRes.rows.length === 0) return res.status(404).json({ error: 'Learner not found' });
+    const userId = learnerRes.rows[0].user_id;
+
+    const existing = await req.db.query('SELECT profile_picture_url FROM onec_users WHERE id = $1', [userId]);
+    const oldUrl = existing.rows[0]?.profile_picture_url;
+
+    await req.db.query('UPDATE onec_users SET profile_picture_url = NULL WHERE id = $1', [userId]);
+    
+    if (oldUrl) {
+      await deleteFile(oldUrl);
+    }
+
     res.json({ data: { profile_picture_url: null } });
   } catch (err) {
     console.error(err);
@@ -472,6 +544,8 @@ module.exports = {
   upload,
   uploadProfilePicture,
   removeProfilePicture,
+  uploadLearnerProfilePicture,
+  removeLearnerProfilePicture,
   getMe,
   changeOwnPassword,
   getNotificationPreferences,

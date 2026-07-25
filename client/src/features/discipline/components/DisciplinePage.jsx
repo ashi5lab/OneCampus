@@ -17,24 +17,24 @@ export function DisciplinePage() {
   const { can, user } = useAuth();
   const navigate = useNavigate();
   const canLog = can('discipline.log');
-  
+
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [cohortId, setCohortId] = useState('');
   const [severity, setSeverity] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  
+
   const [filters, setFilters] = useState({});
 
   const { data: cohorts } = useCohorts({ enabled: canLog || can('cohorts.view') });
-  
+
   const { data: recordsData, isLoading, error } = useDisciplineRecordsPage({
     page,
     pageSize: 10,
     filters
   });
-  
+
   const deleteRecord = useDeleteDisciplineRecord();
 
   function applyFilters() {
@@ -79,7 +79,7 @@ export function DisciplinePage() {
     { key: 'action_taken', header: 'Action Taken', render: (row) => row.action_taken || '—' },
     { key: 'reported_by', header: 'Reported by', render: (row) => row.reported_by_username || '—' }
   ];
-  
+
   if (canLog) {
     columns.push({
       key: 'actions',

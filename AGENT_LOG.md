@@ -1501,3 +1501,39 @@ The underlying mathematical model for behavior scoring has been decoupled from a
 *Log entry authored by Antigravity Agent*
 *Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
 *Timestamp: 2026-07-26T00:30 IST*
+
+---
+
+## Entry 015 — Teacher Profile Picture Management & Client-Side Resizer
+
+**Date:** 2026-07-26
+**Time:** ~00:50 IST
+**Session ID:** `14c32fb4-a0d5-4356-bf37-6c820b650dd2`
+
+---
+
+### User Request
+
+> "add option for teacher to update profile photo of students in the students profile page - use same configs and rules of the upload profile pic - resize the photo to 50KB (less than 50KB)... also give option to view profile pic - this view profile should be only available for teachers to view, students and guardians can only their profiles pics"
+
+---
+
+### Architectural Additions
+
+1. **New Backend Endpoints:**
+   - Added `POST /api/v1/profile/picture/learner/:id` and `DELETE /api/v1/profile/picture/learner/:id` in `server/modules/profile/routes.js`.
+   - These are protected by `learners.manage` permission and look up the learner's underlying `user_id` to attach the Cloudflare R2 image directly to `onec_users`.
+
+2. **Client-Side Image Resizer:**
+   - Refactored `ProfilePictureUploader.jsx` to intercept the raw file before calling the mutation.
+   - The component draws the image to an invisible HTML `<canvas>`, mathematically scales it down (max 800px), and recursively steps down the JPEG quality until the resulting Blob is `< 50KB`.
+
+3. **UI Enhancements:**
+   - Modified `LearnerProfilePage.jsx` to render the interactive `ProfilePictureUploader` (instead of a static `Avatar`) if the viewing user has `learners.manage` permissions.
+   - Added a "View full" button in the uploader's hover overlay that toggles a full-screen React modal.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 14c32fb4-a0d5-4356-bf37-6c820b650dd2*
+*Timestamp: 2026-07-26T00:50 IST*

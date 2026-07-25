@@ -16,6 +16,10 @@ router.post('/fcm-token', controller.saveFcmToken);
 
 // Admin-side password reset — the only /profile routes that touch a user
 // other than the caller, hence the only permission-gated ones here.
+
+
+// Admin-side password reset — the only /profile routes that touch a user
+// other than the caller, hence the only permission-gated ones here.
 router.get('/users', requirePermission('users.manage_passwords'), controller.listUsers);
 router.get('/users/report', requirePermission('users.manage_passwords'), controller.getUsersReport);
 router.patch('/users/:userId/role', requirePermission('users.manage_passwords'), controller.changeUserRole);
@@ -26,13 +30,17 @@ router.post('/users/:userId/force-logout', requirePermission('users.manage_passw
 // so a rejected upload (wrong mimetype, over the 5MB cap) resolves to a
 // clean 400 here instead of falling through to server.js's generic 500
 // error handler, which doesn't know anything about multer-specific errors.
-router.post('/picture', (req, res, next) => {
+const handleUpload = (req, res, next) => {
   controller.upload.single('picture')(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
     next();
   });
-}, controller.uploadProfilePicture);
+};
 
+router.post('/picture', handleUpload, controller.uploadProfilePicture);
 router.delete('/picture', controller.removeProfilePicture);
+
+router.post('/picture/learner/:id', requirePermission('learners.manage'), handleUpload, controller.uploadLearnerProfilePicture);
+router.delete('/picture/learner/:id', requirePermission('learners.manage'), controller.removeLearnerProfilePicture);
 
 module.exports = router;
