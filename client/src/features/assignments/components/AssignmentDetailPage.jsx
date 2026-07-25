@@ -1,10 +1,13 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { PageHeader } from '../../../components/PageHeader';
 import { DataTable } from '../../../components/DataTable';
 import { SearchSelect } from '../../../components/SearchSelect';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
+import { Spinner } from '../../../components/Spinner';
 import {
   useAssignment,
   useTogglePublish,
@@ -12,11 +15,12 @@ import {
   useValuationStudents,
   useUpsertGrade,
 } from '../hooks/useAssignments';
+import { assignmentsApi } from '../services/assignmentsApi';
 import { AssignmentStatusBadge, PublishBadge } from './AssignmentStatusBadge';
 import { SubmissionForm } from './SubmissionForm';
 import { showToast } from '../../../lib/toast';
 
-const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'D', 'F'].map(g => ({
+const GRADE_OPTIONS = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F'].map(g => ({
   value: g,
   label: g,
 }));
@@ -227,6 +231,56 @@ function InfoCell({ label, value }) {
   );
 }
 
+// ─── Activity Tab ─────────────────────────────────────────────────────────────
+const ACTION_LABELS = {
+  'assignment.created':             'Assignment created',
+  'assignment.updated':             'Assignment updated',
+  'assignment.deleted':             'Assignment deleted',
+  'assignment.duplicated':          'Assignment duplicated',
+  'assignment.graded':              'Student graded',
+  'assignment.submitted':           'Submission received',
+  'assignment.publish_toggled':     'Publish status changed',
+  'assignment.valuation_completed': 'Valuation completed',
+};
+
+function ActivityTab({ assignmentId }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['assignments', assignmentId, 'activity'],
+    queryFn: () => assignmentsApi.getActivity ? assignmentsApi.getActivity(assignmentId) : Promise.resolve({ activity: [] }),
+    enabled: !!assignmentId,
+  });
+
+  const activity = data?.activity ?? [];
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8"><Spinner /></div>;
+  }
+  if (activity.length === 0) {
+    return <p className="py-8 text-center text-sm text-ink-500">No activity recorded yet.</p>;
+  }
+
+  return (
+    <ol className="relative border-l border-border pl-5">
+      {activity.map(entry => {
+        const name = entry.first_name
+          ? `${entry.first_name} ${entry.last_name ?? ''}`.trim()
+          : (entry.username ?? 'System');
+        const label = ACTION_LABELS[entry.action] ?? entry.action;
+        const time = new Date(entry.created_at).toLocaleString();
+        return (
+          <li key={entry.id} className="mb-5">
+            <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border-2 border-border bg-accent" />
+            <p className="text-sm font-semibold text-ink-900">{label}</p>
+            <p className="text-xs text-ink-500">
+              {name} &middot; {time}
+            </p>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export function AssignmentDetailPage() {
   const { id } = useParams();
@@ -239,6 +293,7 @@ export function AssignmentDetailPage() {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedCohortId, setSelectedCohortId] = useState('');
+  const [confirmAction, setConfirmAction] = useState(null); // { message, onConfirm, label, danger }
 
   if (isLoading) return <div className="p-8 text-center text-sm text-ink-500">Loading…</div>;
   if (error) return <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>;
@@ -254,27 +309,42 @@ export function AssignmentDetailPage() {
 
   function handlePublishToggle() {
     const next = !assignment.publish_marks;
-    if (!window.confirm(next ? 'Publish marks to students?' : 'Unpublish marks?')) return;
-    togglePublish.mutate(
-      { id: assignment.id, publish: next },
-      {
-        onSuccess: () => showToast.success(next ? 'Marks published.' : 'Marks unpublished.'),
-        onError: e => showToast.error(e.message),
-      }
-    );
+    setConfirmAction({
+      message: next ? 'Publish marks? Students will be able to see their results.' : 'Unpublish marks? Students will no longer see their results.',
+      label: next ? 'Publish' : 'Unpublish',
+      danger: false,
+      onConfirm: () => {
+        setConfirmAction(null);
+        togglePublish.mutate(
+          { id: assignment.id, publish: next },
+          {
+            onSuccess: () => showToast.success(next ? 'Marks published.' : 'Marks unpublished.'),
+            onError: e => showToast.error(e.message),
+          }
+        );
+      },
+    });
   }
 
   function handleCompleteValuation() {
-    if (!window.confirm('Mark valuation complete? Marks will be published to students.')) return;
-    completeValuation.mutate(assignment.id, {
-      onSuccess: () => showToast.success('Valuation completed and marks published!'),
-      onError: e => showToast.error(e.message),
+    setConfirmAction({
+      message: 'Mark valuation complete? Marks will be published to students.',
+      label: 'Complete',
+      danger: false,
+      onConfirm: () => {
+        setConfirmAction(null);
+        completeValuation.mutate(assignment.id, {
+          onSuccess: () => showToast.success('Valuation completed and marks published!'),
+          onError: e => showToast.error(e.message),
+        });
+      },
     });
   }
 
   const tabs = [
     { key: 'overview', label: 'Overview' },
     ...(isGrader ? [{ key: 'students', label: 'Students' }] : []),
+    { key: 'activity', label: 'Activity' },
   ];
 
   return (
@@ -304,8 +374,9 @@ export function AssignmentDetailPage() {
               <button
                 onClick={handleCompleteValuation}
                 disabled={completeValuation.isPending}
-                className="rounded-full bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
               >
+                {completeValuation.isPending && <Spinner size="xs" />}
                 Complete Valuation
               </button>
             )}
@@ -313,12 +384,13 @@ export function AssignmentDetailPage() {
               <button
                 onClick={handlePublishToggle}
                 disabled={togglePublish.isPending}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
                   assignment.publish_marks
                     ? 'border border-border bg-surface text-ink-700 hover:bg-surface-muted'
                     : 'bg-accent text-accent-ink hover:opacity-90'
                 }`}
               >
+                {togglePublish.isPending && <Spinner size="xs" />}
                 {assignment.publish_marks ? 'Unpublish' : 'Publish Marks'}
               </button>
             )}
@@ -366,6 +438,7 @@ export function AssignmentDetailPage() {
         {activeTab === 'students' && isGrader && (
           <ValuationTab assignment={assignment} selectedCohortId={selectedCohortId} />
         )}
+        {activeTab === 'activity' && <ActivityTab assignmentId={assignment.id} />}
       </div>
 
       {/* Learner self-view */}
@@ -373,6 +446,16 @@ export function AssignmentDetailPage() {
         <div className="mt-6">
           <SubmissionForm assignment={assignment} />
         </div>
+      )}
+
+      {confirmAction && (
+        <ConfirmDialog
+          message={confirmAction.message}
+          confirmLabel={confirmAction.label}
+          danger={confirmAction.danger}
+          onConfirm={confirmAction.onConfirm}
+          onCancel={() => setConfirmAction(null)}
+        />
       )}
     </div>
   );

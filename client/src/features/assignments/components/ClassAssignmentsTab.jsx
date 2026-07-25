@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { DataTable } from '../../../components/DataTable';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { useAssignments, useCreateAssignment, useUpdateAssignment, useDeleteAssignment } from '../hooks/useAssignments';
 import { useMarkActivityContextViewed } from '../../activities/hooks/useActivities';
 import { AssignmentFormModal } from './AssignmentFormModal';
+import { showToast } from '../../../lib/toast';
 
 // The Class channel's Assignments tab — the same list as the full
 // /app/assignments page (reached from More), just filtered down to this one
@@ -26,6 +28,7 @@ export function ClassAssignmentsTab({ cohortId }) {
 
   const [showForm, setShowForm] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const scoped = useMemo(() => (assignments || []).filter((a) => a.cohort_id === cohortId), [assignments, cohortId]);
 
@@ -52,9 +55,7 @@ export function ClassAssignmentsTab({ cohortId }) {
             Edit
           </button>
           <button
-            onClick={() => {
-              if (window.confirm(`Delete "${row.title}"?`)) deleteAssignment.mutate(row.id);
-            }}
+            onClick={() => setConfirmDelete(row)}
             className="text-xs font-semibold text-danger hover:opacity-80"
           >
             Delete
@@ -113,6 +114,21 @@ export function ClassAssignmentsTab({ cohortId }) {
           onSubmit={(values) =>
             updateAssignment.mutate({ id: editingAssignment.id, payload: values }, { onSuccess: () => setEditingAssignment(null) })
           }
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          message={`Delete "${confirmDelete.title}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => {
+            deleteAssignment.mutate(confirmDelete.id, {
+              onSuccess: () => { showToast.success('Assignment deleted.'); setConfirmDelete(null); },
+              onError: (e) => { showToast.error(e.message); setConfirmDelete(null); },
+            });
+          }}
+          onCancel={() => setConfirmDelete(null)}
         />
       )}
     </div>
