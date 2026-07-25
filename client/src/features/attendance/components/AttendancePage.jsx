@@ -99,7 +99,7 @@ function AttendancePicker() {
   // Map cohort_id → log entry for O(1) lookup in the render loop
   const logsMap = useMemo(() => {
     const map = {};
-    (logsData?.data || []).forEach((l) => { map[String(l.cohort_id)] = l; });
+    (Array.isArray(logsData) ? logsData : (logsData?.data || [])).forEach((l) => { map[String(l.cohort_id)] = l; });
     return map;
   }, [logsData]);
 
