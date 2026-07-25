@@ -5,7 +5,7 @@ import { useLearners } from '../../learners/hooks/useLearners';
 import { useAttendanceForCohortDate, useMarkAttendance } from '../hooks/useAttendance';
 import { Avatar } from '../../../components/Avatar';
 import { PageHeader } from '../../../components/PageHeader';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Calendar, ChevronDown, Search, Eye } from 'lucide-react';
 
 function todayIso() {
@@ -46,6 +46,8 @@ const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 // channel's own PageHeader owns the topbar, so skip overriding it here.
 export function AttendanceRoster({ lockedCohortId, embedded = false }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialLearnerId = searchParams.get('learner');
   const { can } = useAuth();
   const canMark = can('attendance.mark');
   const cohortId = lockedCohortId || '';
@@ -76,6 +78,15 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
     () => (allLearners || []).filter((l) => String(l.cohort_id) === String(cohortId)),
     [allLearners, cohortId]
   );
+
+  useEffect(() => {
+    if (initialLearnerId && roster.length > 0) {
+      const learner = roster.find(l => String(l.id) === String(initialLearnerId));
+      if (learner && !searchQuery) {
+        setSearchQuery(`${learner.first_name} ${learner.last_name}`);
+      }
+    }
+  }, [initialLearnerId, roster, searchQuery]);
 
   useEffect(() => {
     if (!cohortId || !date) return;
@@ -127,7 +138,7 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
   async function handleSaveAll() {
     try {
       await Promise.all(
-        roster.map((learner) =>
+        filteredRoster.map((learner) =>
           markAttendance.mutateAsync({
             learner_id: learner.id,
             cohort_id: Number(cohortId),
@@ -158,91 +169,97 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
       )}
 
       {/* Main Content */}
-      <div className="px-4 mt-4 space-y-3">
-        {/* Search Students Autocomplete */}
-        <div ref={searchRef} className="relative">
-          <button
-            onClick={() => setSearchOpen((v) => !v)}
-            className="w-full bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100 flex items-center gap-3 text-left"
-          >
-            <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
-            <span className={`flex-1 text-[14px] ${searchQuery ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
-              {searchQuery || 'Search students'}
-            </span>
-            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          </button>
+      <div className="mt-4">
+        {/* Sticky Controls Header */}
+        <div className="sticky top-0 z-40 bg-[#f8f9fe] pt-4 pb-3 px-4 space-y-3 border-b border-gray-100 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.05)] -mx-4 sm:mx-0 sm:px-0 sm:border-0 sm:shadow-none sm:pb-0">
+          {/* Search Students Autocomplete */}
+          <div ref={searchRef} className="relative">
+            <button
+              onClick={() => setSearchOpen((v) => !v)}
+              className="w-full bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100 flex items-center gap-3 text-left"
+            >
+              <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              <span className={`flex-1 text-[14px] ${searchQuery ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+                {searchQuery || 'Search students'}
+              </span>
+              <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            </button>
 
-          {searchOpen && (
-            <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 mt-1 z-40 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
-                <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <input
-                  autoFocus
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Type to search..."
-                  className="flex-1 text-[14px] outline-none text-gray-900 placeholder:text-gray-400"
-                />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
-                )}
+            {searchOpen && (
+              <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 mt-1 z-50 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+                  <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <input
+                    autoFocus
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Type to search..."
+                    className="flex-1 text-[14px] outline-none text-gray-900 placeholder:text-gray-400"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+                  )}
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {filteredRoster.length === 0 ? (
+                    <div className="px-4 py-4 text-[13px] text-gray-500 text-center">No students found</div>
+                  ) : (
+                    filteredRoster.slice(0, 15).map((l) => (
+                      <button
+                        key={l.id}
+                        onClick={() => { setSearchQuery(`${l.first_name} ${l.last_name}`); setSearchOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-indigo-50 transition border-b border-gray-50 last:border-0 text-left"
+                      >
+                        <Avatar name={`${l.first_name} ${l.last_name}`} src={l.photo_url} size={36} />
+                        <div className="min-w-0">
+                          <div className="text-[14px] font-semibold text-gray-900 truncate">{l.first_name} {l.last_name}</div>
+                          <div className="text-[12px] text-gray-500">{l.registry_no || 'N/A'}</div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-              <div className="max-h-60 overflow-y-auto">
-                {filteredRoster.length === 0 ? (
-                  <div className="px-4 py-4 text-[13px] text-gray-500 text-center">No students found</div>
-                ) : (
-                  filteredRoster.slice(0, 15).map((l) => (
-                    <button
-                      key={l.id}
-                      onClick={() => { setSearchQuery(`${l.first_name} ${l.last_name}`); setSearchOpen(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-indigo-50 transition border-b border-gray-50 last:border-0 text-left"
-                    >
-                      <Avatar name={`${l.first_name} ${l.last_name}`} src={l.photo_url} size={36} />
-                      <div className="min-w-0">
-                        <div className="text-[14px] font-semibold text-gray-900 truncate">{l.first_name} {l.last_name}</div>
-                        <div className="text-[12px] text-gray-500">{l.registry_no || 'N/A'}</div>
-                      </div>
-                    </button>
-                  ))
-                )}
+            )}
+          </div>
+
+          {/* Date Dropdown */}
+          <div ref={dateRef} className="relative">
+            <button
+              onClick={() => setDatePickerOpen((v) => !v)}
+              className="w-full bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100 flex items-center gap-3 text-left"
+            >
+              <Calendar className="w-5 h-5 text-[#5a4fcf] flex-shrink-0" />
+              <span className="flex-1 text-[14px] font-medium text-gray-900">{formatDateDisplay(date)}</span>
+              <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            </button>
+            {datePickerOpen && (
+              <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 mt-1 z-50 max-h-60 overflow-y-auto">
+                {datesList.map((d) => (
+                  <button
+                    key={d.iso}
+                    onClick={() => { setDate(d.iso); setDatePickerOpen(false); }}
+                    className={`w-full px-4 py-2.5 text-left text-[13px] hover:bg-indigo-50 transition border-b border-gray-50 last:border-0
+                      ${d.iso === date ? 'font-bold text-[#5a4fcf] bg-indigo-50' : 'text-gray-700'}`}
+                  >
+                    {d.display}
+                  </button>
+                ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Table Header */}
+          <div className="bg-[#f0f0fb] rounded-xl px-4 py-2.5 flex items-center text-[12px] font-semibold text-gray-500">
+            <div className="w-8 text-center">#</div>
+            <div className="flex-1 ml-3">Student</div>
+            <div className="w-28 text-right">Attendance</div>
+          </div>
         </div>
 
-        {/* Date Dropdown */}
-        <div ref={dateRef} className="relative">
-          <button
-            onClick={() => setDatePickerOpen((v) => !v)}
-            className="w-full bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100 flex items-center gap-3 text-left"
-          >
-            <Calendar className="w-5 h-5 text-[#5a4fcf] flex-shrink-0" />
-            <span className="flex-1 text-[14px] font-medium text-gray-900">{formatDateDisplay(date)}</span>
-            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          </button>
-          {datePickerOpen && (
-            <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 mt-1 z-40 max-h-60 overflow-y-auto">
-              {datesList.map((d) => (
-                <button
-                  key={d.iso}
-                  onClick={() => { setDate(d.iso); setDatePickerOpen(false); }}
-                  className={`w-full px-4 py-2.5 text-left text-[13px] hover:bg-indigo-50 transition border-b border-gray-50 last:border-0
-                    ${d.iso === date ? 'font-bold text-[#5a4fcf] bg-indigo-50' : 'text-gray-700'}`}
-                >
-                  {d.display}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Table Header */}
-        <div className="bg-[#f0f0fb] rounded-xl px-4 py-2.5 flex items-center text-[12px] font-semibold text-gray-500">
-          <div className="w-8 text-center">#</div>
-          <div className="flex-1 ml-3">Student</div>
-          <div className="w-28 text-right">Attendance</div>
-        </div>
+        {/* Student Rows */}
+        <div className="px-4 mt-3 space-y-3">
 
         {/* Student Rows */}
         {loadingRoster ? (
@@ -250,7 +267,7 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
         ) : paginatedRoster.length === 0 ? (
           <div className="text-center py-10 text-gray-400 text-[14px]">No students found.</div>
         ) : (
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
             {paginatedRoster.map((learner, idx) => {
               const globalIdx = (page - 1) * pageSize + idx + 1;
               const currentStatus = statuses[learner.id] || 'present';
@@ -378,14 +395,15 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
           </button>
         )}
       </div>
+      </div>
 
       {/* Floating Submit Button */}
       {canMark && roster.length > 0 && (
-        <div className="fixed bottom-6 left-4 right-4 z-50">
+        <div className="fixed bottom-24 md:bottom-8 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
           <button
             onClick={handleSaveAll}
             disabled={markAttendance.isPending}
-            className="w-full bg-[#5a4fcf] text-white rounded-2xl py-4 text-[15px] font-bold shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-70"
+            className="w-full max-w-[300px] bg-[#5a4fcf] text-white rounded-full py-3.5 text-[15px] font-bold shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-70 pointer-events-auto"
           >
             {markAttendance.isPending ? 'Submitting...' : 'Submit Attendance'}
           </button>

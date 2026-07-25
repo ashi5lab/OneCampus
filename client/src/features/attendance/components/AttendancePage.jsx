@@ -129,7 +129,7 @@ function AttendancePicker() {
                         onClick={() => {
                           setSearchOpen(false);
                           setSearchQuery('');
-                          if (l.cohort_id) navigate(`/app/attendance/${l.cohort_id}`);
+                          if (l.cohort_id) navigate(`/app/attendance/${l.cohort_id}?learner=${l.id}`);
                         }}
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 transition border-b border-gray-50 last:border-0 text-left"
                       >
