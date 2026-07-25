@@ -1,19 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useConfig } from '../../../contexts/ConfigContext';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useAttendanceForCohortDate, useMarkAttendance } from '../hooks/useAttendance';
 import { Avatar } from '../../../components/Avatar';
-import { TeacherHeader } from '../../../components/TeacherHeader';
-import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Calendar, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Calendar, ChevronDown, Search, Eye } from 'lucide-react';
 
 function todayIso() {
   const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function formatDateDisplay(isoDate) {
+  const d = new Date(`${isoDate}T00:00:00`);
+  const day = d.getDate();
+  const month = d.toLocaleDateString('en-US', { month: 'long' });
+  const year = d.getFullYear();
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+  return `${day} ${month} ${year}, ${weekday}`;
 }
 
 function generateDateRange() {
@@ -22,27 +27,39 @@ function generateDateRange() {
   for (let i = -15; i <= 15; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-    dates.push({
-      iso: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-      dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
-      dayNumber: d.getDate(),
-      isToday: i === 0,
-    });
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    dates.push({ iso, display: formatDateDisplay(iso) });
   }
   return dates;
 }
+
+const STATUS_OPTIONS = [
+  { value: 'present', label: 'Present', color: '#22c55e' },
+  { value: 'absent', label: 'Absent', color: '#ef4444' },
+  { value: 'late', label: 'Late', color: '#f59e0b' },
+];
+
+const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 
 export function AttendanceRoster({ lockedCohortId }) {
   const navigate = useNavigate();
   const { can } = useAuth();
   const canMark = can('attendance.mark');
-  
-  const [cohortId, setCohortId] = useState(lockedCohortId || '');
+  const cohortId = lockedCohortId || '';
+
   const [date, setDate] = useState(todayIso());
   const [statuses, setStatuses] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
-  
-  const { data: cohorts } = useCohorts({ enabled: !lockedCohortId });
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [openStatusId, setOpenStatusId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const searchRef = useRef(null);
+  const dateRef = useRef(null);
+
+  const { data: cohorts } = useCohorts();
   const { data: allLearners } = useLearners();
   const { data: existingRecords, isLoading: loadingRoster } = useAttendanceForCohortDate(cohortId, date);
   const markAttendance = useMarkAttendance();
@@ -53,29 +70,56 @@ export function AttendanceRoster({ lockedCohortId }) {
   );
 
   const roster = useMemo(
-    () => (allLearners || []).filter((learner) => String(learner.cohort_id) === String(cohortId)),
+    () => (allLearners || []).filter((l) => String(l.cohort_id) === String(cohortId)),
     [allLearners, cohortId]
   );
 
   useEffect(() => {
     if (!cohortId || !date) return;
-    const nextStatuses = {};
+    const next = {};
     for (const learner of roster) {
       const existing = (existingRecords || []).find((r) => r.learner_id === learner.id);
-      nextStatuses[learner.id] = existing?.status || 'present';
+      next[learner.id] = existing?.status || 'present';
     }
-    setStatuses(nextStatuses);
+    setStatuses(next);
   }, [cohortId, date, roster, existingRecords]);
+
+  // Close search/date dropdowns on outside click; status dropdowns use stopPropagation
+  useEffect(() => {
+    function handleMouseDown(e) {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
+      if (dateRef.current && !dateRef.current.contains(e.target)) setDatePickerOpen(false);
+      setOpenStatusId(null);
+    }
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, []);
 
   const filteredRoster = useMemo(() => {
     if (!searchQuery.trim()) return roster;
     const q = searchQuery.toLowerCase().trim();
     return roster.filter((l) => {
-      const fullName = `${l.first_name} ${l.last_name}`.toLowerCase();
+      const name = `${l.first_name} ${l.last_name}`.toLowerCase();
       const regNo = (l.registry_no || '').toLowerCase();
-      return fullName.includes(q) || regNo.includes(q);
+      return name.includes(q) || regNo.includes(q);
     });
   }, [roster, searchQuery]);
+
+  const totalStudents = filteredRoster.length;
+  const totalPages = Math.max(1, Math.ceil(totalStudents / pageSize));
+  const paginatedRoster = filteredRoster.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => { setPage(1); }, [searchQuery, pageSize]);
+
+  const datesList = useMemo(() => generateDateRange(), []);
+
+  const visiblePages = useMemo(() => {
+    const start = Math.max(1, page - 1);
+    const end = Math.min(totalPages, start + 2);
+    const pages = [];
+    for (let p = start; p <= end; p++) pages.push(p);
+    return pages;
+  }, [page, totalPages]);
 
   async function handleSaveAll() {
     try {
@@ -86,7 +130,7 @@ export function AttendanceRoster({ lockedCohortId }) {
             cohort_id: Number(cohortId),
             date,
             status: statuses[learner.id] || 'present',
-            remarks: null
+            remarks: null,
           })
         )
       );
@@ -97,120 +141,182 @@ export function AttendanceRoster({ lockedCohortId }) {
     }
   }
 
-  const handleStatusChange = (learnerId, status) => {
-    setStatuses(prev => ({ ...prev, [learnerId]: status }));
-  };
-
-  const datesList = useMemo(() => generateDateRange(), []);
-
   return (
     <div className="bg-[#f8f9fe] min-h-screen pb-32 font-body relative">
-      {/* Custom Header matching Teacher UI */}
-      <div className="bg-[#5a4fcf] text-white pt-10 pb-6 px-6 rounded-b-[40px] shadow-sm relative z-10">
-        <div className="flex items-center justify-between mb-6">
-          <button onClick={() => navigate('/app/attendance')} className="p-2 -ml-2 rounded-full hover:bg-white/10 transition">
+      {/* Header */}
+      <div className="bg-[#5a4fcf] text-white pt-10 pb-6 px-6 rounded-b-[40px] shadow-sm">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate('/app/attendance')}
+            className="p-2 -ml-2 rounded-full hover:bg-white/10 transition"
+          >
             <ChevronLeft className="w-6 h-6 text-white" />
           </button>
-          <h1 className="text-[18px] font-bold">{selectedCohort?.name || 'Class Attendance'}</h1>
-          <div className="w-10"></div> {/* Spacer for center alignment */}
-        </div>
-
-        {/* Horizontal Date Selector */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {datesList.map((d) => (
-            <button
-              key={d.iso}
-              onClick={() => setDate(d.iso)}
-              className={`flex flex-col items-center justify-center min-w-[56px] h-[72px] rounded-2xl transition-all ${
-                date === d.iso 
-                  ? 'bg-white text-[#5a4fcf] shadow-md' 
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              <span className={`text-[12px] font-semibold ${date === d.iso ? 'text-[#5a4fcf]' : 'text-white/70'}`}>
-                {d.dayName}
-              </span>
-              <span className={`text-[20px] font-bold ${date === d.iso ? 'text-[#5a4fcf]' : 'text-white'}`}>
-                {d.dayNumber}
-              </span>
-            </button>
-          ))}
+          <div className="text-center">
+            <h1 className="text-[18px] font-bold">Class Attendance</h1>
+            {selectedCohort && (
+              <p className="text-[13px] text-white/80 mt-0.5">{selectedCohort.name}</p>
+            )}
+          </div>
+          <button className="w-10 h-10 bg-white/15 rounded-2xl flex items-center justify-center hover:bg-white/25 transition">
+            <Calendar className="w-5 h-5 text-white" />
+          </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="px-4 relative z-20 mt-4 space-y-4">
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input 
-            type="text" 
-            placeholder="Search student..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white text-gray-900 rounded-2xl pl-12 pr-4 py-3.5 text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-[#5a4fcf]/50 shadow-sm border border-gray-100"
-          />
+      <div className="px-4 mt-4 space-y-3">
+        {/* Search Students Autocomplete */}
+        <div ref={searchRef} className="relative">
+          <button
+            onClick={() => setSearchOpen((v) => !v)}
+            className="w-full bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100 flex items-center gap-3 text-left"
+          >
+            <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
+            <span className={`flex-1 text-[14px] ${searchQuery ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+              {searchQuery || 'Search students'}
+            </span>
+            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </button>
+
+          {searchOpen && (
+            <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 mt-1 z-40 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+                <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <input
+                  autoFocus
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Type to search..."
+                  className="flex-1 text-[14px] outline-none text-gray-900 placeholder:text-gray-400"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+                )}
+              </div>
+              <div className="max-h-60 overflow-y-auto">
+                {filteredRoster.length === 0 ? (
+                  <div className="px-4 py-4 text-[13px] text-gray-500 text-center">No students found</div>
+                ) : (
+                  filteredRoster.slice(0, 15).map((l) => (
+                    <button
+                      key={l.id}
+                      onClick={() => { setSearchQuery(`${l.first_name} ${l.last_name}`); setSearchOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-indigo-50 transition border-b border-gray-50 last:border-0 text-left"
+                    >
+                      <Avatar name={`${l.first_name} ${l.last_name}`} src={l.photo_url} size={36} />
+                      <div className="min-w-0">
+                        <div className="text-[14px] font-semibold text-gray-900 truncate">{l.first_name} {l.last_name}</div>
+                        <div className="text-[12px] text-gray-500">{l.registry_no || 'N/A'}</div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Student List */}
+        {/* Date Dropdown */}
+        <div ref={dateRef} className="relative">
+          <button
+            onClick={() => setDatePickerOpen((v) => !v)}
+            className="w-full bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100 flex items-center gap-3 text-left"
+          >
+            <Calendar className="w-5 h-5 text-[#5a4fcf] flex-shrink-0" />
+            <span className="flex-1 text-[14px] font-medium text-gray-900">{formatDateDisplay(date)}</span>
+            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </button>
+          {datePickerOpen && (
+            <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 mt-1 z-40 max-h-60 overflow-y-auto">
+              {datesList.map((d) => (
+                <button
+                  key={d.iso}
+                  onClick={() => { setDate(d.iso); setDatePickerOpen(false); }}
+                  className={`w-full px-4 py-2.5 text-left text-[13px] hover:bg-indigo-50 transition border-b border-gray-50 last:border-0
+                    ${d.iso === date ? 'font-bold text-[#5a4fcf] bg-indigo-50' : 'text-gray-700'}`}
+                >
+                  {d.display}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Table Header */}
+        <div className="bg-[#f0f0fb] rounded-xl px-4 py-2.5 flex items-center text-[12px] font-semibold text-gray-500">
+          <div className="w-8 text-center">#</div>
+          <div className="flex-1 ml-3">Student</div>
+          <div className="w-28 text-right">Attendance</div>
+        </div>
+
+        {/* Student Rows */}
         {loadingRoster ? (
-          <div className="text-center p-8 text-gray-500 text-sm">Loading students...</div>
-        ) : filteredRoster.length === 0 ? (
-          <div className="text-center p-8 text-gray-500 text-sm">No students found.</div>
+          <div className="text-center py-10 text-gray-400 text-[14px]">Loading students...</div>
+        ) : paginatedRoster.length === 0 ? (
+          <div className="text-center py-10 text-gray-400 text-[14px]">No students found.</div>
         ) : (
-          <div className="space-y-3">
-            {filteredRoster.map((learner, idx) => {
+          <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100">
+            {paginatedRoster.map((learner, idx) => {
+              const globalIdx = (page - 1) * pageSize + idx + 1;
               const currentStatus = statuses[learner.id] || 'present';
-              
+              const statusOpt = STATUS_OPTIONS.find((s) => s.value === currentStatus) || STATUS_OPTIONS[0];
+
               return (
-                <div key={learner.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
-                  <div className="text-[12px] font-bold text-gray-400 w-5">
-                    {String(idx + 1).padStart(2, '0')}
-                  </div>
-                  
-                  <Avatar name={`${learner.first_name} ${learner.last_name}`} src={learner.photo_url} size={44} className="rounded-xl flex-shrink-0" />
-                  
+                <div key={learner.id} className="px-4 py-3 flex items-center gap-3">
+                  <div className="text-[13px] text-gray-400 w-8 text-center flex-shrink-0">{globalIdx}</div>
+                  <Avatar name={`${learner.first_name} ${learner.last_name}`} src={learner.photo_url} size={40} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[15px] font-bold text-gray-900 truncate">
+                    <div className="text-[14px] font-semibold text-gray-900 truncate">
                       {learner.first_name} {learner.last_name}
                     </div>
-                    <div className="text-[12px] font-medium text-gray-500">
-                      Roll No: {learner.registry_no || 'N/A'}
-                    </div>
+                    <div className="text-[12px] text-gray-500">{learner.registry_no || 'N/A'}</div>
                   </div>
 
-                  {canMark && (
-                    <div className="flex items-center bg-gray-50 rounded-xl p-1 shadow-inner border border-gray-100">
+                  {canMark ? (
+                    <div className="relative flex-shrink-0">
                       <button
-                        onClick={() => handleStatusChange(learner.id, 'present')}
-                        className={`w-10 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold transition-all ${
-                          currentStatus === 'present' 
-                            ? 'bg-emerald-500 text-white shadow-sm' 
-                            : 'text-gray-400 hover:text-gray-600'
-                        }`}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={() => setOpenStatusId(openStatusId === learner.id ? null : learner.id)}
+                        className="flex items-center gap-1.5 border border-gray-200 rounded-xl px-3 py-1.5 bg-white min-w-[105px] justify-between"
                       >
-                        P
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: statusOpt.color }} />
+                          <span className="text-[13px] font-medium" style={{ color: statusOpt.color }}>
+                            {statusOpt.label}
+                          </span>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
                       </button>
-                      <button
-                        onClick={() => handleStatusChange(learner.id, 'absent')}
-                        className={`w-10 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold transition-all ${
-                          currentStatus === 'absent' 
-                            ? 'bg-red-500 text-white shadow-sm' 
-                            : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                      >
-                        A
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(learner.id, 'late')}
-                        className={`w-10 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold transition-all ${
-                          currentStatus === 'late' 
-                            ? 'bg-amber-500 text-white shadow-sm' 
-                            : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                      >
-                        L
-                      </button>
+                      {openStatusId === learner.id && (
+                        <div
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden min-w-[120px]"
+                        >
+                          {STATUS_OPTIONS.map((opt) => (
+                            <button
+                              key={opt.value}
+                              onClick={() => {
+                                setStatuses((prev) => ({ ...prev, [learner.id]: opt.value }));
+                                setOpenStatusId(null);
+                              }}
+                              className={`w-full flex items-center gap-2 px-4 py-2.5 text-[13px] hover:bg-gray-50 transition
+                                ${currentStatus === opt.value ? 'font-bold bg-gray-50' : ''}`}
+                            >
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: opt.color }} />
+                              <span style={{ color: opt.color }}>{opt.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: statusOpt.color }} />
+                      <span className="text-[13px] font-medium" style={{ color: statusOpt.color }}>
+                        {statusOpt.label}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -218,10 +324,70 @@ export function AttendanceRoster({ lockedCohortId }) {
             })}
           </div>
         )}
+
+        {/* Pagination */}
+        {totalStudents > 0 && (
+          <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2 text-[12px] text-gray-500">
+                <span>Records per page</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-[12px] text-gray-700 focus:outline-none"
+                >
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[12px] text-gray-500 mr-1">
+                  {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalStudents)} of {totalStudents}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center disabled:opacity-40 hover:bg-gray-50 transition"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
+                </button>
+                {visiblePages.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`w-7 h-7 rounded-lg text-[12px] font-bold transition
+                      ${p === page ? 'bg-[#5a4fcf] text-white' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center disabled:opacity-40 hover:bg-gray-50 transition"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* View All Students */}
+        {totalStudents > pageSize && (
+          <button
+            onClick={() => { setPageSize(totalStudents); setPage(1); }}
+            className="w-full bg-white border border-gray-200 rounded-2xl py-3.5 text-[14px] font-semibold text-[#5a4fcf] flex items-center justify-center gap-2 shadow-sm"
+          >
+            <Eye className="w-4 h-4" />
+            View all students ({totalStudents})
+          </button>
+        )}
       </div>
 
       {/* Floating Submit Button */}
-      {canMark && filteredRoster.length > 0 && (
+      {canMark && roster.length > 0 && (
         <div className="fixed bottom-6 left-4 right-4 z-50">
           <button
             onClick={handleSaveAll}
