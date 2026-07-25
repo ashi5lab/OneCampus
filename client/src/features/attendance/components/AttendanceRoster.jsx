@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useLearners } from '../../learners/hooks/useLearners';
-import { useAttendanceForCohortDate, useMarkAttendance } from '../hooks/useAttendance';
+import { useAttendanceForCohortDate, useMarkAttendance, useMarkAttendanceBulk } from '../hooks/useAttendance';
 import { Avatar } from '../../../components/Avatar';
 import { PageHeader } from '../../../components/PageHeader';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -67,7 +67,7 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
   const { data: cohorts } = useCohorts();
   const { data: allLearners } = useLearners();
   const { data: existingRecords, isLoading: loadingRoster } = useAttendanceForCohortDate(cohortId, date);
-  const markAttendance = useMarkAttendance();
+  const markAttendanceBulk = useMarkAttendanceBulk();
 
   const selectedCohort = useMemo(
     () => (cohorts || []).find((c) => String(c.id) === String(cohortId)),
@@ -137,17 +137,17 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
 
   async function handleSaveAll() {
     try {
-      await Promise.all(
-        filteredRoster.map((learner) =>
-          markAttendance.mutateAsync({
-            learner_id: learner.id,
-            cohort_id: Number(cohortId),
-            date,
-            status: statuses[learner.id] || 'present',
-            remarks: null,
-          })
-        )
-      );
+      const records = filteredRoster.map((learner) => ({
+        learner_id: learner.id,
+        status: statuses[learner.id] || 'present',
+        remarks: null,
+      }));
+
+      await markAttendanceBulk.mutateAsync({
+        cohort_id: Number(cohortId),
+        date,
+        records
+      });
       alert('Attendance saved successfully');
       navigate('/app/attendance');
     } catch (err) {
@@ -402,10 +402,10 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
         <div className="fixed bottom-24 md:bottom-8 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
           <button
             onClick={handleSaveAll}
-            disabled={markAttendance.isPending}
+            disabled={markAttendanceBulk.isPending}
             className="w-full max-w-[300px] bg-[#5a4fcf] text-white rounded-full py-3.5 text-[15px] font-bold shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-70 pointer-events-auto"
           >
-            {markAttendance.isPending ? 'Submitting...' : 'Submit Attendance'}
+            {markAttendanceBulk.isPending ? 'Submitting...' : 'Submit Attendance'}
           </button>
         </div>
       )}

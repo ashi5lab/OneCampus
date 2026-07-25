@@ -43,3 +43,15 @@ export function useMarkAttendance() {
     }
   });
 }
+
+export function useMarkAttendanceBulk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: attendanceApi.markBulk,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['learners'] });
+      queryClient.invalidateQueries({ queryKey: ['instructors'] });
+    }
+  });
+}

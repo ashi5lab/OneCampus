@@ -11,6 +11,7 @@ router.use(moduleGuard('attendance'));
 
 router.get('/', requirePermission('attendance.view'), controller.getAll);
 router.get('/absentee-report', requirePermission('attendance.view'), controller.absenteeReport);
+router.post('/bulk', requirePermission('attendance.mark'), controller.markBulk);
 router.post('/', requirePermission('attendance.mark'), controller.mark);
 
 module.exports = router;
