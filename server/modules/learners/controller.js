@@ -238,10 +238,12 @@ async function getProfile(req, res) {
            WHERE lr.id = $1
          ),
          exceptions AS (
-           SELECT status, COUNT(*)::int AS count 
-           FROM onec_attendance 
-           WHERE learner_id = $1 
-           GROUP BY status
+           SELECT a.status, COUNT(*)::int AS count
+           FROM onec_attendance a
+           JOIN onec_learners lr2 ON a.learner_id = lr2.id
+           JOIN onec_cohort_attendance_logs cal ON cal.cohort_id = lr2.cohort_id AND cal.date = a.date
+           WHERE a.learner_id = $1
+           GROUP BY a.status
          )
          SELECT 'total_possible' AS status, COALESCE(MAX(m.total), 0)::int AS count FROM marked_days m
          UNION ALL
@@ -279,7 +281,7 @@ async function getProfile(req, res) {
     const absents = Number(attSum.find(r => r.status === 'absent')?.count || 0);
     const lates = Number(attSum.find(r => r.status === 'late')?.count || 0);
     const excused = Number(attSum.find(r => r.status === 'excused')?.count || 0);
-    const present = totalPossible - (absents + lates + excused);
+    const present = Math.max(0, totalPossible - (absents + lates + excused));
 
     const formattedSummary = [
       { status: 'present', count: present },
