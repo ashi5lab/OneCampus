@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const router = express.Router();
 
 // Meta (WhatsApp Cloud API) webhook endpoint —
-// https://api.onecampusedu.online/webhooks/whatsapp
+// https://api.onecampusedu.online/api/webhook/whatsapp
 //
 // Two halves, per Meta's contract
 // (developers.facebook.com/documentation/business-messaging/whatsapp/webhooks):
@@ -80,7 +80,7 @@ function handleEvent(req, res) {
         for (const message of value.messages || []) {
           console.log(
             `[whatsapp-webhook] incoming ${message.type || 'message'} from ${message.from}` +
-              (message.text?.body ? `: ${message.text.body.slice(0, 200)}` : '')
+            (message.text?.body ? `: ${message.text.body.slice(0, 200)}` : '')
           );
         }
 
