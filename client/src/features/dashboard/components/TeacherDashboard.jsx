@@ -1,8 +1,28 @@
-import { Link } from 'react-router-dom';
-import { Users, CheckCircle2, ClipboardList, CalendarDays, Speaker, Calendar as CalendarIcon, FileText, GraduationCap } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Users, CheckCircle2, ClipboardList, CalendarDays, Speaker, Calendar as CalendarIcon, FileText, GraduationCap, Plus, CalendarCheck, ShieldAlert } from 'lucide-react';
 import { TeacherHeader } from '../../../components/TeacherHeader';
 
 export function TeacherDashboard() {
+  const navigate = useNavigate();
+  const [fabOpen, setFabOpen] = useState(false);
+  const fabRef = useRef(null);
+
+  useEffect(() => {
+    if (!fabOpen) return;
+    const handleOutsideClick = (e) => {
+      if (fabRef.current && !fabRef.current.contains(e.target)) {
+        setFabOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [fabOpen]);
+
+  const fabActions = [
+    { label: 'Attendance', icon: CalendarCheck, path: '/app/attendance' },
+    { label: 'Discipline', icon: ShieldAlert, path: '/app/discipline' },
+  ];
   const glanceCards = [
     { icon: Users, value: '4', label: 'My Classes', color: 'text-indigo-600 bg-indigo-50' },
     { icon: CheckCircle2, value: '3/4', label: 'Attendance Marked', color: 'text-indigo-600 bg-indigo-50' },
@@ -152,6 +172,46 @@ export function TeacherDashboard() {
           </div>
         </div>
 
+      </div>
+
+      {/* Floating Action Button */}
+      <div ref={fabRef} className="fixed bottom-24 right-4 z-50 flex flex-col items-end gap-2">
+        {/* Bubble menu options */}
+        {fabActions.map((action, idx) => {
+          const Icon = action.icon;
+          return (
+            <div
+              key={action.label}
+              className={`flex items-center gap-2 transition-all duration-200 origin-bottom-right ${
+                fabOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-75 translate-y-2 pointer-events-none'
+              }`}
+              style={{ transitionDelay: fabOpen ? `${(fabActions.length - 1 - idx) * 50}ms` : '0ms' }}
+            >
+              <span className="bg-white text-gray-800 text-[13px] font-semibold px-3 py-1.5 rounded-full shadow-md border border-gray-100">
+                {action.label}
+              </span>
+              <button
+                type="button"
+                onClick={() => { setFabOpen(false); navigate(action.path); }}
+                className="w-10 h-10 rounded-full bg-[#5a4fcf] flex items-center justify-center shadow-lg"
+              >
+                <Icon className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          );
+        })}
+
+        {/* Main FAB */}
+        <button
+          type="button"
+          onClick={() => setFabOpen((o) => !o)}
+          className="w-14 h-14 rounded-full bg-[#5a4fcf] flex items-center justify-center shadow-xl active:scale-95 transition-transform"
+          aria-label="Quick actions"
+        >
+          <Plus
+            className={`w-7 h-7 text-white transition-transform duration-200 ${fabOpen ? 'rotate-45' : 'rotate-0'}`}
+          />
+        </button>
       </div>
     </div>
   );
