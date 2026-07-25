@@ -107,7 +107,7 @@ export function TeacherDashboard() {
   }, [timetableData, todayName]);
 
   // Attendance glance: how many of today's classes have a complete (non-partial) log
-  const logs = logsData?.data ?? [];
+  const logs = Array.isArray(logsData) ? logsData : (logsData?.data ?? []);
   const markedCount    = logs.filter((l) => !l.is_partial).length;
   const totalClasses   = todaySchedule.length || (typeof classCount === 'number' ? classCount : 0);
   const attendanceText = totalClasses > 0 ? `${markedCount}/${totalClasses}` : `${markedCount}`;

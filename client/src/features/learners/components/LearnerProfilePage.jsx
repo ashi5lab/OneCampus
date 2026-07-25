@@ -148,20 +148,28 @@ export function LearnerProfilePage() {
   const uploadLearnerPic = useUploadLearnerProfilePicture(learnerId, ['learners', learnerId, 'profile']);
   const removeLearnerPic = useRemoveLearnerProfilePicture(learnerId, ['learners', learnerId, 'profile']);
 
-  // Get subjects overview for the academic performance card
+  // Aggregate per-subject across all graded sources (evaluations, assignments, exams)
   const subjectScores = useMemo(() => {
-    if (!data?.scores) return [];
+    if (!data) return [];
     const subs = {};
-    data.scores.forEach(s => {
-      if (!subs[s.module_name]) subs[s.module_name] = { score: 0, max: 0 };
-      subs[s.module_name].score += Number(s.score_obtained);
-      subs[s.module_name].max += Number(s.max_score);
+    const allRows = [
+      ...(data.scores ?? []),
+      ...(data.assignment_scores ?? []),
+      ...(data.exam_scores ?? []),
+    ];
+    allRows.forEach(s => {
+      const key = s.module_name || 'Other';
+      if (!subs[key]) subs[key] = { score: 0, max: 0 };
+      if (s.score_obtained != null && s.max_score > 0) {
+        subs[key].score += Number(s.score_obtained);
+        subs[key].max += Number(s.max_score);
+      }
     });
-    return Object.entries(subs).map(([name, d]) => ({
-      name,
-      pct: Math.round((d.score / d.max) * 100)
-    })).slice(0, 5); // show top 5 for the card
-  }, [data?.scores]);
+    return Object.entries(subs)
+      .filter(([, d]) => d.max > 0)
+      .map(([name, d]) => ({ name, pct: Math.round((d.score / d.max) * 100) }))
+      .slice(0, 5);
+  }, [data]);
 
   const behaviorStats = useMemo(() => {
     const records = Array.isArray(disciplineRecords) ? disciplineRecords : disciplineRecords?.data || [];
@@ -182,13 +190,20 @@ export function LearnerProfilePage() {
   if (isLoading) return <div className="p-8 text-center text-sm text-ink-500">Loading…</div>;
   if (error) return <div className="rounded border border-border bg-surface p-8 text-center text-sm font-semibold text-danger">{error.message}</div>;
 
-  const { learner, guardians, attendance, scores, certificates } = data;
-  
+  const { learner, guardians, attendance, scores, assignment_scores = [], exam_scores = [], certificates } = data;
+
+  // All graded records for summary stats
+  const allGradedScores = [
+    ...scores.filter(s => s.score_obtained != null && s.max_score > 0).map(s => ({ score_obtained: s.score_obtained, max_score: s.max_score })),
+    ...assignment_scores.filter(s => s.score_obtained != null && s.max_score > 0).map(s => ({ score_obtained: s.score_obtained, max_score: s.max_score })),
+    ...exam_scores.filter(s => s.score_obtained != null && s.max_score > 0).map(s => ({ score_obtained: s.score_obtained, max_score: s.max_score })),
+  ];
+
   const attendanceCounts = Object.fromEntries(attendance.summary.map((row) => [row.status, row.count]));
   const totalAttendance = attendance.summary.reduce((sum, row) => sum + row.count, 0);
   const attendanceRate = totalAttendance > 0 ? Math.round(((attendanceCounts.present ?? 0) / totalAttendance) * 100) : null;
-  const avgScorePct = scores.length > 0
-    ? Math.round((scores.reduce((sum, s) => sum + Number(s.score_obtained) / Number(s.max_score), 0) / scores.length) * 100)
+  const avgScorePct = allGradedScores.length > 0
+    ? Math.round((allGradedScores.reduce((sum, s) => sum + Number(s.score_obtained) / Number(s.max_score), 0) / allGradedScores.length) * 100)
     : null;
 
   const primaryGuardian = guardians.length > 0 ? guardians[0] : null;
@@ -383,7 +398,7 @@ export function LearnerProfilePage() {
             <div className="flex-1 min-w-0 space-y-6">
               
               {/* Tab Bar */}
-              <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide">
+              <div className="flex flex-wrap items-center gap-1 pb-1">
                 {TABS.map((t) => {
                   const Icon = t.icon;
                   const isActive = tab === t.key;
@@ -420,7 +435,7 @@ export function LearnerProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {/* Subject List */}
                       <div className="divide-y divide-border/50">
-                        {scores.length > 0 ? scores.slice(0, 5).map((sub, i) => (
+                        {subjectScores.length > 0 ? subjectScores.slice(0, 5).map((sub, i) => (
                           <div key={i} className="flex items-center justify-between py-3 px-2 -mx-2 hover:bg-surface-muted/30 transition-colors rounded-lg">
                             <div className="flex items-center gap-3 text-sm font-semibold text-ink-800">
                               <div className={`w-2 h-2 rounded-full ${i % 2 === 0 ? 'bg-emerald-500' : 'bg-indigo-500'}`}></div>
@@ -505,31 +520,90 @@ export function LearnerProfilePage() {
 
               {/* Other Tabs (Re-used from old layout but restyled into cards) */}
               {tab === 'academics' && (
-                <div className="space-y-5 bg-surface rounded-2xl shadow-sm border border-border p-5">
-                  <div>
+                <div className="space-y-5">
+                  {/* Assignment Scores */}
+                  <div className="bg-surface rounded-2xl shadow-sm border border-border p-5">
+                    <h3 className="mb-3 text-sm font-extrabold text-ink-900">Assignment Scores</h3>
+                    <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+                      <DataTable
+                        columns={[
+                          { key: 'module', header: t('topic'), render: (row) => <span className="font-semibold text-ink-800">{row.module_name ?? '—'}</span> },
+                          { key: 'name', header: 'Assignment', render: (row) => row.name },
+                          { key: 'date', header: 'Due Date', render: (row) => row.eval_date ? new Date(row.eval_date).toLocaleDateString() : '—' },
+                          {
+                            key: 'score',
+                            header: 'Score',
+                            render: (row) => row.eval_type === 'grades'
+                              ? <span className="font-bold text-ink-900">{row.grade_value ?? '—'}</span>
+                              : (
+                                <span className={Number(row.score_obtained) < Number(row.passing_marks) ? 'font-bold text-danger' : 'font-bold text-success'}>
+                                  {row.score_obtained} / {row.max_score}
+                                </span>
+                              )
+                          }
+                        ]}
+                        rows={assignment_scores}
+                        rowKey={(row) => `as-${row.name}-${row.eval_date}`}
+                        emptyMessage="No graded assignments yet."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Exam Scores */}
+                  <div className="bg-surface rounded-2xl shadow-sm border border-border p-5">
                     <h3 className="mb-3 text-sm font-extrabold text-ink-900">Exam Scores</h3>
                     <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
                       <DataTable
                         columns={[
-                          { key: 'module', header: t('topic'), render: (row) => <span className="font-semibold text-ink-800">{row.module_name}</span> },
-                          { key: 'evaluation', header: 'Exam', render: (row) => row.evaluation_name },
-                          { key: 'date', header: 'Date', render: (row) => <span className="text-ink-500">{new Date(row.eval_date).toLocaleDateString()}</span> },
+                          { key: 'module', header: t('topic'), render: (row) => <span className="font-semibold text-ink-800">{row.module_name ?? '—'}</span> },
+                          { key: 'name', header: 'Exam', render: (row) => row.name },
+                          { key: 'date', header: 'Date', render: (row) => row.eval_date ? new Date(row.eval_date).toLocaleDateString() : '—' },
                           {
                             key: 'score',
                             header: 'Score',
-                            render: (row) => (
-                              <span className={Number(row.score_obtained) < Number(row.passing_score) ? 'font-bold text-danger' : 'font-bold text-success'}>
-                                {row.score_obtained} / {row.max_score}
-                              </span>
-                            )
+                            render: (row) => row.eval_type === 'grades'
+                              ? <span className="font-bold text-ink-900">{row.grade_value ?? '—'}</span>
+                              : (
+                                <span className={Number(row.score_obtained) < Number(row.passing_marks) ? 'font-bold text-danger' : 'font-bold text-success'}>
+                                  {row.score_obtained} / {row.max_score}
+                                </span>
+                              )
                           }
                         ]}
-                        rows={scores}
-                        rowKey={(row) => row.id}
-                        emptyMessage="No exam scores yet."
+                        rows={exam_scores}
+                        rowKey={(row) => `ex-${row.name}-${row.eval_date}`}
+                        emptyMessage="No graded exams yet."
                       />
                     </div>
                   </div>
+
+                  {/* Legacy evaluation scores */}
+                  {scores.length > 0 && (
+                    <div className="bg-surface rounded-2xl shadow-sm border border-border p-5">
+                      <h3 className="mb-3 text-sm font-extrabold text-ink-900">Evaluation Scores</h3>
+                      <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+                        <DataTable
+                          columns={[
+                            { key: 'module', header: t('topic'), render: (row) => <span className="font-semibold text-ink-800">{row.module_name}</span> },
+                            { key: 'evaluation', header: 'Evaluation', render: (row) => row.evaluation_name },
+                            { key: 'date', header: 'Date', render: (row) => <span className="text-ink-500">{new Date(row.eval_date).toLocaleDateString()}</span> },
+                            {
+                              key: 'score',
+                              header: 'Score',
+                              render: (row) => (
+                                <span className={Number(row.score_obtained) < Number(row.passing_score) ? 'font-bold text-danger' : 'font-bold text-success'}>
+                                  {row.score_obtained} / {row.max_score}
+                                </span>
+                              )
+                            }
+                          ]}
+                          rows={scores}
+                          rowKey={(row) => row.id}
+                          emptyMessage="No evaluation scores yet."
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

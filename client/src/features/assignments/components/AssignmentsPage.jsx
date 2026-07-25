@@ -76,8 +76,8 @@ export function AssignmentsPage() {
       header: 'Due',
       render: (row) => row.due_date ? new Date(row.due_date).toLocaleDateString() : '—',
     },
-    { key: 'status', header: 'Status', render: (row) => <AssignmentStatusBadge status={row.status} /> },
-    { key: 'publish', header: 'Published', render: (row) => <PublishBadge published={row.publish_marks} /> },
+    { key: 'status', header: 'Status', mobileCompact: true, render: (row) => <AssignmentStatusBadge status={row.status} /> },
+    { key: 'publish', header: 'Published', mobileCompact: true, render: (row) => <PublishBadge published={row.publish_marks} /> },
     {
       key: 'actions',
       header: '',
@@ -185,6 +185,7 @@ export function AssignmentsPage() {
           isLoading={isLoading}
           serverPagination={{ page, pageSize, total, onPageChange: setPage }}
           mobileCompact
+          onRowClick={(row) => navigate(`/app/assignments/${row.id}`)}
         />
       </div>
 
