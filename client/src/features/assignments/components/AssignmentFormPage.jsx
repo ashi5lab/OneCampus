@@ -13,7 +13,7 @@ import { PageHeader } from '../../../components/PageHeader';
 import { Spinner } from '../../../components/Spinner';
 import { SearchSelect } from '../../../components/SearchSelect';
 import { MultiSearchSelect } from '../../../components/MultiSearchSelect';
-import { UserSearchSelect } from '../../../components/UserSearchSelect';
+import { MultiUserSearchSelect } from '../../../components/UserSearchSelect';
 import { showToast } from '../../../lib/toast';
 
 // ─── Zod schema ──────────────────────────────────────────────────────────────
@@ -123,12 +123,6 @@ export function AssignmentFormPage() {
   const moduleOptions = (modulesData?.data ?? []).map(m => ({ value: m.id, label: m.name }));
   const cohortOptions = (cohortsData?.data ?? []).map(c => ({ value: c.id, label: c.name }));
   const allUsers = allUsersData?.data ?? [];
-  const learnerOptions = allUsers
-    .filter(u => u.role === 'learner')
-    .map(u => ({
-      value: u.id,
-      label: u.name || u.username,
-    }));
 
   async function onSubmit(values, asDraft = false) {
     const payload = { ...values };
@@ -280,11 +274,13 @@ export function AssignmentFormPage() {
                 name="student_user_ids"
                 control={control}
                 render={({ field }) => (
-                  <MultiSearchSelect
-                    options={learnerOptions}
+                  <MultiUserSearchSelect
+                    users={allUsers}
+                    roles={['learner']}
                     values={field.value ?? []}
                     onChange={field.onChange}
                     placeholder="Search students by name…"
+                    showRole={false}
                   />
                 )}
               />
