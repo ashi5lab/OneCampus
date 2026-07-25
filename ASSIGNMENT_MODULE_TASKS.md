@@ -147,9 +147,12 @@ Draft → Created → Grading In Progress → Completed → Published
 - [x] Status + publish filters on list
 - [x] Inline autosave on valuation
 - [x] Reuses DataTable, SearchSelect, PageHeader, showToast
-- [ ] Skeleton loading states (DataTable built-in isLoading)
+- [x] AssignmentSuccessPage — shown after create (not draft), with View/Go buttons
+- [x] Activity tab — timeline of audit log entries, server endpoint GET /assignments/:id/activity
+- [x] ConfirmDialog component (replaced all window.confirm in assignment module)
+- [x] Spinner component — wired into form submit, Complete Valuation, Publish Marks buttons
+- [x] Bug fix: subject/class/student dropdowns were empty (wrong data shape — .data not .modules/.cohorts/.users)
 - [ ] Attachment upload (PDF, images, docs) — deferred
-- [ ] AssignmentCreated success page — optional
 - [ ] AGENT_LOG entry — pending
 - [ ] PRD update — pending
 
@@ -174,8 +177,6 @@ Draft → Created → Grading In Progress → Completed → Published
 ## Deferred / Future
 
 - Attachment upload (PDF, images, docs)
-- AssignmentCreated success animation page
-- Activity tab (audit log for assignments)
 - Bulk grade upload via CSV
 
 ---
