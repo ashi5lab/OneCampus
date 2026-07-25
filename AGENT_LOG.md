@@ -599,3 +599,55 @@ None in this session. The `is_partial` column migration was already applied in E
 *Log entry authored by Antigravity Agent*
 *Session: 1038c693-05cb-5db2-aad9-142777098a43*
 *Timestamp: 2026-07-25T21:00 IST*
+
+---
+
+## Entry 004 — JSX Syntax Error in AttendancePage (Build Failure) [COMPLETE]
+
+**Date:** 2026-07-25
+**Time:** ~21:10 IST
+**Session ID:** `1038c693-05cb-5db2-aad9-142777098a43`
+
+---
+
+### User Report
+
+> "there are build errors"
+
+Vite error:
+```
+Internal server error: AttendancePage.jsx: Unexpected token, expected "}" (241:8)
+  239 |             }))
+  240 |           )
+> 241 |         )}
+```
+
+---
+
+### Root Cause
+
+In JSX, `{expression}` is closed by the first bare `}` the parser encounters. The `list.map((c) => { ... return jsx; }))` callback used a **block body** `{...}`. JSX treated the closing `}` of the arrow function block as closing the outer `{!isSearching && (...)}` expression — leaving dangling `))` tokens that caused the parse failure.
+
+---
+
+### Fix
+
+**File modified:** `client/src/features/attendance/components/AttendancePage.jsx`
+
+- Extracted a `ClassCard` named component (placed above `AttendancePicker`) containing the card JSX and per-card variable declarations (`isMarked`, `presentCount`, `totalLearners`)
+- Rewrote the class list render to use `list.map((c) => (<ClassCard ... />))` — parenthesized arrow body, no block `{}`
+- Also simplified the conditional render from nested ternary to three separate `&&` guards (avoids the same JSX-in-ternary pitfall)
+
+**Commit:** `598ebe0`
+
+---
+
+### Rule Established
+
+> Block-body arrow functions (`(x) => { ... }`) must NOT be used directly inside JSX expression containers `{ }` — the closing `}` of the block is misread by JSX as closing the expression. Always use parenthesized arrow bodies `(x) => (...)` or extract to named components.
+
+---
+
+*Log entry authored by Antigravity Agent*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*
+*Timestamp: 2026-07-25T21:10 IST*
