@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { PageHeader } from '../../../components/PageHeader';
 import { AttendanceRoster } from './AttendanceRoster';
@@ -9,6 +9,7 @@ import { useLearners } from '../../learners/hooks/useLearners';
 import { useCohortAttendanceLogs } from '../hooks/useAttendance';
 import { TeacherHeader } from '../../../components/TeacherHeader';
 import { Avatar } from '../../../components/Avatar';
+import { FlatList, FlatRow } from '../../../components/FlatList';
 import { ChevronRight, Clock, CheckCircle2, Search, ChevronDown } from 'lucide-react';
 
 function todayIso() {
@@ -37,55 +38,48 @@ export function AttendancePage() {
   return <AttendancePicker />;
 }
 
-function ClassCard({ c, log }) {
+// Never a grid — one column at every breakpoint — so this is a flat row
+// (not a card) throughout, same reasoning as ClassPage's "My Classes".
+function ClassRow({ c, log }) {
   const isMarked = !!log;
   const presentCount = log?.present_count ?? null;
   const totalLearners = log?.total_learners ?? c.learner_count ?? null;
   return (
-    <Link
-      to={`/app/attendance/${c.id}`}
-      className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-transform active:scale-[0.99] hover:shadow-md"
-    >
-      <div className="flex justify-between items-center">
+    <FlatRow to={`/app/attendance/${c.id}`}>
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-indigo-50 text-indigo-700 rounded-2xl flex items-center justify-center text-[18px] font-bold">
+          <div className="w-10 h-10 bg-indigo-50 text-indigo-700 rounded-xl flex items-center justify-center text-[15px] font-bold flex-shrink-0">
             {(c.name || '?')[0].toUpperCase()}
           </div>
-          <div>
-            <div className="text-[16px] font-bold text-gray-900">{c.name}</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[14.5px] font-bold text-gray-900 truncate">{c.name}</div>
             <div className="text-[12px] font-medium text-gray-500">
               {c.learner_count != null ? `${c.learner_count} students` : 'Students'}
             </div>
           </div>
+          <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
         </div>
-        <ChevronRight className="w-5 h-5 text-gray-400" />
-      </div>
 
-      <div className="flex gap-2 mt-1">
-        <div className="flex-1 bg-gray-50 rounded-xl p-2.5 flex items-center justify-between">
+        <div className="flex gap-2 mt-2.5 pl-[52px]">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
             <Clock className="w-3.5 h-3.5" />
             Status
+            {isMarked ? (
+              <span className="text-[10.5px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Marked</span>
+            ) : (
+              <span className="text-[10.5px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">Pending</span>
+            )}
           </div>
-          {isMarked ? (
-            <div className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Marked</div>
-          ) : (
-            <div className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">Pending</div>
-          )}
-        </div>
-        <div className="flex-1 bg-gray-50 rounded-xl p-2.5 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Present
-          </div>
-          <div className="text-[11px] font-bold text-gray-900">
-            {isMarked && presentCount != null && totalLearners != null
-              ? `${presentCount}/${totalLearners}`
-              : '--/--'}
+            <span className="text-[10.5px] font-bold text-gray-900">
+              {isMarked && presentCount != null && totalLearners != null ? `${presentCount}/${totalLearners}` : '--/--'}
+            </span>
           </div>
         </div>
       </div>
-    </Link>
+    </FlatRow>
   );
 }
 
@@ -232,9 +226,15 @@ function AttendancePicker() {
         {!isSearching && !cohortsLoading && list.length === 0 && (
           <div className="text-center py-8 text-gray-400 text-sm">No classes found.</div>
         )}
-        {!isSearching && !cohortsLoading && list.map((c) => (
-          <ClassCard key={c.id} c={c} log={logsMap[String(c.id)]} />
-        ))}
+        {!isSearching && !cohortsLoading && list.length > 0 && (
+          <div className="-mx-4">
+            <FlatList className="bg-white">
+              {list.map((c) => (
+                <ClassRow key={c.id} c={c} log={logsMap[String(c.id)]} />
+              ))}
+            </FlatList>
+          </div>
+        )}
       </div>
     </div>
   );
