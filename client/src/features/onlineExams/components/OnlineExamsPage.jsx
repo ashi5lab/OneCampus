@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { StatCard } from '../../../components/StatCard';
@@ -8,7 +9,6 @@ import { Badge } from '../../../components/Badge';
 import { useOnlineExams, useOnlineExam, useCreateOnlineExam, useUpdateOnlineExam, useDeleteOnlineExam } from '../hooks/useOnlineExams';
 import { showToast } from '../../../lib/toast';
 import { ExamFormModal } from './ExamFormModal';
-import { ConfirmDialog } from '../../../components/ConfirmDialog';
 
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const STATUS_LABEL = { in_progress: 'In progress', submitted: 'Submitted', graded: 'Graded' };
@@ -24,12 +24,12 @@ export function OnlineExamsPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingExamId, setEditingExamId] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const columns = [
     {
       key: 'title',
       header: 'Title',
+      sortable: true,
       render: (row) => (
         <Link to={`/app/online-exams/${row.id}`} className="font-semibold text-accent-dark hover:underline">
           {row.title}
@@ -43,6 +43,7 @@ export function OnlineExamsPage() {
     {
       key: 'status',
       header: canCreate ? 'Published' : 'Your Status',
+      mobileCompact: true,
       render: (row) =>
         canCreate ? (
           <Badge variant={row.published ? 'active' : 'pending'}>{row.published ? 'Published' : 'Draft'}</Badge>
@@ -51,29 +52,27 @@ export function OnlineExamsPage() {
         ) : (
           <Badge variant="inactive">Not started</Badge>
         )
-    },
-    {
-      key: 'actions',
-      header: '',
-      render: (row) => {
-        const canManage = user.role === 'admin' || row.created_by === user.id;
-        if (!canManage) return null;
-        return (
-          <div className="flex justify-end gap-3">
-            <button onClick={() => setEditingExamId(row.id)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
-              Edit
-            </button>
-            <button
-              onClick={() => setConfirmDelete(row)}
-              className="text-xs font-semibold text-danger hover:opacity-80"
-            >
-              Delete
-            </button>
-          </div>
-        );
-      }
     }
   ];
+
+  function examActions(row) {
+    const canManage = user.role === 'admin' || row.created_by === user.id;
+    return [
+      { key: 'edit', label: 'Edit', icon: Pencil, hidden: !canManage, onClick: () => setEditingExamId(row.id) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !canManage,
+        confirm: `Delete "${row.title}"? This cannot be undone.`,
+        onClick: () => deleteExam.mutate(row.id, {
+          onSuccess: () => showToast.success('Exam deleted.'),
+          onError: (e) => showToast.error(e.message)
+        })
+      }
+    ];
+  }
 
   return (
     <div>
@@ -95,7 +94,7 @@ export function OnlineExamsPage() {
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
-        {exams && <DataTable columns={columns} rows={exams} rowKey={(row) => row.id} emptyMessage="No exams yet." />}
+        {exams && <DataTable columns={columns} rows={exams} rowKey={(row) => row.id} emptyMessage="No exams yet." mobileCompact actions={examActions} />}
       </div>
 
       {showForm && (
@@ -112,21 +111,6 @@ export function OnlineExamsPage() {
           examId={editingExamId}
           onClose={() => setEditingExamId(null)}
           updateExam={updateExam}
-        />
-      )}
-
-      {confirmDelete && (
-        <ConfirmDialog
-          message={`Delete "${confirmDelete.title}"? This cannot be undone.`}
-          confirmLabel="Delete"
-          danger={true}
-          onConfirm={() => {
-            deleteExam.mutate(confirmDelete.id, {
-              onSuccess: () => { showToast.success('Exam deleted.'); setConfirmDelete(null); },
-              onError: (e) => { showToast.error(e.message); setConfirmDelete(null); }
-            });
-          }}
-          onCancel={() => setConfirmDelete(null)}
         />
       )}
     </div>
