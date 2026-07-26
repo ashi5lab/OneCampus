@@ -56,7 +56,7 @@ const ALL_PERMISSIONS = [
 const DEFAULT_ROLE_PERMISSIONS = {
   admin: ALL_PERMISSIONS,
   staff: ['calendar.view', 'notices.view'],
-  instructor: ['calendar.view', 'notices.view'],
+  instructor: ['calendar.view', 'notices.view', 'exams.view', 'exams.manage', 'exams.grade'],
   learner: ['calendar.view', 'notices.view'],
   guardian: ['calendar.view', 'notices.view']
 };
