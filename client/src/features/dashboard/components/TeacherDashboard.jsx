@@ -6,6 +6,7 @@ import {
   Zap, ChevronRight, Bell, AlertCircle, Clock, XCircle
 } from 'lucide-react';
 import { TeacherHeader } from '../../../components/TeacherHeader';
+import { Card } from '../../../components/Card';
 import { FlatList, FlatRow } from '../../../components/FlatList';
 import { SectionHeader } from '../../../components/SectionHeader';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -319,7 +320,7 @@ export function TeacherDashboard() {
         </div>
 
         {/* Today's Schedule */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <Card padding="p-5">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-[15px] font-bold text-gray-900">Today's Schedule</h2>
             <Link to="/app/timetable" className="text-xs font-semibold text-indigo-600">View Timetable</Link>
@@ -357,10 +358,10 @@ export function TeacherDashboard() {
               })}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Recent Notices */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <Card padding="p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[15px] font-bold text-gray-900">Recent Notices</h2>
             <Link to="/app/notices" className="text-xs font-semibold text-indigo-600">View all</Link>
@@ -385,10 +386,10 @@ export function TeacherDashboard() {
               ))}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Upcoming Events */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <Card padding="p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[15px] font-bold text-gray-900">Upcoming Events</h2>
             <Link to="/app/calendar" className="text-xs font-semibold text-indigo-600">View calendar</Link>
@@ -425,7 +426,7 @@ export function TeacherDashboard() {
               })}
             </div>
           )}
-        </div>
+        </Card>
 
       </div>
     </div>

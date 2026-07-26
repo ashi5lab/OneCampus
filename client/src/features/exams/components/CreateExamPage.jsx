@@ -5,6 +5,7 @@ import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { useInstructors } from '../../instructors/hooks/useInstructors';
 import { useAuth } from '../../../contexts/AuthContext';
 import { SearchSelect } from '../../../components/SearchSelect';
+import { Card } from '../../../components/Card';
 
 export function CreateExamPage({ onSubmit, submitting, submitError, onCancel, initialCohortId }) {
   const { t } = useConfig();
@@ -157,7 +158,7 @@ useEffect(() => {
   }
 
   return (
-    <div className="w-full rounded-2xl border border-border bg-surface p-6 shadow-sm">
+    <Card padding="p-6" className="w-full">
       <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
         <div>
           <h2 className="text-lg font-bold text-ink-900">Create New Exam</h2>
@@ -431,6 +432,6 @@ useEffect(() => {
           </button>
         </div>
       </form>
-    </div>
+    </Card>
   );
 }
