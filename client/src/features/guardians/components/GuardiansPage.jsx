@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
@@ -17,8 +18,9 @@ export function GuardiansPage() {
   const { t } = useConfig();
   const { can } = useAuth();
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 10;
-  const { data: result, isLoading, error } = useGuardiansPage({ page, pageSize: PAGE_SIZE });
+  const [pageSize, setPageSize] = useState(10);
+  const [sort, setSort] = useState(null);
+  const { data: result, isLoading, error } = useGuardiansPage({ page, pageSize: pageSize === 'all' ? 200 : pageSize, sort: sort?.key, order: sort?.dir });
   const guardians = result?.data;
   const meta = result?.meta;
   const createGuardian = useCreateGuardian();
@@ -38,6 +40,7 @@ export function GuardiansPage() {
     {
       key: 'name',
       header: 'Guardian',
+      sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2.5">
           <Avatar name={`${row.first_name} ${row.last_name}`} src={row.profile_picture_url} size={32} />
@@ -48,10 +51,11 @@ export function GuardiansPage() {
         </div>
       )
     },
-    { key: 'address', header: 'Address', render: (row) => row.address },
+    { key: 'address', header: 'Address', mobileCompact: true, render: (row) => row.address },
     {
       key: 'whatsapp',
       header: 'WhatsApp',
+      mobileCompact: true,
       render: (row) => <Badge variant={row.whatsapp_opt_in ? 'active' : 'inactive'}>{row.whatsapp_opt_in ? 'Opted in' : 'Not opted in'}</Badge>
     }
   ];
@@ -67,43 +71,25 @@ export function GuardiansPage() {
         const names = (learners || [])
           .filter((learner) => linkedIds.includes(learner.id))
           .map((learner) => `${learner.first_name} ${learner.last_name}`);
-        return (
-          <div className="flex items-center gap-2">
-            <span className="text-[12.5px] text-ink-500">
-              {names.length > 0 ? names.join(', ') : 'None'}
-            </span>
-            <button
-              onClick={() => setLinksTarget(row)}
-              className="whitespace-nowrap text-[11.5px] font-semibold text-accent hover:opacity-80"
-            >
-              Manage
-            </button>
-          </div>
-        );
+        return <span className="text-[12.5px] text-ink-500">{names.length > 0 ? names.join(', ') : 'None'}</span>;
       }
     });
   }
 
-  if (can('guardians.manage')) {
-    columns.push({
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          <button onClick={() => setEditingGuardian(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
-          <button 
-            onClick={() => {
-              if (window.confirm(`Are you sure you want to delete ${row.first_name} ${row.last_name}?`)) {
-                deleteGuardian.mutate(row.id);
-              }
-            }} 
-            className="text-xs font-semibold text-danger hover:opacity-80"
-          >
-            Delete
-          </button>
-        </div>
-      )
-    });
+  function guardianActions(row) {
+    return [
+      { key: 'links', label: 'Manage Links', hidden: !canManageLinks, onClick: () => setLinksTarget(row) },
+      { key: 'edit', label: 'Edit', icon: Pencil, hidden: !can('guardians.manage'), onClick: () => setEditingGuardian(row) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !can('guardians.manage'),
+        confirm: `Are you sure you want to delete ${row.first_name} ${row.last_name}?`,
+        onClick: () => deleteGuardian.mutate(row.id)
+      }
+    ];
   }
 
   return (
@@ -133,7 +119,21 @@ export function GuardiansPage() {
             columns={columns}
             rows={guardians}
             rowKey={(row) => row.id}
-            serverPagination={{ page, pageSize: PAGE_SIZE, total: meta?.total ?? 0, onPageChange: setPage }}
+            mobileCompact
+            actions={guardianActions}
+            sort={sort}
+            onSortChange={(key) => setSort((prev) => {
+              if (!prev || prev.key !== key) return { key, dir: 'asc' };
+              if (prev.dir === 'asc') return { key, dir: 'desc' };
+              return null;
+            })}
+            serverPagination={{
+              page,
+              pageSize: pageSize === 'all' ? 200 : pageSize,
+              total: meta?.total ?? 0,
+              onPageChange: setPage,
+              onPageSizeChange: (size) => { setPageSize(size); setPage(1); }
+            }}
           />
         )}
       </div>

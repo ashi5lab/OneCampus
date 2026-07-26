@@ -7,10 +7,10 @@ export function useGuardians() {
 
 // Server-side-paginated variant for the roster page — see
 // useLearnersPage's comment for why this exists alongside useGuardians.
-export function useGuardiansPage({ page = 1, pageSize = 10 } = {}) {
+export function useGuardiansPage({ page = 1, pageSize = 10, sort, order } = {}) {
   return useQuery({
-    queryKey: ['guardians', 'page', page, pageSize],
-    queryFn: () => guardiansApi.listPage({ page, pageSize })
+    queryKey: ['guardians', 'page', page, pageSize, sort, order],
+    queryFn: () => guardiansApi.listPage({ page, pageSize, sort, order })
   });
 }
 
