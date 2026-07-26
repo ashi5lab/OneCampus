@@ -220,7 +220,7 @@ async function getProfile(req, res) {
     // connections — node-postgres serializes queries issued on one client,
     // so Promise.all here is safe and just avoids one round trip of latency
     // per query rather than running them concurrently on the wire.
-    const [guardians, attendanceSummary, recentAttendance, scores, certificates] = await Promise.all([
+    const [guardians, attendanceSummary, recentAttendance, scores, certificates, assignmentScores] = await Promise.all([
       req.db.query(
         `SELECT g.id, g.first_name, g.last_name, g.phone, g.address, usr.profile_picture_url
          FROM onec_learner_guardian_map map
@@ -273,8 +273,44 @@ async function getProfile(req, res) {
       req.db.query(
         'SELECT id, type, certificate_no, issue_date FROM onec_certificates WHERE learner_id = $1 ORDER BY issue_date DESC',
         [learnerId]
+      ),
+      req.db.query(
+        `SELECT sub.score_obtained, sub.grade_value, sub.status,
+                a.title AS name, a.due_date::text AS eval_date, a.max_score, a.passing_marks,
+                a.eval_type, a.publish_marks, 'assignment' AS source_type,
+                m.name AS module_name
+         FROM onec_assignment_submissions sub
+         JOIN onec_assignments a ON sub.assignment_id = a.id
+         LEFT JOIN onec_modules m ON a.module_id = m.id
+         WHERE sub.learner_id = $1
+           AND a.publish_marks = true
+           AND sub.status = 'graded'
+         ORDER BY a.due_date DESC`,
+        [learnerId]
       )
     ]);
+
+    // Exam scores — table may not exist if migration 041 hasn't run yet
+    let examScoreRows = [];
+    try {
+      const examScores = await req.db.query(
+        `SELECT sub.score_obtained, sub.grade_value, sub.status,
+                e.title AS name, e.exam_date::text AS eval_date, e.max_score, e.passing_marks,
+                e.eval_type, e.publish_marks, 'exam' AS source_type,
+                m.name AS module_name
+         FROM onec_exam_submissions sub
+         JOIN onec_exams e ON sub.exam_id = e.id
+         LEFT JOIN onec_modules m ON e.module_id = m.id
+         WHERE sub.learner_id = $1
+           AND e.publish_marks = true
+           AND sub.status = 'graded'
+         ORDER BY e.exam_date DESC`,
+        [learnerId]
+      );
+      examScoreRows = examScores.rows;
+    } catch (err) {
+      if (err.code !== '42P01') throw err; // re-throw if not "table not found"
+    }
 
     const attSum = attendanceSummary.rows;
     const totalPossible = Number(attSum.find(r => r.status === 'total_possible')?.count || 0);
@@ -296,6 +332,8 @@ async function getProfile(req, res) {
         guardians: guardians.rows,
         attendance: { summary: formattedSummary, recent: recentAttendance.rows },
         scores: scores.rows,
+        assignment_scores: assignmentScores.rows,
+        exam_scores: examScoreRows,
         certificates: certificates.rows
       }
     });

@@ -77,8 +77,8 @@ export function ExamsPage() {
       render: (row) => row.exam_date ? new Date(row.exam_date).toLocaleDateString() : '—',
     },
     { key: 'taken_by', header: 'Taken By', render: (row) => row.taken_by_name ?? '—' },
-    { key: 'status', header: 'Status', render: (row) => <ExamStatusBadge status={row.status} /> },
-    { key: 'publish', header: 'Published', render: (row) => <ExamPublishBadge published={row.publish_marks} /> },
+    { key: 'status', header: 'Status', mobileCompact: true, render: (row) => <ExamStatusBadge status={row.status} /> },
+    { key: 'publish', header: 'Published', mobileCompact: true, render: (row) => <ExamPublishBadge published={row.publish_marks} /> },
     {
       key: 'actions',
       header: '',
@@ -186,6 +186,7 @@ export function ExamsPage() {
           isLoading={isLoading}
           serverPagination={{ page, pageSize, total, onPageChange: setPage }}
           mobileCompact
+          onRowClick={(row) => navigate(`/app/exams/${row.id}`)}
         />
       </div>
 

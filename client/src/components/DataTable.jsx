@@ -21,7 +21,7 @@ import { useState } from 'react';
 // e.g. useLearnersPage). This is what large/growing rosters (Students,
 // Teachers, Staff, Guardians) use so a page load only pulls the ~10 rows
 // it's about to show instead of the entire table every time.
-export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records found.', pageSize = 10, mobileCompact = false, serverPagination = null, rowClassName }) {
+export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records found.', pageSize = 10, mobileCompact = false, serverPagination = null, rowClassName, onRowClick }) {
   const [internalPage, setInternalPage] = useState(1);
 
   const isEmpty = serverPagination ? serverPagination.total === 0 : rows.length === 0;
@@ -56,14 +56,30 @@ export function DataTable({ columns, rows, rowKey, emptyMessage = 'No records fo
           data or its row actions to go. */}
       {mobileCompact ? (
         <div className="overflow-hidden rounded border border-border bg-surface md:hidden">
-          {paginatedRows.map((row, i) => (
-            <div key={rowKey(row)} className={`flex items-center gap-2 px-4 py-3 ${i > 0 ? 'border-t border-surface-muted' : ''} ${rowClassName ? rowClassName(row) : ''}`}>
-              <div className="min-w-0 flex-1 text-[14px] font-medium text-ink-900">{primaryColumn.render(row)}</div>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="flex-shrink-0 text-ink-500">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
-              </svg>
-            </div>
-          ))}
+          {paginatedRows.map((row, i) => {
+            const extraCols = restColumns.filter(c => c.mobileCompact);
+            return (
+              <div
+                key={rowKey(row)}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                className={`flex items-center gap-2 px-4 py-3 ${i > 0 ? 'border-t border-surface-muted' : ''} ${onRowClick ? 'cursor-pointer active:bg-surface-muted' : ''} ${rowClassName ? rowClassName(row) : ''}`}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="text-[14px] font-medium text-ink-900">{primaryColumn.render(row)}</div>
+                  {extraCols.length > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {extraCols.map(col => (
+                        <span key={col.key}>{col.render(row)}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="flex-shrink-0 text-ink-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+                </svg>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 md:hidden">

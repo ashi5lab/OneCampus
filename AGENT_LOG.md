@@ -1649,3 +1649,62 @@ Build verified: ✓ 2288 modules transformed, no new errors
 *Log entry authored by Claude Code*
 *Session: 1038c693-05cb-5db2-aad9-142777098a43*
 *Timestamp: 2026-07-25T21:30 IST*
+
+---
+
+## Entry 020 — 5 Bug Fixes: Academic Scores, Dashboard Attendance, Mobile UX, Migration Runner
+
+**Date:** 2026-07-25
+**Time:** ~22:15 IST
+**Session ID:** 1038c693-05cb-5db2-aad9-142777098a43
+**Branch:** claude/bug-fixes-profile-attendance-mobile
+**PR:** https://github.com/ashi5lab/OneCampus/pull/119
+
+### User Request
+> Five bugs to fix in a single PR:
+> 1. Academic details not showing in student profile after assignment published + marks awarded
+> 2. Dashboard attendance count shows 0/11 after marking class attendance
+> 3. Image uploads not configured error on mobile PWA profile picture
+> 4. Student profile tabs scrollable horizontally on mobile — should wrap to next row
+> 5. Assignment/Exam list row only clickable on title text; should work anywhere + show status badges
+
+### Root Causes and Fixes
+
+**1. Academic tab empty (client/server)**
+- Root cause (server): `getProfile` only queried `onec_learner_scores` (old evaluations). Assignment submissions (`onec_assignment_submissions`) and exam submissions (`onec_exam_submissions`) were never fetched.
+- Root cause (client): Overview tab subject list iterated raw `scores[]` but accessed `sub.name` / `sub.pct` (undefined on raw rows). Should use computed `subjectScores[]`.
+- Fix: Server adds `assignment_scores` + `exam_scores` queries with publish_marks=true + status='graded' filters. Exam scores have 42P01 fallback. Client Academic tab shows three sections. subjectScores aggregates all three. CGPA stat uses allGradedScores.
+
+**2. Dashboard attendance always 0**
+- Root cause: `attendanceApi.getLogs()` already unwraps `{data:[...]}` → plain array. `TeacherDashboard.jsx` then accessed `logsData?.data` again → `undefined` → `[]` → count=0.
+- Fix: `const logs = Array.isArray(logsData) ? logsData : (logsData?.data ?? []);`
+
+**3. Image upload not configured**
+- Not a code bug — R2 environment variables not set. Explained to user: needs `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` in server .env.
+
+**4. Mobile tab scrolling in student profile**
+- Root cause: Tab bar used `overflow-x-auto scrollbar-hide`. Changed to `flex-wrap` so tabs wrap to next row.
+
+**5. Assignment/Exam list mobile UX**
+- Root cause: DataTable mobileCompact mode had no `onRowClick`. Status/Published columns weren't shown in compact rows.
+- Fix: Added `onRowClick` prop to DataTable — makes entire row tappable. Added `mobileCompact: true` column flag — renders those columns as badges below title in compact rows. Applied to AssignmentsPage and ExamsPage.
+
+**Bonus: Migration 041 runner**
+- The internal server error on Assignments page was caused by `a.taken_by` column not existing (migration 041 not yet applied to tenant schemas).
+- Created `server/scripts/run_migration_041.js` — applies migration 041 to all tenants from `public.onec_tenants`.
+- User needs to run: `node server/scripts/run_migration_041.js`
+
+### Files Modified
+- `server/modules/learners/controller.js` — add assignment_scores + exam_scores to profile response
+- `server/scripts/run_migration_041.js` — NEW: migration runner for all tenants
+- `client/src/components/DataTable.jsx` — onRowClick prop + mobileCompact column flag
+- `client/src/features/assignments/components/AssignmentsPage.jsx` — onRowClick + mobileCompact flags
+- `client/src/features/exams/components/ExamsPage.jsx` — onRowClick + mobileCompact flags
+- `client/src/features/dashboard/components/TeacherDashboard.jsx` — fix double-unwrap of logsData
+- `client/src/features/learners/components/LearnerProfilePage.jsx` — flex-wrap tabs, subjectScores fix, new academic sections, allGradedScores CGPA
+
+---
+
+*Log entry authored by Claude Code*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*
+*Timestamp: 2026-07-25T22:15 IST*
