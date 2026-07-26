@@ -26,13 +26,14 @@ export function DisciplinePage() {
   const [toDate, setToDate] = useState('');
 
   const [filters, setFilters] = useState({});
+  const [sort, setSort] = useState(null);
 
   const { data: cohorts } = useCohorts({ enabled: canLog || can('cohorts.view') });
 
   const { data: recordsData, isLoading, error } = useDisciplineRecordsPage({
     page,
     pageSize: 10,
-    filters
+    filters: { ...filters, sort: sort?.key, order: sort?.dir }
   });
 
   const deleteRecord = useDeleteDisciplineRecord();
@@ -59,10 +60,11 @@ export function DisciplinePage() {
   }
 
   const columns = [
-    { key: 'incident_date', header: 'Date', render: (row) => new Date(row.incident_date).toLocaleDateString() },
+    { key: 'incident_date', header: 'Date', sortable: true, render: (row) => new Date(row.incident_date).toLocaleDateString() },
     {
       key: 'learner',
       header: 'Student',
+      sortable: true,
       render: (row) => (
         <div>
           <div className="font-semibold">{row.learner_first_name} {row.learner_last_name}</div>
@@ -73,6 +75,7 @@ export function DisciplinePage() {
     {
       key: 'severity',
       header: 'Severity',
+      sortable: true,
       render: (row) => <Badge variant={SEVERITY_META[row.severity]?.variant || 'pending'}>{SEVERITY_META[row.severity]?.label || row.severity}</Badge>
     },
     { key: 'description', header: 'Description', render: (row) => row.description },
@@ -80,30 +83,19 @@ export function DisciplinePage() {
     { key: 'reported_by', header: 'Reported by', render: (row) => row.reported_by_username || '—' }
   ];
 
-  if (canLog) {
-    columns.push({
-      key: 'actions',
-      header: '',
-      render: (row) => {
-        const canManage = user.role === 'admin' || row.reported_by === user.id;
-        if (!canManage) return null;
-        return (
-          <div className="flex justify-end gap-3">
-            <button onClick={() => navigate(`/app/discipline/${row.id}/edit`)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
-              Edit
-            </button>
-            <button
-              onClick={() => {
-                if (window.confirm('Delete this record?')) deleteRecord.mutate(row.id);
-              }}
-              className="text-xs font-semibold text-danger hover:opacity-80"
-            >
-              Delete
-            </button>
-          </div>
-        );
+  function disciplineActions(row) {
+    const canManage = canLog && (user.role === 'admin' || row.reported_by === user.id);
+    return [
+      { key: 'edit', label: 'Edit', hidden: !canManage, onClick: () => navigate(`/app/discipline/${row.id}/edit`) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        variant: 'danger',
+        hidden: !canManage,
+        confirm: 'Delete this record?',
+        onClick: () => deleteRecord.mutate(row.id)
       }
-    });
+    ];
   }
 
   return (
@@ -157,12 +149,20 @@ export function DisciplinePage() {
             rows={recordsData?.data || []}
             rowKey={(row) => row.id}
             emptyMessage="No discipline records found."
+            actions={disciplineActions}
+            sort={sort}
+            onSortChange={(key) => setSort((prev) => {
+              if (!prev || prev.key !== key) return { key, dir: 'asc' };
+              if (prev.dir === 'asc') return { key, dir: 'desc' };
+              return null;
+            })}
             serverPagination={{
               page,
               pageSize: 10,
               total: recordsData?.meta?.total || 0,
               onPageChange: setPage
             }}
+            pageSizeOptions={[10]}
             rowClassName={(row) => {
               if (row.severity === 'positive') return 'bg-emerald-50/50';
               if (row.severity === 'minor') return 'bg-orange-50/50';
