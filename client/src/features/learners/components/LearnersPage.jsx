@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Pencil, Trash2, Award, GraduationCap } from 'lucide-react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
-import { SearchSelect } from '../../../components/SearchSelect';
 import { Avatar } from '../../../components/Avatar';
 import { GeneratedCredentialsModal } from '../../../components/GeneratedCredentialsModal';
 import { PageHeader } from '../../../components/PageHeader';
@@ -26,28 +26,32 @@ export function LearnersPage() {
   const setClassHead = useSetClassHead();
   const setSchoolHead = useSetSchoolHead();
 
-  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [cohortId, setCohortId] = useState('');
   const [gender, setGender] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 10;
+  const [pageSize, setPageSize] = useState(10);
+  const [sort, setSort] = useState(null); // { key, dir }
 
-  // Debounce the search box so every keystroke doesn't fire a request.
-  useEffect(() => {
-    const timeout = setTimeout(() => setSearch(searchInput), 300);
-    return () => clearTimeout(timeout);
-  }, [searchInput]);
-
-  const filters = { search: search || undefined, cohort_id: cohortId || undefined, gender: gender || undefined, status: status || undefined };
+  const filters = {
+    search: search || undefined,
+    cohort_id: cohortId || undefined,
+    gender: gender || undefined,
+    status: status || undefined,
+    sort: sort?.key,
+    order: sort?.dir
+  };
+  const hasActiveFilters = Boolean(search || cohortId || gender || status);
   // Back to page 1 whenever a filter changes — otherwise a filtered-down
   // result set can leave the view stuck on a now out-of-range page.
   useEffect(() => {
     setPage(1);
   }, [search, cohortId, gender, status]);
 
-  const { data: result, isLoading, error } = useLearnersPage({ page, pageSize: PAGE_SIZE, filters });
+  // 'All' is soft-capped at 200 server-side (see server/lib/pagination.js) —
+  // sent through as an actual pageSize rather than switching response shape.
+  const { data: result, isLoading, error } = useLearnersPage({ page, pageSize: pageSize === 'all' ? 200 : pageSize, filters });
   const learners = result?.data;
   const meta = result?.meta;
   const createLearner = useCreateLearner();
@@ -62,6 +66,7 @@ export function LearnersPage() {
     {
       key: 'name',
       header: t('learner'),
+      sortable: true,
       render: (row) => (
         <Link to={`/app/learners/${row.id}`} className="flex items-center gap-2.5 hover:underline">
           <Avatar name={`${row.first_name} ${row.last_name}`} src={row.profile_picture_url} size={32} />
@@ -72,12 +77,12 @@ export function LearnersPage() {
         </Link>
       )
     },
-    { key: 'status', header: 'Status', render: (row) => (
+    { key: 'status', header: 'Status', sortable: true, mobileCompact: true, render: (row) => (
       <Badge variant={STATUS_VARIANT[row.status] || 'active'}>{row.status}</Badge>
     ) },
     // Previously showed the raw cohort_id — getAll now joins onec_cohorts
     // and returns cohort_name for exactly this.
-    { key: 'cohort', header: t('cohort'), render: (row) => row.cohort_name || '—' },
+    { key: 'cohort', header: t('cohort'), sortable: true, mobileCompact: true, render: (row) => row.cohort_name || '—' },
     { key: 'gender', header: 'Gender', render: (row) => GENDER_LABEL[row.meta?.gender] || '—' },
     {
       key: 'roles',
@@ -96,40 +101,42 @@ export function LearnersPage() {
     }
   ];
 
-  if (canManage) {
-    columns.push({
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex flex-wrap justify-end gap-3">
-          <button
-            onClick={() => setClassHead.mutate({ id: row.id, is_class_head: !row.meta?.is_class_head })}
-            className="text-xs font-semibold text-ink-500 hover:text-ink-900"
-          >
-            {row.meta?.is_class_head ? 'Unset Class Head' : 'Make Class Head'}
-          </button>
-          {canAssignSchoolHead && (
-            <button
-              onClick={() => setSchoolHead.mutate({ id: row.id, is_school_head: !row.meta?.is_school_head })}
-              className="text-xs font-semibold text-ink-500 hover:text-ink-900"
-            >
-              {row.meta?.is_school_head ? 'Unset School Head' : 'Make School Head'}
-            </button>
-          )}
-          <button onClick={() => setEditingLearner(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
-          <button
-            onClick={() => {
-              if (window.confirm(`Are you sure you want to delete ${row.first_name} ${row.last_name}?`)) {
-                deleteLearner.mutate(row.id);
-              }
-            }}
-            className="text-xs font-semibold text-danger hover:opacity-80"
-          >
-            Delete
-          </button>
-        </div>
-      )
-    });
+  // First-class actions prop (see DataTable.jsx) — renders inline buttons
+  // on desktop and a kebab menu on mobile, so these are never dropped on
+  // small screens the way a manually-added "actions" column used to be.
+  function learnerActions(row) {
+    return [
+      {
+        key: 'class-head',
+        label: row.meta?.is_class_head ? 'Unset Class Head' : 'Make Class Head',
+        icon: GraduationCap,
+        hidden: !canManage,
+        onClick: () => setClassHead.mutate({ id: row.id, is_class_head: !row.meta?.is_class_head })
+      },
+      {
+        key: 'school-head',
+        label: row.meta?.is_school_head ? 'Unset School Head' : 'Make School Head',
+        icon: Award,
+        hidden: !canAssignSchoolHead,
+        onClick: () => setSchoolHead.mutate({ id: row.id, is_school_head: !row.meta?.is_school_head })
+      },
+      {
+        key: 'edit',
+        label: 'Edit',
+        icon: Pencil,
+        hidden: !canManage,
+        onClick: () => setEditingLearner(row)
+      },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !canManage,
+        confirm: `Are you sure you want to delete ${row.first_name} ${row.last_name}?`,
+        onClick: () => deleteLearner.mutate(row.id)
+      }
+    ];
   }
 
   if (showForm || editingLearner) {
@@ -192,60 +199,6 @@ export function LearnersPage() {
         <StatCard label={`Total ${t('learners')}`} value={isLoading ? '—' : meta?.total ?? 0} />
       </div>
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <label className="min-w-[200px] flex-1">
-          <div className="mb-1 text-xs font-semibold text-ink-700">Search</div>
-          <input
-            className="input"
-            placeholder={`Search by name or registry no…`}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-        </label>
-        <label className="w-[200px]">
-          <div className="mb-1 text-xs font-semibold text-ink-700">{t('cohort')}</div>
-          <SearchSelect
-            options={(cohorts || []).map((c) => ({ value: c.id, label: c.name }))}
-            value={cohortId}
-            onChange={setCohortId}
-            placeholder="All"
-          />
-        </label>
-        <label className="w-[140px]">
-          <div className="mb-1 text-xs font-semibold text-ink-700">Gender</div>
-          <select className="input" value={gender} onChange={(e) => setGender(e.target.value)}>
-            <option value="">All</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </label>
-        <label className="w-[140px]">
-          <div className="mb-1 text-xs font-semibold text-ink-700">Status</div>
-          <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">All</option>
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="inactive">Inactive</option>
-            <option value="alumni">Alumni</option>
-          </select>
-        </label>
-        {(searchInput || cohortId || gender || status) && (
-          <button
-            type="button"
-            onClick={() => {
-              setSearchInput('');
-              setCohortId('');
-              setGender('');
-              setStatus('');
-            }}
-            className="rounded border border-border px-3 py-2 text-xs font-semibold text-ink-700 hover:bg-surface-muted"
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
-
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && (
@@ -260,7 +213,56 @@ export function LearnersPage() {
             rowKey={(row) => row.id}
             emptyMessage="No matching learners."
             mobileCompact
-            serverPagination={{ page, pageSize: PAGE_SIZE, total: meta?.total ?? 0, onPageChange: setPage }}
+            actions={learnerActions}
+            sort={sort}
+            onSortChange={(key) => setSort((prev) => {
+              if (!prev || prev.key !== key) return { key, dir: 'asc' };
+              if (prev.dir === 'asc') return { key, dir: 'desc' };
+              return null;
+            })}
+            filters={{
+              search: { value: search, onChange: setSearch, placeholder: 'Search by name or registry no…' },
+              fields: [
+                {
+                  key: 'cohort',
+                  type: 'select',
+                  label: t('cohort'),
+                  value: cohortId,
+                  onChange: setCohortId,
+                  options: (cohorts || []).map((c) => ({ value: c.id, label: c.name }))
+                },
+                {
+                  key: 'gender',
+                  type: 'select',
+                  label: 'Gender',
+                  value: gender,
+                  onChange: setGender,
+                  options: [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }]
+                },
+                {
+                  key: 'status',
+                  type: 'select',
+                  label: 'Status',
+                  value: status,
+                  onChange: setStatus,
+                  options: [
+                    { value: 'active', label: 'Active' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'inactive', label: 'Inactive' },
+                    { value: 'alumni', label: 'Alumni' }
+                  ]
+                }
+              ],
+              hasActiveFilters,
+              onClear: () => { setSearch(''); setCohortId(''); setGender(''); setStatus(''); }
+            }}
+            serverPagination={{
+              page,
+              pageSize: pageSize === 'all' ? 200 : pageSize,
+              total: meta?.total ?? 0,
+              onPageChange: setPage,
+              onPageSizeChange: (size) => { setPageSize(size); setPage(1); }
+            }}
           />
         )}
       </div>
