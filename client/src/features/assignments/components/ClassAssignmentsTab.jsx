@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { DataTable } from '../../../components/DataTable';
-import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { useAssignments, useCreateAssignment, useUpdateAssignment, useDeleteAssignment } from '../hooks/useAssignments';
 import { useMarkActivityContextViewed } from '../../activities/hooks/useActivities';
 import { AssignmentFormModal } from './AssignmentFormModal';
@@ -29,7 +29,6 @@ export function ClassAssignmentsTab({ cohortId }) {
 
   const [showForm, setShowForm] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const scoped = useMemo(() => (assignments || []).filter((a) => a.cohort_id === cohortId), [assignments, cohortId]);
 
@@ -37,6 +36,7 @@ export function ClassAssignmentsTab({ cohortId }) {
     {
       key: 'title',
       header: 'Title',
+      sortable: true,
       render: (row) => (
         <Link to={`/app/assignments/${row.id}`} className="font-semibold text-accent-dark hover:underline">
           {row.title}
@@ -44,26 +44,25 @@ export function ClassAssignmentsTab({ cohortId }) {
       )
     },
     { key: 'module', header: t('topic'), render: (row) => row.module_name },
-    { key: 'due_date', header: 'Due', render: (row) => new Date(row.due_date).toLocaleDateString() }
+    { key: 'due_date', header: 'Due', sortable: true, render: (row) => new Date(row.due_date).toLocaleDateString() }
   ];
-  if (canManage) {
-    columns.push({
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          <button onClick={() => setEditingAssignment(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
-            Edit
-          </button>
-          <button
-            onClick={() => setConfirmDelete(row)}
-            className="text-xs font-semibold text-danger hover:opacity-80"
-          >
-            Delete
-          </button>
-        </div>
-      )
-    });
+
+  function assignmentActions(row) {
+    return [
+      { key: 'edit', label: 'Edit', icon: Pencil, hidden: !canManage, onClick: () => setEditingAssignment(row) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !canManage,
+        confirm: `Delete "${row.title}"? This cannot be undone.`,
+        onClick: () => deleteAssignment.mutate(row.id, {
+          onSuccess: () => showToast.success('Assignment deleted.'),
+          onError: (e) => showToast.error(e.message),
+        })
+      }
+    ];
   }
 
   return (
@@ -83,7 +82,7 @@ export function ClassAssignmentsTab({ cohortId }) {
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {!isLoading && !error && (
-          <DataTable columns={columns} rows={scoped} rowKey={(row) => row.id} emptyMessage="No assignments posted yet." />
+          <DataTable columns={columns} rows={scoped} rowKey={(row) => row.id} emptyMessage="No assignments posted yet." mobileCompact actions={assignmentActions} />
         )}
       </div>
 
@@ -115,21 +114,6 @@ export function ClassAssignmentsTab({ cohortId }) {
           onSubmit={(values) =>
             updateAssignment.mutate({ id: editingAssignment.id, payload: values }, { onSuccess: () => setEditingAssignment(null) })
           }
-        />
-      )}
-
-      {confirmDelete && (
-        <ConfirmDialog
-          message={`Delete "${confirmDelete.title}"? This cannot be undone.`}
-          confirmLabel="Delete"
-          danger
-          onConfirm={() => {
-            deleteAssignment.mutate(confirmDelete.id, {
-              onSuccess: () => { showToast.success('Assignment deleted.'); setConfirmDelete(null); },
-              onError: (e) => { showToast.error(e.message); setConfirmDelete(null); },
-            });
-          }}
-          onCancel={() => setConfirmDelete(null)}
         />
       )}
     </div>
