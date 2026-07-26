@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Download } from 'lucide-react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DataTable } from '../../../components/DataTable';
@@ -44,24 +45,23 @@ export function CertificatesPage() {
   };
 
   const columns = [
-    { key: 'certificate_no', header: 'Certificate No.', render: (row) => <span className="font-mono font-semibold">{row.certificate_no}</span> },
+    { key: 'certificate_no', header: 'Certificate No.', sortable: true, render: (row) => <span className="font-mono font-semibold">{row.certificate_no}</span> },
     { key: 'learner', header: t('learner'), render: (row) => learnerName(row.learner_id) },
-    { key: 'type', header: 'Type', render: (row) => row.type },
-    { key: 'issue_date', header: 'Issued', render: (row) => new Date(row.issue_date).toLocaleDateString() },
-    {
-      key: 'pdf',
-      header: '',
-      render: (row) => (
-        <button
-          onClick={() => handleDownload(row)}
-          disabled={downloadingId === row.id}
-          className="text-[11.5px] font-semibold text-accent disabled:opacity-60"
-        >
-          {downloadingId === row.id ? 'Downloading…' : 'Download PDF'}
-        </button>
-      )
-    }
+    { key: 'type', header: 'Type', mobileCompact: true, render: (row) => row.type },
+    { key: 'issue_date', header: 'Issued', sortable: true, mobileCompact: true, render: (row) => new Date(row.issue_date).toLocaleDateString() }
   ];
+
+  function certificateActions(row) {
+    return [
+      {
+        key: 'download',
+        label: downloadingId === row.id ? 'Downloading…' : 'Download PDF',
+        icon: Download,
+        disabled: downloadingId === row.id,
+        onClick: () => handleDownload(row)
+      }
+    ];
+  }
 
   return (
     <div>
@@ -91,7 +91,7 @@ export function CertificatesPage() {
         {error && (
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
-        {certificates && <DataTable columns={columns} rows={certificates} rowKey={(row) => row.id} />}
+        {certificates && <DataTable columns={columns} rows={certificates} rowKey={(row) => row.id} mobileCompact actions={certificateActions} />}
       </div>
 
       {showForm && (

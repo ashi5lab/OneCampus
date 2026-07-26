@@ -21,6 +21,7 @@ export function JobsTable({ entityType }) {
     {
       key: 'status',
       header: 'Status',
+      mobileCompact: true,
       render: (job) => {
         const meta = STATUS_META[job.status] || STATUS_META.processing;
         return <Badge variant={meta.variant}>{meta.label}</Badge>;
@@ -76,7 +77,7 @@ export function JobsTable({ entityType }) {
       {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
       {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
       {jobs && (
-        <DataTable columns={columns} rows={jobs} rowKey={(job) => job.id} emptyMessage="No uploads yet." />
+        <DataTable columns={columns} rows={jobs} rowKey={(job) => job.id} emptyMessage="No uploads yet." mobileCompact />
       )}
 
       {viewingJobId && <JobErrorsModal jobId={viewingJobId} onClose={() => setViewingJobId(null)} />}
