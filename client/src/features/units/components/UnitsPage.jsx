@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
@@ -17,30 +18,23 @@ export function UnitsPage() {
   const [editingUnit, setEditingUnit] = useState(null);
 
   const columns = [
-    { key: 'name', header: 'Name', render: (row) => <span className="font-semibold">{row.name}</span> },
-    { key: 'type', header: 'Type', render: (row) => row.type }
+    { key: 'name', header: 'Name', sortable: true, render: (row) => <span className="font-semibold">{row.name}</span> },
+    { key: 'type', header: 'Type', sortable: true, mobileCompact: true, render: (row) => row.type }
   ];
 
-  if (can('units.manage')) {
-    columns.push({
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          <button onClick={() => setEditingUnit(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
-          <button 
-            onClick={() => {
-              if (window.confirm(`Are you sure you want to delete ${row.name}?`)) {
-                deleteUnit.mutate(row.id);
-              }
-            }} 
-            className="text-xs font-semibold text-danger hover:opacity-80"
-          >
-            Delete
-          </button>
-        </div>
-      )
-    });
+  function unitActions(row) {
+    return [
+      { key: 'edit', label: 'Edit', icon: Pencil, hidden: !can('units.manage'), onClick: () => setEditingUnit(row) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !can('units.manage'),
+        confirm: `Are you sure you want to delete ${row.name}?`,
+        onClick: () => deleteUnit.mutate(row.id)
+      }
+    ];
   }
 
   return (
@@ -69,7 +63,7 @@ export function UnitsPage() {
         {error && (
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
-        {units && <DataTable columns={columns} rows={units} rowKey={(row) => row.id} />}
+        {units && <DataTable columns={columns} rows={units} rowKey={(row) => row.id} mobileCompact actions={unitActions} />}
       </div>
 
       {showForm && (
