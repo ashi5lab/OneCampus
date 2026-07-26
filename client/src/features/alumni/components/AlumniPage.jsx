@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { RotateCcw } from 'lucide-react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
@@ -16,19 +17,12 @@ export function AlumniPage() {
   const canManage = can('learners.manage');
   const updateLearner = useUpdateLearner();
 
-  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setSearch(searchInput), 300);
-    return () => clearTimeout(timeout);
-  }, [searchInput]);
 
   const filters = { status: 'alumni', search: search || undefined };
   const { data: alumni, isLoading, error } = useLearners({ filters });
 
   function restoreToActive(row) {
-    if (!window.confirm(`Restore ${row.first_name} ${row.last_name} to active status?`)) return;
     updateLearner.mutate({
       id: row.id,
       payload: {
@@ -46,6 +40,7 @@ export function AlumniPage() {
     {
       key: 'name',
       header: t('learner'),
+      sortable: true,
       render: (row) => (
         <Link to={`/app/learners/${row.id}`} className="flex items-center gap-2.5 hover:underline">
           <Avatar name={`${row.first_name} ${row.last_name}`} src={row.profile_picture_url} size={32} />
@@ -56,22 +51,21 @@ export function AlumniPage() {
         </Link>
       )
     },
-    { key: 'cohort', header: `Last ${t('cohort')}`, render: (row) => row.cohort_name || '—' },
+    { key: 'cohort', header: `Last ${t('cohort')}`, sortable: true, mobileCompact: true, render: (row) => row.cohort_name || '—' },
     { key: 'graduation_year', header: 'Graduation Year', render: (row) => row.meta?.graduation_year || '—' }
   ];
 
-  if (canManage) {
-    columns.push({
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end">
-          <button onClick={() => restoreToActive(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
-            Restore to Active
-          </button>
-        </div>
-      )
-    });
+  function alumniActions(row) {
+    return [
+      {
+        key: 'restore',
+        label: 'Restore to Active',
+        icon: RotateCcw,
+        hidden: !canManage,
+        confirm: `Restore ${row.first_name} ${row.last_name} to active status?`,
+        onClick: () => restoreToActive(row)
+      }
+    ];
   }
 
   return (
@@ -82,18 +76,6 @@ export function AlumniPage() {
         <StatCard label="Total Alumni" value={isLoading ? '—' : alumni.length} />
       </div>
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <label className="min-w-[200px] flex-1">
-          <div className="mb-1 text-xs font-semibold text-ink-700">Search</div>
-          <input
-            className="input"
-            placeholder="Search by name or registry no…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-        </label>
-      </div>
-
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && (
@@ -102,7 +84,15 @@ export function AlumniPage() {
           </div>
         )}
         {alumni && (
-          <DataTable columns={columns} rows={alumni} rowKey={(row) => row.id} emptyMessage="No alumni yet." mobileCompact />
+          <DataTable
+            columns={columns}
+            rows={alumni}
+            rowKey={(row) => row.id}
+            emptyMessage="No alumni yet."
+            mobileCompact
+            actions={alumniActions}
+            filters={{ search: { value: search, onChange: setSearch, placeholder: 'Search by name or registry no…' } }}
+          />
         )}
       </div>
     </div>

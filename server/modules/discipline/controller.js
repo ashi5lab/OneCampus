@@ -1,6 +1,12 @@
 const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
-const { parsePagination } = require('../../lib/pagination');
+const { parsePagination, resolveSort } = require('../../lib/pagination');
+
+const DISCIPLINE_SORT_MAP = {
+  incident_date: 'd.incident_date',
+  learner: 'l.first_name, l.last_name',
+  severity: 'd.severity'
+};
 const { getScopedLearnerIds } = require('../../lib/rowScope');
 
 // Accepts user_id (onec_users.id) — the value UserSearchSelect always
@@ -62,13 +68,15 @@ async function getAll(req, res) {
        LEFT JOIN onec_learners l ON d.learner_id = l.id
        ${where}`;
 
+    const orderBy = resolveSort(req.query, DISCIPLINE_SORT_MAP, 'd.incident_date DESC, d.id DESC');
+
     if (!pagination) {
       const result = await req.db.query(
         `SELECT d.id, d.learner_id, d.incident_date::text AS incident_date, d.severity, d.description, d.action_taken,
                 d.reported_by, d.created_at, u.username AS reported_by_username,
                 l.first_name AS learner_first_name, l.last_name AS learner_last_name, l.registry_no AS learner_registry_no
          ${baseQuery}
-         ORDER BY d.incident_date DESC, d.id DESC`,
+         ORDER BY ${orderBy}`,
         params
       );
       return res.json({ data: result.rows });
@@ -84,7 +92,7 @@ async function getAll(req, res) {
               d.reported_by, d.created_at, u.username AS reported_by_username,
               l.first_name AS learner_first_name, l.last_name AS learner_last_name, l.registry_no AS learner_registry_no
        ${baseQuery}
-       ORDER BY d.incident_date DESC, d.id DESC
+       ORDER BY ${orderBy}
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, limit, offset]
     );

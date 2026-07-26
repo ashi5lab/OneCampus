@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { Pencil, Trash2 } from 'lucide-react';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { PageHeader } from '../../../components/PageHeader';
@@ -13,6 +14,7 @@ export function AccessControlPage() {
     {
       key: 'name',
       header: 'Name',
+      sortable: true,
       render: (row) => (
         <div>
           <div className="font-semibold">{row.name}</div>
@@ -37,26 +39,21 @@ export function AccessControlPage() {
       header: 'Permissions',
       render: (row) => <span className="text-[12.5px] text-ink-700">{row.permissions.length} granted</span>
     },
-    {
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          <Link to={`/app/access-control/${row.id}`} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
-            Edit
-          </Link>
-          <button
-            onClick={() => {
-              if (window.confirm(`Delete access group "${row.name}"?`)) deleteGroup.mutate(row.id);
-            }}
-            className="text-xs font-semibold text-danger hover:opacity-80"
-          >
-            Delete
-          </button>
-        </div>
-      )
-    }
   ];
+
+  function groupActions(row) {
+    return [
+      { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => navigate(`/app/access-control/${row.id}`) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        confirm: `Delete access group "${row.name}"?`,
+        onClick: () => deleteGroup.mutate(row.id)
+      }
+    ];
+  }
 
   return (
     <div className="max-w-[1000px]">
@@ -80,7 +77,7 @@ export function AccessControlPage() {
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {groups && (
-          <DataTable columns={columns} rows={groups} rowKey={(row) => row.id} emptyMessage="No access groups yet — every role uses just its default permissions." />
+          <DataTable columns={columns} rows={groups} rowKey={(row) => row.id} emptyMessage="No access groups yet — every role uses just its default permissions." mobileCompact actions={groupActions} />
         )}
       </div>
     </div>

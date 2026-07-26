@@ -24,6 +24,7 @@ export function ClassExamsTab({ cohortId }) {
     {
       key: 'title',
       header: 'Exam Name',
+      sortable: true,
       render: (row) => (
         <Link to={`/app/exams/${row.id}`} className="font-semibold text-accent-dark hover:underline">
           {row.title}
@@ -31,7 +32,7 @@ export function ClassExamsTab({ cohortId }) {
       )
     },
     { key: 'module', header: t('topic'), render: (row) => row.subject_name },
-    { key: 'exam_date', header: 'Date', render: (row) => row.exam_date ? new Date(row.exam_date).toLocaleDateString() : '—' },
+    { key: 'exam_date', header: 'Date', sortable: true, mobileCompact: true, render: (row) => row.exam_date ? new Date(row.exam_date).toLocaleDateString() : '—' },
     { key: 'taken_by', header: 'Taken By', render: (row) => row.taken_by_name ?? '—' },
   ];
 
@@ -52,7 +53,7 @@ export function ClassExamsTab({ cohortId }) {
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {!isLoading && !error && (
-          <DataTable columns={columns} rows={scoped} rowKey={(row) => row.id} emptyMessage="No exams scheduled yet." />
+          <DataTable columns={columns} rows={scoped} rowKey={(row) => row.id} emptyMessage="No exams scheduled yet." mobileCompact />
         )}
       </div>
 

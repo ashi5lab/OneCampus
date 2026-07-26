@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Pencil, Trash2 } from 'lucide-react';
 import { DataTable } from '../../../components/DataTable';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEvaluations, useCreateEvaluation, useUpdateEvaluation, useDeleteEvaluation } from '../hooks/useEvaluations';
@@ -24,35 +25,25 @@ export function EvaluationsPage() {
         </Link>
       )
     },
-    { key: 'type', header: 'Type', render: (row) => row.type },
-    { key: 'time_block', header: 'Term', render: (row) => row.time_block },
-    {
-      key: 'actions',
-      header: '',
-      render: (row) => {
-        const canManage = can('evaluations.manage') || row.created_by === user.id;
-        if (!canManage) return null;
-        return (
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={() => setEditingEval(row)}
-              className="text-xs font-semibold text-ink-500 hover:text-ink-900"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => {
-                if (window.confirm(`Delete "${row.name}"?`)) deleteEvaluation.mutate(row.id);
-              }}
-              className="text-xs font-semibold text-danger hover:opacity-80"
-            >
-              Delete
-            </button>
-          </div>
-        );
-      }
-    }
+    { key: 'type', header: 'Type', mobileCompact: true, render: (row) => row.type },
+    { key: 'time_block', header: 'Term', mobileCompact: true, render: (row) => row.time_block }
   ];
+
+  function evaluationActions(row) {
+    const canManage = can('evaluations.manage') || row.created_by === user.id;
+    return [
+      { key: 'edit', label: 'Edit', icon: Pencil, hidden: !canManage, onClick: () => setEditingEval(row) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !canManage,
+        confirm: `Delete "${row.name}"?`,
+        onClick: () => deleteEvaluation.mutate(row.id)
+      }
+    ];
+  }
 
   return (
     <div>
@@ -72,7 +63,7 @@ export function EvaluationsPage() {
         {error && (
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
-        {evaluations && <DataTable columns={columns} rows={evaluations} rowKey={(row) => row.id} />}
+        {evaluations && <DataTable columns={columns} rows={evaluations} rowKey={(row) => row.id} mobileCompact actions={evaluationActions} />}
       </div>
 
       {showForm && (

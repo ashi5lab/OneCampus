@@ -1,7 +1,12 @@
 const { z } = require('zod');
 const bcrypt = require('bcrypt');
 const { logAudit } = require('../../lib/audit');
-const { parsePagination } = require('../../lib/pagination');
+const { parsePagination, resolveSort } = require('../../lib/pagination');
+
+const GUARDIANS_SORT_MAP = {
+  name: 'g.first_name, g.last_name',
+  phone: 'g.phone'
+};
 const { hasPermission } = require('../../lib/permissions');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
 const { withTenantPrefix } = require('../../lib/credentials');
@@ -35,14 +40,15 @@ async function getAll(req, res) {
     if (error) return res.status(400).json({ error: 'Invalid pagination parameters', details: error });
 
     const baseQuery = 'FROM onec_guardians g LEFT JOIN onec_users u ON g.user_id = u.id';
+    const orderBy = resolveSort(req.query, GUARDIANS_SORT_MAP, 'g.id DESC');
 
     if (!pagination) {
-      const result = await req.db.query(`SELECT g.*, u.profile_picture_url ${baseQuery} ORDER BY g.id DESC`);
+      const result = await req.db.query(`SELECT g.*, u.profile_picture_url ${baseQuery} ORDER BY ${orderBy}`);
       return res.json({ data: result.rows });
     }
 
     const [rows, count] = await Promise.all([
-      req.db.query(`SELECT g.*, u.profile_picture_url ${baseQuery} ORDER BY g.id DESC LIMIT $1 OFFSET $2`, [pagination.limit, pagination.offset]),
+      req.db.query(`SELECT g.*, u.profile_picture_url ${baseQuery} ORDER BY ${orderBy} LIMIT $1 OFFSET $2`, [pagination.limit, pagination.offset]),
       req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`)
     ]);
     res.json({ data: rows.rows, meta: { total: count.rows[0].total, page: pagination.page, pageSize: pagination.pageSize } });

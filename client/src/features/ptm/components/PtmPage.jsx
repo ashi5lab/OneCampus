@@ -35,38 +35,27 @@ export function PtmPage() {
           <Badge variant="active">Open</Badge>
         )
     },
-    {
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          {!row.booking_id && canBook && (
-            <button onClick={() => setBookingSlot(row)} className="text-xs font-semibold text-accent-dark hover:underline">
-              Book
-            </button>
-          )}
-          {row.booking_id && (canManageAny || (profile?.learnerId && profile.learnerId === row.learner_id)) && (
-            <button
-              onClick={() => cancelBooking.mutate(row.booking_id)}
-              className="text-xs font-semibold text-danger hover:opacity-80"
-            >
-              Cancel Booking
-            </button>
-          )}
-          {(canManageAny || (isInstructor && profile.instructorId === row.instructor_id)) && (
-            <button
-              onClick={() => {
-                if (window.confirm('Remove this slot?')) removeSlot.mutate(row.id);
-              }}
-              className="text-xs font-semibold text-ink-500 hover:text-ink-900"
-            >
-              Remove
-            </button>
-          )}
-        </div>
-      )
-    }
   ];
+
+  function slotActions(row) {
+    return [
+      { key: 'book', label: 'Book', hidden: !(!row.booking_id && canBook), onClick: () => setBookingSlot(row) },
+      {
+        key: 'cancel',
+        label: 'Cancel Booking',
+        variant: 'danger',
+        hidden: !(row.booking_id && (canManageAny || (profile?.learnerId && profile.learnerId === row.learner_id))),
+        onClick: () => cancelBooking.mutate(row.booking_id)
+      },
+      {
+        key: 'remove',
+        label: 'Remove',
+        hidden: !(canManageAny || (isInstructor && profile.instructorId === row.instructor_id)),
+        confirm: 'Remove this slot?',
+        onClick: () => removeSlot.mutate(row.id)
+      }
+    ];
+  }
 
   return (
     <div>
@@ -88,7 +77,7 @@ export function PtmPage() {
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
-        {slots && <DataTable columns={columns} rows={slots} rowKey={(row) => row.id} emptyMessage="No meeting slots open yet." />}
+        {slots && <DataTable columns={columns} rows={slots} rowKey={(row) => row.id} emptyMessage="No meeting slots open yet." mobileCompact actions={slotActions} />}
       </div>
 
       {showAddSlot && <AddSlotModal canManageAny={canManageAny} onClose={() => setShowAddSlot(false)} />}

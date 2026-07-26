@@ -1,5 +1,7 @@
 const { z } = require('zod');
-const { parsePagination } = require('../../lib/pagination');
+const { parsePagination, resolveSort } = require('../../lib/pagination');
+
+const ATTENDANCE_SORT_MAP = { date: 'date', status: 'status' };
 const { getScopedLearnerIds } = require('../../lib/rowScope');
 
 const attendanceSchema = z.object({
@@ -52,15 +54,17 @@ async function getAll(req, res) {
     const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
     const baseQuery = `FROM onec_attendance ${whereClause}`;
 
+    const orderBy = resolveSort(req.query, ATTENDANCE_SORT_MAP, 'date DESC, id DESC');
+
     if (!pagination) {
-      const result = await req.db.query(`SELECT * ${baseQuery} ORDER BY date DESC, id DESC`, params);
+      const result = await req.db.query(`SELECT * ${baseQuery} ORDER BY ${orderBy}`, params);
       return res.json({ data: result.rows });
     }
 
     const pageParams = [...params, pagination.limit, pagination.offset];
     const [rows, count] = await Promise.all([
       req.db.query(
-        `SELECT * ${baseQuery} ORDER BY date DESC, id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+        `SELECT * ${baseQuery} ORDER BY ${orderBy} LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
         pageParams
       ),
       req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`, params)

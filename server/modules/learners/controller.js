@@ -1,7 +1,16 @@
 const { z } = require('zod');
 const bcrypt = require('bcrypt');
 const { logAudit } = require('../../lib/audit');
-const { parsePagination } = require('../../lib/pagination');
+const { parsePagination, resolveSort } = require('../../lib/pagination');
+
+// Public sort key -> literal SQL column expression. Used by getAll's
+// ?sort=/?order= (see resolveSort in lib/pagination.js).
+const LEARNERS_SORT_MAP = {
+  name: 'l.first_name, l.last_name',
+  registry_no: 'l.registry_no',
+  cohort: 'c.name',
+  status: 'l.status'
+};
 const { hasPermission } = require('../../lib/permissions');
 const { getScopedLearnerIds } = require('../../lib/rowScope');
 const { getCallerDesignation } = require('../../lib/designation');
@@ -64,16 +73,17 @@ async function getAll(req, res) {
     }
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const baseQuery = `FROM onec_learners l LEFT JOIN onec_cohorts c ON l.cohort_id = c.id LEFT JOIN onec_users u ON l.user_id = u.id ${whereClause}`;
+    const orderBy = resolveSort(req.query, LEARNERS_SORT_MAP, 'l.id DESC');
 
     if (!pagination) {
-      const result = await req.db.query(`SELECT l.*, c.name AS cohort_name, u.profile_picture_url ${baseQuery} ORDER BY l.id DESC`, params);
+      const result = await req.db.query(`SELECT l.*, c.name AS cohort_name, u.profile_picture_url ${baseQuery} ORDER BY ${orderBy}`, params);
       return res.json({ data: result.rows });
     }
 
     const pageParams = [...params, pagination.limit, pagination.offset];
     const [rows, count] = await Promise.all([
       req.db.query(
-        `SELECT l.*, c.name AS cohort_name, u.profile_picture_url ${baseQuery} ORDER BY l.id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+        `SELECT l.*, c.name AS cohort_name, u.profile_picture_url ${baseQuery} ORDER BY ${orderBy} LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
         pageParams
       ),
       req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`, params)

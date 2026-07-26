@@ -1,5 +1,7 @@
 const { z } = require('zod');
-const { parsePagination } = require('../../lib/pagination');
+const { parsePagination, resolveSort } = require('../../lib/pagination');
+
+const UNITS_SORT_MAP = { name: 'name', type: 'type' };
 
 const unitSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -14,13 +16,15 @@ async function getAll(req, res) {
     const { pagination, error } = parsePagination(req.query);
     if (error) return res.status(400).json({ error: 'Invalid pagination parameters', details: error });
 
+    const orderBy = resolveSort(req.query, UNITS_SORT_MAP, 'id DESC');
+
     if (!pagination) {
-      const result = await req.db.query('SELECT * FROM onec_units ORDER BY id DESC');
+      const result = await req.db.query(`SELECT * FROM onec_units ORDER BY ${orderBy}`);
       return res.json({ data: result.rows });
     }
 
     const [rows, count] = await Promise.all([
-      req.db.query('SELECT * FROM onec_units ORDER BY id DESC LIMIT $1 OFFSET $2', [pagination.limit, pagination.offset]),
+      req.db.query(`SELECT * FROM onec_units ORDER BY ${orderBy} LIMIT $1 OFFSET $2`, [pagination.limit, pagination.offset]),
       req.db.query('SELECT COUNT(*)::int AS total FROM onec_units')
     ]);
     res.json({ data: rows.rows, meta: { total: count.rows[0].total, page: pagination.page, pageSize: pagination.pageSize } });

@@ -505,3 +505,25 @@ Deliberately scoped to `onec_instructor_cohorts` (roster membership — the expl
 ### Permissions
 - `learners.update_picture` (new) — narrower than `learners.manage`; grants only student profile-picture upload/remove. Granted to `instructor` by default (see `server/lib/permissions.js`).
 - Gated via `requirePermission.any('learners.manage', 'learners.update_picture')` on `/profile/picture/learner/:id` (see `server/middleware/permissionGuard.js`).
+
+## Reusable DataTable — pagination, sorting, actions, filters (all 44 list tables)
+
+`client/src/components/DataTable.jsx` is the single shared table primitive for every list/roster page in the app (Students, Teachers, Staff, Guardians, Assignments, Exams, Discipline, Library, PTM, Leave, Access Control, Calendar, Certificates, and 30+ more). This section documents its current API — see `Rules.md` §2 for the mandatory-usage rule.
+
+### Two bugs fixed at the source
+1. **Pagination showed one button per page.** A 408-row Students roster at 20/page rendered 21 unbroken number buttons — the original implementation did `Array.from({length: totalPages}).map(...)` with no truncation. Now windowed with `…` ellipsis (first, last, current ±1).
+2. **Row actions silently dropped on mobile.** `mobileCompact` mode only ever rendered the primary column + columns explicitly flagged `mobileCompact: true`. Every hand-rolled `{ key: 'actions', ... }` column across the app was neither, so Edit/Delete/etc. were invisible on small screens — reported first on the Teachers roster, but present on every roster page. Fixed structurally with a new first-class `actions` prop (see below) rather than per-page patches, so this class of bug can't recur.
+
+### New/changed props
+- **`actions(row) => [{ key, label, icon?, onClick, variant?, hidden?, disabled?, confirm? }]`** — renders inline buttons on desktop, a kebab (⋮) menu on both mobile layouts (compact rows and full cards). `variant: 'danger'` colors it red. `confirm: 'message'` routes the click through the shared `<ConfirmDialog />` instead of firing immediately — replaces the app's remaining scattered `window.confirm` calls in table row actions.
+- **Page-size selector**: `pageSizeOptions` prop, default `[10, 20, 50, 100, 'all']`. `'all'` is sent to the server as `pageSize=200` (the server's existing hard cap in `server/lib/pagination.js`) rather than requesting unlimited rows.
+- **Sortable columns**: mark a column `sortable: true` (+ optional `sortValue(row)` override). Uncontrolled by default — DataTable sorts the full `rows` array in memory, correct for client-side/unpaginated tables. For server-paginated tables, pass controlled `sort={{key,dir}}` + `onSortChange(key)` and forward `sort`/`order` query params to the list endpoint.
+- **`filters` prop**: optional declarative `{ search, fields, onClear, hasActiveFilters }` bar with built-in 300ms search debouncing, replacing hand-rolled search/filter bar markup on most pages that had one.
+
+### Server-side sort support
+`server/lib/pagination.js` gained `resolveSort(query, sortMap, defaultOrderBy)`: the client's `?sort=` value is only ever used as a lookup key into a **per-endpoint whitelist** of literal SQL column expressions (`sortMap`) chosen by the server — never concatenated into the query — so it's safe against SQL injection despite the result being spliced into `ORDER BY`. Wired into all 12 paginated list endpoints: `assignments`, `attendance`, `bulkUpload`, `cohorts`, `discipline`, `exams`, `guardians`, `instructors`, `learners`, `modules`, `staff`, `units`.
+
+### Migration scope
+All roster/management pages with real row actions were migrated to the `actions` prop (Students, Teachers, Staff, Guardians, Units, Modules, Alumni, Access Control, Assignments, Exams, Discipline, Evaluations, PTM, Visitors, Leave, Library, Calendar, Class Members, Voicemail, Online Exams and their class-scoped tabs, Submissions rosters). Pure read-only display tables (report tabs, detail-page history tables, activity logs, bulk-upload job history) were intentionally left on the base `DataTable` — they have no actions to move and already got the pagination/sorting core improvements for free, since every table in the app shares the same component.
+
+Found and fixed one latent bug while migrating: `ClassMembersTab.jsx` was passing a `pagination` prop that `DataTable` never actually supported (only `serverPagination` existed) — paging was silently falling back to client-side slicing over just the current server page. Fixed to `serverPagination`.

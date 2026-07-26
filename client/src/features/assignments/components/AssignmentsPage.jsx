@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Pencil, Copy, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { DataTable } from '../../../components/DataTable';
 import { PageHeader } from '../../../components/PageHeader';
 import { SearchSelect } from '../../../components/SearchSelect';
-import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { useAssignments, useDeleteAssignment, useDuplicateAssignment } from '../hooks/useAssignments';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { AssignmentStatusBadge, PublishBadge } from './AssignmentStatusBadge';
@@ -30,10 +30,10 @@ export function AssignmentsPage() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [page, setPage] = useState(1);
-  const [confirmDelete, setConfirmDelete] = useState(null); // row to delete
+  const [sort, setSort] = useState(null);
   const pageSize = 20;
 
-  const filters = { search, cohort_id: cohortId || undefined, status: status || undefined, from_date: fromDate || undefined, to_date: toDate || undefined, page, page_size: pageSize };
+  const filters = { search, cohort_id: cohortId || undefined, status: status || undefined, from_date: fromDate || undefined, to_date: toDate || undefined, page, page_size: pageSize, sort: sort?.key, order: sort?.dir };
   const { data, isLoading, error } = useAssignments(filters);
   const { data: cohortsData } = useCohorts();
 
@@ -45,10 +45,10 @@ export function AssignmentsPage() {
 
   const cohortOptions = (cohortsData?.data ?? []).map(c => ({ value: String(c.id), label: c.name }));
 
-  function handleDeleteConfirmed() {
-    deleteAssignment.mutate(confirmDelete.id, {
-      onSuccess: () => { showToast.success('Assignment deleted.'); setConfirmDelete(null); },
-      onError: (e) => { showToast.error(e.message); setConfirmDelete(null); },
+  function handleDelete(row) {
+    deleteAssignment.mutate(row.id, {
+      onSuccess: () => showToast.success('Assignment deleted.'),
+      onError: (e) => showToast.error(e.message),
     });
   }
 
@@ -63,58 +63,42 @@ export function AssignmentsPage() {
     {
       key: 'title',
       header: 'Title',
+      sortable: true,
       render: (row) => (
         <Link to={`/app/assignments/${row.id}`} className="font-semibold text-accent-dark hover:underline">
           {row.title}
         </Link>
       ),
     },
-    { key: 'subject', header: 'Subject', render: (row) => row.module_name ?? '—' },
+    { key: 'subject', header: 'Subject', sortable: true, render: (row) => row.module_name ?? '—' },
     { key: 'class', header: t('cohort'), render: (row) => row.class_names ?? '—' },
     {
       key: 'due_date',
       header: 'Due',
+      sortable: true,
       render: (row) => row.due_date ? new Date(row.due_date).toLocaleDateString() : '—',
     },
     { key: 'status', header: 'Status', mobileCompact: true, render: (row) => <AssignmentStatusBadge status={row.status} /> },
     { key: 'publish', header: 'Published', mobileCompact: true, render: (row) => <PublishBadge published={row.publish_marks} /> },
-    {
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => navigate(`/app/assignments/${row.id}`)}
-            className="text-xs font-semibold text-ink-500 hover:text-ink-900"
-          >
-            View
-          </button>
-          {can('assignments.manage') && (
-            <>
-              <button
-                onClick={() => navigate(`/app/assignments/${row.id}/edit`)}
-                className="text-xs font-semibold text-ink-500 hover:text-ink-900"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDuplicate(row)}
-                className="text-xs font-semibold text-ink-500 hover:text-ink-900"
-              >
-                Duplicate
-              </button>
-              <button
-                onClick={() => setConfirmDelete(row)}
-                className="text-xs font-semibold text-danger hover:opacity-80"
-              >
-                Delete
-              </button>
-            </>
-          )}
-        </div>
-      ),
-    },
   ];
+
+  // Row is already fully tappable (onRowClick below) and the title is a
+  // Link, so "View" would be redundant here — only manage-gated actions.
+  function assignmentActions(row) {
+    return [
+      { key: 'edit', label: 'Edit', icon: Pencil, hidden: !can('assignments.manage'), onClick: () => navigate(`/app/assignments/${row.id}/edit`) },
+      { key: 'duplicate', label: 'Duplicate', icon: Copy, hidden: !can('assignments.manage'), onClick: () => handleDuplicate(row) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !can('assignments.manage'),
+        confirm: `Delete "${row.title}"? This cannot be undone.`,
+        onClick: () => handleDelete(row)
+      }
+    ];
+  }
 
   return (
     <div>
@@ -184,20 +168,18 @@ export function AssignmentsPage() {
           emptyMessage="No assignments found."
           isLoading={isLoading}
           serverPagination={{ page, pageSize, total, onPageChange: setPage }}
+          pageSizeOptions={[pageSize]}
           mobileCompact
           onRowClick={(row) => navigate(`/app/assignments/${row.id}`)}
+          actions={assignmentActions}
+          sort={sort}
+          onSortChange={(key) => setSort((prev) => {
+            if (!prev || prev.key !== key) return { key, dir: 'asc' };
+            if (prev.dir === 'asc') return { key, dir: 'desc' };
+            return null;
+          })}
         />
       </div>
-
-      {confirmDelete && (
-        <ConfirmDialog
-          message={`Delete "${confirmDelete.title}"? This cannot be undone.`}
-          confirmLabel="Delete"
-          danger
-          onConfirm={handleDeleteConfirmed}
-          onCancel={() => setConfirmDelete(null)}
-        />
-      )}
     </div>
   );
 }

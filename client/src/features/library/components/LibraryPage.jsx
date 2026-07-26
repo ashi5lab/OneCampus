@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BookPlus, Pencil, Trash2, Undo2, HandCoins } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
@@ -51,31 +52,20 @@ export function LibraryPage() {
       )
     }
   ];
-  if (can('library.manage')) {
-    bookColumns.push({
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          {row.available_copies > 0 && (
-            <button onClick={() => setIssuingBook(row)} className="text-xs font-semibold text-accent-dark hover:underline">
-              Issue
-            </button>
-          )}
-          <button onClick={() => setEditingBook(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
-            Edit
-          </button>
-          <button
-            onClick={() => {
-              if (window.confirm(`Delete "${row.title}"?`)) deleteBook.mutate(row.id);
-            }}
-            className="text-xs font-semibold text-danger hover:opacity-80"
-          >
-            Delete
-          </button>
-        </div>
-      )
-    });
+  function bookActions(row) {
+    return [
+      { key: 'issue', label: 'Issue', icon: BookPlus, hidden: !(can('library.manage') && row.available_copies > 0), onClick: () => setIssuingBook(row) },
+      { key: 'edit', label: 'Edit', icon: Pencil, hidden: !can('library.manage'), onClick: () => setEditingBook(row) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !can('library.manage'),
+        confirm: `Delete "${row.title}"?`,
+        onClick: () => deleteBook.mutate(row.id)
+      }
+    ];
   }
 
   const loanColumns = [
@@ -108,25 +98,11 @@ export function LibraryPage() {
         )
     }
   ];
-  if (can('library.manage')) {
-    loanColumns.push({
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          {!row.returned_date && (
-            <button onClick={() => returnLoan.mutate(row.id)} className="text-xs font-semibold text-accent-dark hover:underline">
-              Mark Returned
-            </button>
-          )}
-          {row.fine_amount > 0 && (
-            <button onClick={() => setWaivingFineFor(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">
-              Waive
-            </button>
-          )}
-        </div>
-      )
-    });
+  function loanActions(row) {
+    return [
+      { key: 'return', label: 'Mark Returned', icon: Undo2, hidden: !(can('library.manage') && !row.returned_date), onClick: () => returnLoan.mutate(row.id) },
+      { key: 'waive', label: 'Waive', icon: HandCoins, hidden: !(can('library.manage') && row.fine_amount > 0), onClick: () => setWaivingFineFor(row) }
+    ];
   }
 
   return (
@@ -170,7 +146,7 @@ export function LibraryPage() {
           <div className="overflow-hidden rounded border border-border bg-surface">
             {booksLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
             {booksError && <div className="p-8 text-center text-sm font-semibold text-danger">{booksError.message}</div>}
-            {books && <DataTable columns={bookColumns} rows={books} rowKey={(row) => row.id} />}
+            {books && <DataTable columns={bookColumns} rows={books} rowKey={(row) => row.id} mobileCompact actions={bookActions} />}
           </div>
         </>
       )}
@@ -180,7 +156,7 @@ export function LibraryPage() {
           {loansLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
           {loansError && <div className="p-8 text-center text-sm font-semibold text-danger">{loansError.message}</div>}
           {loans && (
-            <DataTable columns={loanColumns} rows={loans} rowKey={(row) => row.id} emptyMessage="No loans yet." />
+            <DataTable columns={loanColumns} rows={loans} rowKey={(row) => row.id} emptyMessage="No loans yet." mobileCompact actions={loanActions} />
           )}
         </div>
       )}

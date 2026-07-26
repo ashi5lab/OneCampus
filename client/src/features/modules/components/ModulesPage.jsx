@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
@@ -26,32 +27,25 @@ export function ModulesPage() {
   }
 
   const columns = [
-    { key: 'name', header: 'Name', render: (row) => <span className="font-semibold">{row.name}</span> },
-    { key: 'code', header: 'Code', render: (row) => <span className="font-mono text-[12.5px]">{row.code}</span> },
+    { key: 'name', header: 'Name', sortable: true, render: (row) => <span className="font-semibold">{row.name}</span> },
+    { key: 'code', header: 'Code', sortable: true, mobileCompact: true, render: (row) => <span className="font-mono text-[12.5px]">{row.code}</span> },
     { key: 'unit', header: 'Unit', render: (row) => unitName(row.unit_id) },
     { key: 'credits', header: 'Credits', render: (row) => row.credits }
   ];
 
-  if (can('modules.manage')) {
-    columns.push({
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          <button onClick={() => setEditingModule(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
-          <button 
-            onClick={() => {
-              if (window.confirm(`Are you sure you want to delete ${row.name}?`)) {
-                deleteModule.mutate(row.id);
-              }
-            }} 
-            className="text-xs font-semibold text-danger hover:opacity-80"
-          >
-            Delete
-          </button>
-        </div>
-      )
-    });
+  function moduleActions(row) {
+    return [
+      { key: 'edit', label: 'Edit', icon: Pencil, hidden: !can('modules.manage'), onClick: () => setEditingModule(row) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !can('modules.manage'),
+        confirm: `Are you sure you want to delete ${row.name}?`,
+        onClick: () => deleteModule.mutate(row.id)
+      }
+    ];
   }
 
   return (
@@ -80,7 +74,7 @@ export function ModulesPage() {
         {error && (
           <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>
         )}
-        {modules && <DataTable columns={columns} rows={modules} rowKey={(row) => row.id} />}
+        {modules && <DataTable columns={columns} rows={modules} rowKey={(row) => row.id} mobileCompact actions={moduleActions} />}
       </div>
 
       {showForm && (

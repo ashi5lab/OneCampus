@@ -47,21 +47,14 @@ export function LeavePage() {
     { key: 'dates', header: 'Dates', render: (row) => `${row.start_date} → ${row.end_date}` },
     { key: 'days', header: 'Duration', render: (row) => daysLabel(row) },
     { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} /> },
-    { key: 'note', header: 'Reviewer Note', render: (row) => row.review_note || '—' },
-    {
-      key: 'actions',
-      header: '',
-      render: (row) =>
-        row.status === 'pending' ? (
-          <button
-            onClick={() => cancelLeave.mutate(row.id)}
-            className="text-xs font-semibold text-danger hover:opacity-80"
-          >
-            Withdraw
-          </button>
-        ) : null
-    }
+    { key: 'note', header: 'Reviewer Note', render: (row) => row.review_note || '—' }
   ];
+
+  function mineActions(row) {
+    return [
+      { key: 'withdraw', label: 'Withdraw', variant: 'danger', hidden: row.status !== 'pending', onClick: () => cancelLeave.mutate(row.id) }
+    ];
+  }
 
   const queueColumns = [
     {
@@ -79,25 +72,23 @@ export function LeavePage() {
     { key: 'days', header: 'Duration', render: (row) => daysLabel(row) },
     { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} /> },
     {
-      key: 'actions',
-      header: '',
-      render: (row) =>
-        row.status === 'pending' ? (
-          <button onClick={() => setReviewing(row)} className="text-xs font-semibold text-accent-dark hover:underline">
-            Review
-          </button>
-        ) : (
-          <div className="flex items-center justify-end gap-3">
-            <span className="text-[11.5px] text-ink-500">{row.reviewed_by_username ? `by ${row.reviewed_by_username}` : '—'}</span>
-            {canViewCoverage && row.status === 'approved' && row.applicant_role === 'instructor' && (
-              <button onClick={() => setCoverageFor(row.id)} className="text-xs font-semibold text-accent-dark hover:underline">
-                Coverage
-              </button>
-            )}
-          </div>
-        )
+      key: 'reviewed_by',
+      header: 'Reviewed By',
+      render: (row) => (row.status !== 'pending' ? <span className="text-[11.5px] text-ink-500">{row.reviewed_by_username ? `by ${row.reviewed_by_username}` : '—'}</span> : '—')
     }
   ];
+
+  function queueActions(row) {
+    return [
+      { key: 'review', label: 'Review', hidden: row.status !== 'pending', onClick: () => setReviewing(row) },
+      {
+        key: 'coverage',
+        label: 'Coverage',
+        hidden: !(canViewCoverage && row.status === 'approved' && row.applicant_role === 'instructor'),
+        onClick: () => setCoverageFor(row.id)
+      }
+    ];
+  }
 
   const pendingMine = (mine || []).filter((r) => r.status === 'pending').length;
   const pendingQueue = (queue || []).filter((r) => r.status === 'pending').length;
@@ -144,7 +135,7 @@ export function LeavePage() {
           <div className="overflow-hidden rounded border border-border bg-surface">
             {mineLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
             {mineError && <div className="p-8 text-center text-sm font-semibold text-danger">{mineError.message}</div>}
-            {mine && <DataTable columns={mineColumns} rows={mine} rowKey={(row) => row.id} emptyMessage="No leave requests yet." />}
+            {mine && <DataTable columns={mineColumns} rows={mine} rowKey={(row) => row.id} emptyMessage="No leave requests yet." mobileCompact actions={mineActions} />}
           </div>
         </>
       )}
@@ -159,7 +150,7 @@ export function LeavePage() {
             {queueLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
             {queueError && <div className="p-8 text-center text-sm font-semibold text-danger">{queueError.message}</div>}
             {queue && (
-              <DataTable columns={queueColumns} rows={queue} rowKey={(row) => row.id} emptyMessage="Nothing awaiting your review." />
+              <DataTable columns={queueColumns} rows={queue} rowKey={(row) => row.id} emptyMessage="Nothing awaiting your review." mobileCompact actions={queueActions} />
             )}
           </div>
         </>

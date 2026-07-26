@@ -29,22 +29,23 @@ export function ExamSubmissionsRoster({ exam }) {
       header: 'Score',
       render: (row) => (row.total_score != null ? `${row.total_score} / ${exam.max_score}` : '—')
     },
-    {
-      key: 'actions',
-      header: '',
-      render: (row) =>
-        row.status !== 'in_progress' && (
-          <button onClick={() => setGradingId(gradingId === row.id ? null : row.id)} className="text-xs font-semibold text-accent-dark hover:underline">
-            {gradingId === row.id ? 'Close' : 'View / Grade'}
-          </button>
-        )
-    }
   ];
+
+  function submissionActions(row) {
+    return [
+      {
+        key: 'grade',
+        label: gradingId === row.id ? 'Close' : 'View / Grade',
+        hidden: row.status === 'in_progress',
+        onClick: () => setGradingId(gradingId === row.id ? null : row.id)
+      }
+    ];
+  }
 
   return (
     <div>
       <div className="overflow-hidden rounded border border-border bg-surface">
-        <DataTable columns={columns} rows={submissions} rowKey={(row) => row.id} emptyMessage="No submissions yet." />
+        <DataTable columns={columns} rows={submissions} rowKey={(row) => row.id} emptyMessage="No submissions yet." mobileCompact actions={submissionActions} />
       </div>
 
       {gradingId && <GradePanel submissionId={gradingId} exam={exam} onClose={() => setGradingId(null)} />}

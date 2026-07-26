@@ -33,25 +33,23 @@ export function SubmissionsRoster({ assignment }) {
           '—'
         )
     },
-    {
-      key: 'actions',
-      header: '',
-      render: (row) =>
-        row.submitted_at && (
-          <button
-            onClick={() => setGrading(grading === row.id ? null : row.id)}
-            className="text-xs font-semibold text-accent-dark hover:underline"
-          >
-            {row.score_obtained != null ? 'Regrade' : 'Grade'}
-          </button>
-        )
-    }
   ];
+
+  function submissionActions(row) {
+    return [
+      {
+        key: 'grade',
+        label: row.score_obtained != null ? 'Regrade' : 'Grade',
+        hidden: !row.submitted_at,
+        onClick: () => setGrading(grading === row.id ? null : row.id)
+      }
+    ];
+  }
 
   return (
     <div>
       <div className="overflow-hidden rounded border border-border bg-surface">
-        <DataTable columns={columns} rows={submissions} rowKey={(row) => row.id} emptyMessage="No learners in this cohort yet." />
+        <DataTable columns={columns} rows={submissions} rowKey={(row) => row.id} emptyMessage="No learners in this cohort yet." mobileCompact actions={submissionActions} />
       </div>
 
       {grading && (

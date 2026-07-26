@@ -1,7 +1,12 @@
 const { z } = require('zod');
 const bcrypt = require('bcrypt');
 const { logAudit } = require('../../lib/audit');
-const { parsePagination } = require('../../lib/pagination');
+const { parsePagination, resolveSort } = require('../../lib/pagination');
+
+const STAFF_SORT_MAP = {
+  name: 's.first_name, s.last_name',
+  staff_id: 's.staff_id'
+};
 const { assignDesignation } = require('../../lib/designation');
 const { generateUniqueUsername, generatePassword, placeholderEmail } = require('../../lib/credentials');
 
@@ -46,16 +51,17 @@ async function getAll(req, res) {
     }
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const baseQuery = `FROM onec_staff s LEFT JOIN onec_users u ON s.user_id = u.id ${whereClause}`;
+    const orderBy = resolveSort(req.query, STAFF_SORT_MAP, 's.id DESC');
 
     if (!pagination) {
-      const result = await req.db.query(`SELECT s.*, u.profile_picture_url ${baseQuery} ORDER BY s.id DESC`, params);
+      const result = await req.db.query(`SELECT s.*, u.profile_picture_url ${baseQuery} ORDER BY ${orderBy}`, params);
       return res.json({ data: result.rows });
     }
 
     const pageParams = [...params, pagination.limit, pagination.offset];
     const [rows, count] = await Promise.all([
       req.db.query(
-        `SELECT s.*, u.profile_picture_url ${baseQuery} ORDER BY s.id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+        `SELECT s.*, u.profile_picture_url ${baseQuery} ORDER BY ${orderBy} LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
         pageParams
       ),
       req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`, params)

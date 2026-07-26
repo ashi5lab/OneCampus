@@ -1,6 +1,13 @@
 const { z } = require('zod');
 const { logAudit } = require('../../lib/audit');
-const { parsePagination } = require('../../lib/pagination');
+const { parsePagination, resolveSort } = require('../../lib/pagination');
+
+const ASSIGNMENTS_SORT_MAP = {
+  title: 'a.title',
+  subject: 'm.name',
+  due_date: 'a.due_date',
+  status: 'a.status'
+};
 const { getOwnLearnerId } = require('../../lib/ownLearner');
 const { hasPermission } = require('../../lib/permissions');
 
@@ -142,10 +149,11 @@ async function listAssignments(req, res) {
     const groupBy = 'GROUP BY a.id, m.name, u.username, inst.first_name, inst.last_name, tb_u.username, tb_inst.first_name, tb_inst.last_name';
 
     const baseQuery = `${BASE_SELECT} LEFT JOIN onec_modules m2 ON m2.id = a.module_id ${where} ${groupBy}`;
+    const orderBy = resolveSort(req.query, ASSIGNMENTS_SORT_MAP, 'a.created_at DESC');
 
     if (!pagination) {
       const result = await req.db.query(
-        `${BASE_SELECT} ${where} ${groupBy} ORDER BY a.created_at DESC`,
+        `${BASE_SELECT} ${where} ${groupBy} ORDER BY ${orderBy}`,
         params
       );
       return res.json({ data: result.rows });
@@ -166,7 +174,7 @@ async function listAssignments(req, res) {
     const total = parseInt(countResult.rows[0].count, 10);
 
     const result = await req.db.query(
-      `${BASE_SELECT} ${where} ${groupBy} ORDER BY a.created_at DESC
+      `${BASE_SELECT} ${where} ${groupBy} ORDER BY ${orderBy}
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, limit, offset]
     );
