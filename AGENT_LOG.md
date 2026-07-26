@@ -1889,3 +1889,47 @@ node server/scripts/run_migration.js 042_learners_update_picture_permission.sql
 
 *Log entry authored by Claude Code*
 *Session: 1038c693-05cb-5db2-aad9-142777098a43*
+
+## Entry 026 — Reusable DataTable: Fix Pagination + Mobile Actions Bugs, Add Sort/Filters Everywhere
+
+**User Request:** Reported two bugs from a screenshot of the Students page: (1) pagination renders one button per page (21 unbroken buttons at 408 rows), citing the Instructors page as the "working" reference; (2) Teachers page Edit/Delete buttons missing on mobile. Asked for a plan before implementing: "create a single reusable component with props... all tables should be having pagination... show all, show 5, 10, 20, 50 records per page... filter, search should include in this reusable component... use access controls for role based also." Plan was presented and approved via AskUserQuestion (page sizes 10/20/50/100/All soft-capped at 200, sorting included, filters included, all 44 files migrated), then: "implement only once i approve... segregate changes and do commit by commit and push on each module or changes per table or feature to the branch. But do everything in a single branch with multiple commits. and a single PR."
+
+### Root Cause Analysis
+1. **Pagination bug**: `DataTable.jsx`'s pagination controls did `Array.from({length: totalPages}).map(...)` — one button per page, no truncation. Every server-paginated table in the app shares this exact code, so it wasn't Students-specific; Instructors "worked" purely because that roster was small enough (few pages) for the bug to never manifest, not because the code differed.
+2. **Mobile actions bug**: `mobileCompact` mode (used by every roster page) only rendered the primary column plus columns explicitly flagged `mobileCompact: true`. A hand-rolled `{ key: 'actions', ... }` column was neither, so it was silently dropped from every compact mobile row app-wide — not just Teachers.
+
+### Files Changed — Phase 1 (DataTable core)
+- `client/src/components/DataTable.jsx` — full rewrite, 100% backward compatible:
+  - Windowed/ellipsis page-number buttons (`paginationWindow()` helper).
+  - Page-size selector: `pageSizeOptions` prop, default `[10, 20, 50, 100, 'all']`.
+  - Sortable column headers: `sortable: true` (+ optional `sortValue`) per column; uncontrolled (client-side sort of `rows`) by default, or controlled via `sort`/`onSortChange` for server-side sorting.
+  - First-class `actions(row) => [{key,label,icon,onClick,variant,hidden,disabled,confirm}]` prop — inline buttons on desktop, kebab (⋮) menu on both mobile layouts (new `ActionsKebab` component). `confirm: 'message'` routes through the existing `<ConfirmDialog />` via new internal `confirmAction` state, instead of `window.confirm`.
+  - Opt-in declarative `filters` prop: `{ search: {value,onChange,placeholder,debounceMs}, fields: [...], onClear, hasActiveFilters }` — new `FilterBar`/`FilterField` components, search debounced internally (300ms default).
+
+### Files Changed — Phase 2 (server sort support)
+- `server/lib/pagination.js` — added `resolveSort(query, sortMap, defaultOrderBy)`: client's `?sort=` is a lookup key into a per-endpoint whitelist of literal SQL column expressions (never concatenated into the query), safe against SQL injection.
+- Wired into all 12 paginated `getAll`/`listAssignments`/`listExams` endpoints: `assignments`, `attendance`, `bulkUpload`, `cohorts`, `discipline`, `exams`, `guardians`, `instructors`, `learners`, `modules`, `staff`, `units` — each with its own `*_SORT_MAP` whitelist, falling back to the endpoint's pre-existing hardcoded `ORDER BY` when `?sort=` is absent/invalid.
+
+### Files Changed — Phase 3 (roster pages)
+`LearnersPage.jsx` (Students), `InstructorsPage.jsx` (Teachers, both Teachers tab and Teacher Subjects tab), `StaffPage.jsx`, `GuardiansPage.jsx` (+ `useGuardians.js` hook gained `sort`/`order` params), `UnitsPage.jsx`, `ModulesPage.jsx`, `AlumniPage.jsx` — all migrated to `actions` prop, sortable columns, page-size selector, declarative `filters` (where the page had search/filter UI). `CohortsPage.jsx` uses a card grid, not `DataTable` — out of scope.
+
+### Files Changed — Phase 4 (remaining ~25 files)
+`AccessControlPage.jsx`, `AssignmentsPage.jsx`, `ExamsPage.jsx` (both already had `onRowClick`+`mobileCompact` from a prior session — converted their manual actions column + page-local `confirmDelete`/`<ConfirmDialog/>` state to the `actions` prop's built-in confirm), `DisciplinePage.jsx` (row-level permission check preserved inside the actions function), `ClassAssignmentsTab.jsx`, `SubmissionsRoster.jsx`, `VoicemailTab.jsx`, `ClassMembersTab.jsx`, `EvaluationsPage.jsx`, `exams/ClassExamsTab.jsx`, `onlineExams/OnlineExamsPage.jsx`, `onlineExams/ClassExamsTab.jsx`, `onlineExams/ExamSubmissionsRoster.jsx`, `PtmPage.jsx`, `VisitorLogPage.jsx`, `LeavePage.jsx` (both My Requests and Approvals tables), `LibraryPage.jsx` (both Catalog and Loans tables), `CalendarPage.jsx` (All Events table only — a separate card-list delete button elsewhere on the page still uses `window.confirm`, out of DataTable scope), `CertificatesPage.jsx`, `JobsTable.jsx` (mobileCompact flag only — its Failed/Logins columns mix data with a conditional link, not uniform actions).
+
+**Bug found and fixed while migrating:** `ClassMembersTab.jsx` was passing a `pagination` prop that `DataTable` never actually read (only `serverPagination` ever existed) — paging was silently broken, falling back to client-side slicing over just the current server-fetched page. Fixed to `serverPagination`.
+
+**Scope boundary:** Pure read-only display tables (report tabs ×6, detail-page history tables, activity logs, evaluation/assignment/exam detail pages, `InstructorProfilePage`/`LearnerProfilePage`'s internal tables, staff/my-attendance views, SMS/WhatsApp broadcast tabs) were left on the base `DataTable` — no actions to migrate, no mobile-actions-missing risk, and they already inherit the pagination-ellipsis/page-size/sort core improvements for free since every table in the app shares the same component.
+
+### Database Operations
+None — this was entirely a client component API rewrite + server `ORDER BY` whitelisting, no schema changes.
+
+### Expected Outcome
+- Students/any large roster no longer renders one pagination button per page.
+- Every roster page's row actions (Edit/Delete/etc.) are now reachable on mobile via a kebab menu — structurally guaranteed by the `actions` prop rather than per-page vigilance.
+- `Rules.md` §2 rewritten to document the full `DataTable` API as the mandatory pattern for all list/table UI going forward.
+- Single PR (#122) with one commit per module/feature, branch `claude/attendance-search-class-list-i50jbb`, kept in draft until all phases landed.
+
+---
+
+*Log entry authored by Claude Code*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*
