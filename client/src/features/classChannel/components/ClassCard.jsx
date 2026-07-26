@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { BookOpen, Calendar, Users, ChevronRight, FlaskConical, FunctionSquare, Zap, Lightbulb } from 'lucide-react';
 
-// Maps subjects to icons and colors
-const SUBJECT_MAP = [
+// Maps subjects to icons and colors — also used by ClassListRow.jsx (the
+// flat-row rendering of the same data) so both stay visually in sync.
+export const SUBJECT_MAP = [
   { icon: FlaskConical, color: 'text-purple-700 bg-purple-100', iconColor: 'text-purple-700' },
   { icon: Zap, color: 'text-blue-700 bg-blue-100', iconColor: 'text-blue-700' },
   { icon: FunctionSquare, color: 'text-emerald-700 bg-emerald-100', iconColor: 'text-emerald-700' },
@@ -10,16 +11,23 @@ const SUBJECT_MAP = [
   { icon: BookOpen, color: 'text-orange-700 bg-orange-100', iconColor: 'text-orange-700' }
 ];
 
-export function ClassCard({ cohort, to, index = 0 }) {
+// Shared by ClassCard (grid) and ClassListRow (flat list) so both derive
+// the same icon/color/section/subject from a cohort.
+export function deriveClassMeta(cohort, index = 0) {
   const style = SUBJECT_MAP[index % SUBJECT_MAP.length];
-  const Icon = style.icon;
-  
+
   // Try to extract section or default to 'A'
   const sectionMatch = cohort.name.match(/\b([A-E])\b/i);
   const section = sectionMatch ? `Section ${sectionMatch[1].toUpperCase()}` : 'Section A';
-  
+
   // Try to extract subject or just use name
   const subject = cohort.subject || (cohort.name.includes('Science') ? 'Science' : cohort.name.includes('Math') ? 'Mathematics' : cohort.name.includes('Physics') ? 'Physics' : 'Subject');
+
+  return { style, Icon: style.icon, section, subject };
+}
+
+export function ClassCard({ cohort, to, index = 0 }) {
+  const { style, Icon, section, subject } = deriveClassMeta(cohort, index);
 
   return (
     <Link

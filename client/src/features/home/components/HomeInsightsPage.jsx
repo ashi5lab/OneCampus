@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Card } from '../../../components/Card';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useDashboardReport } from '../../reports/hooks/useReports';
 import { useNotices } from '../../notices/hooks/useNotices';
@@ -248,7 +249,7 @@ const STAT_COLORS = {
 function StatCard({ icon, label, value, subtitle, color, viewAllTo, sparkline }) {
   const styles = STAT_COLORS[color] || STAT_COLORS.emerald;
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
+    <Card padding="p-4 sm:p-6" className="hover:shadow-md transition-shadow">
       <div className="mb-2 flex items-start justify-between gap-1.5">
         <div className="flex min-w-0 items-start gap-1.5 sm:gap-2">
           <div className={`flex h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0 items-center justify-center rounded-lg ${styles.iconBg}`}>{icon}</div>
@@ -267,7 +268,7 @@ function StatCard({ icon, label, value, subtitle, color, viewAllTo, sparkline })
         </div>
         {sparkline && <Sparkline />}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -293,7 +294,7 @@ function TodayScheduleCard({ timetable }) {
   const todayClasses = timetable?.filter(t => new Date(t.start_time).toDateString() === new Date().toDateString()) || [];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
+    <Card padding="p-4 sm:p-6" className="hover:shadow-md transition-shadow">
       <div className="mb-4 sm:mb-6 flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h2 className="text-base sm:text-lg font-semibold text-gray-900">Today's Schedule</h2>
@@ -337,7 +338,7 @@ function TodayScheduleCard({ timetable }) {
           })}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -345,7 +346,7 @@ function RecentMessagesCard({ inbox, compact }) {
   const items = (inbox || []).slice(0, compact ? 2 : 3);
 
   return (
-    <div className={`rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-6'}`}>
+    <Card padding={compact ? 'p-4' : 'p-6'} className="hover:shadow-md transition-shadow">
       <div className={`flex items-center justify-between gap-2 ${compact ? 'mb-3' : 'mb-4'}`}>
         <h2 className={`font-semibold text-gray-900 ${compact ? 'text-sm' : 'text-lg'}`}>Recent Messages</h2>
         <Link to="/app/messages" className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
@@ -373,7 +374,7 @@ function RecentMessagesCard({ inbox, compact }) {
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -381,7 +382,7 @@ function RecentActivityCard({ activities, compact }) {
   const items = (activities?.data || []).slice(0, compact ? 3 : 4);
 
   return (
-    <div className={`rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-6'}`}>
+    <Card padding={compact ? 'p-4' : 'p-6'} className="hover:shadow-md transition-shadow">
       <div className={`flex items-center justify-between gap-2 ${compact ? 'mb-3' : 'mb-4'}`}>
         <h2 className={`font-semibold text-gray-900 ${compact ? 'text-sm' : 'text-lg'}`}>Recent Activity</h2>
         <Link to="/app/activities" className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
@@ -409,7 +410,7 @@ function RecentActivityCard({ activities, compact }) {
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -427,7 +428,7 @@ function CalendarWidget({ compact }) {
   const dayLabels = compact ? ['S', 'M', 'T', 'W', 'T', 'F', 'S'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-    <div className={`rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-6'}`}>
+    <Card padding={compact ? 'p-4' : 'p-6'} className="hover:shadow-md transition-shadow">
       <h3 className={`font-semibold text-gray-900 ${compact ? 'mb-3 text-sm' : 'mb-4 text-lg'}`}>{month} {year}</h3>
 
       <div className={`grid grid-cols-7 gap-1 ${compact ? 'mb-1' : 'mb-3'}`}>
@@ -457,7 +458,7 @@ function CalendarWidget({ compact }) {
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -465,7 +466,7 @@ function DueAssignmentsCard({ report, compact }) {
   const items = report?.pendingActions?.filter(a => a.type === 'assignment')?.slice(0, compact ? 2 : 3) || [];
 
   return (
-    <div className={`rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-6'}`}>
+    <Card padding={compact ? 'p-4' : 'p-6'} className="hover:shadow-md transition-shadow">
       <div className={`flex items-center justify-between gap-2 ${compact ? 'mb-3' : 'mb-4'}`}>
         <h2 className={`font-semibold text-gray-900 ${compact ? 'text-sm' : 'text-lg'}`}>Due Assignments</h2>
         <Link to="/app/assignments" className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
@@ -494,7 +495,7 @@ function DueAssignmentsCard({ report, compact }) {
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -502,7 +503,7 @@ function NoticesCard({ notices }) {
   const items = (notices || []).slice(0, 3);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
+    <Card padding="p-4 sm:p-6" className="hover:shadow-md transition-shadow">
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900">Notices</h2>
         <Link to="/app/notices" className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
@@ -524,7 +525,7 @@ function NoticesCard({ notices }) {
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -567,7 +568,7 @@ function QuickActionsCard({ role }) {
   const filtered = actions.filter(a => a.roles.includes(role));
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+    <Card padding="p-6">
       <h2 className="mb-4 text-[15px] font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
         <Grid className="h-4 w-4 text-gray-500" /> Quick Actions
       </h2>
@@ -588,7 +589,7 @@ function QuickActionsCard({ role }) {
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
 

@@ -4,6 +4,7 @@ import { useAllUsers } from '../../profile/hooks/useProfile';
 import { useDisciplineRecords, useCreateDisciplineRecord, useUpdateDisciplineRecord } from '../hooks/useDiscipline';
 import { PageHeader } from '../../../components/PageHeader';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
+import { Card } from '../../../components/Card';
 
 const SEVERITY_OPTIONS = [
   { value: 'positive', label: 'Positive note (+5 pts)', classes: 'bg-emerald-50 text-emerald-900 font-medium' },
@@ -95,7 +96,7 @@ export function DisciplineFormPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Incident Information Section */}
-        <div className="bg-surface rounded-2xl shadow-sm border border-border p-6">
+        <Card padding="p-6">
           <h2 className="text-[15px] font-bold text-ink-900 mb-5">Incident Information</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
@@ -126,10 +127,10 @@ export function DisciplineFormPage() {
               </select>
             </label>
           </div>
-        </div>
+        </Card>
 
         {/* Incident Details Section */}
-        <div className="bg-surface rounded-2xl shadow-sm border border-border p-6">
+        <Card padding="p-6">
           <h2 className="text-[15px] font-bold text-ink-900 mb-5">Incident Details</h2>
           
           <label className="block mb-5">
@@ -154,7 +155,7 @@ export function DisciplineFormPage() {
               onChange={(e) => setActionTaken(e.target.value)} 
             />
           </label>
-        </div>
+        </Card>
 
         {errorMsg && <div className="text-sm font-semibold text-danger">{errorMsg}</div>}
 

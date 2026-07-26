@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 import { PageHeader } from '../../../components/PageHeader';
+import { Card } from '../../../components/Card';
 import { useDisciplineRecordsPage, useDeleteDisciplineRecord } from '../hooks/useDiscipline';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 
@@ -115,7 +116,7 @@ export function DisciplinePage() {
         }
       />
 
-      <div className="bg-surface rounded-2xl shadow-sm border border-border p-4 mb-6">
+      <Card padding="p-4" className="mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <input type="text" className="input text-sm w-full" placeholder="Search student name or roll..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e?.key === 'Enter' && applyFilters()} />
           <select className="input text-sm w-full" value={cohortId} onChange={(e) => setCohortId(e.target.value)}>
@@ -138,9 +139,9 @@ export function DisciplinePage() {
           <button onClick={resetFilters} className="px-4 py-2 text-sm font-bold text-ink-600 hover:bg-surface-muted rounded-full transition-colors border border-transparent hover:border-border">Clear search</button>
           <button onClick={applyFilters} className="px-4 py-2 text-sm font-bold bg-[#4b43c4] text-white rounded-full hover:bg-[#3a34a8] transition-colors shadow-sm">Search now</button>
         </div>
-      </div>
+      </Card>
 
-      <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
+      <Card padding="p-0" className="overflow-hidden">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading records...</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {!isLoading && !error && (
@@ -171,7 +172,7 @@ export function DisciplinePage() {
             }}
           />
         )}
-      </div>
+      </Card>
     </div>
   );
 }

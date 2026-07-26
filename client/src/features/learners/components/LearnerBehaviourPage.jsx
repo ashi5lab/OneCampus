@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Award, AlertCircle, AlertTriangle, Shield, Calendar, Filter, ArrowDownUp, Trophy, MinusCircle } from 'lucide-react';
 import { PageHeader } from '../../../components/PageHeader';
 import { Avatar } from '../../../components/Avatar';
+import { Card } from '../../../components/Card';
 import { useLearnerProfile } from '../hooks/useLearners';
 import { useDisciplineRecords } from '../../discipline/hooks/useDiscipline';
 
@@ -100,7 +101,7 @@ export function LearnerBehaviourPage({ learnerId: propLearnerId, asTab = false }
 
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-0 bg-surface rounded-2xl shadow-sm border border-border overflow-hidden divide-x divide-border">
+      <Card padding="p-0" className="grid grid-cols-4 gap-0 overflow-hidden divide-x divide-border">
         <div className="p-4 text-center flex flex-col items-center justify-center">
           <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2">
             <Trophy className="w-4 h-4" />
@@ -138,7 +139,7 @@ export function LearnerBehaviourPage({ learnerId: propLearnerId, asTab = false }
             This Term <AlertCircle className="w-2.5 h-2.5 opacity-60" />
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Tabs */}
       <div className="flex items-center gap-6 border-b border-border">
@@ -196,7 +197,7 @@ export function LearnerBehaviourPage({ learnerId: propLearnerId, asTab = false }
                     <div className={`w-2.5 h-2.5 rounded-full border-2 border-surface ${meta.dot}`} />
                   </div>
                   
-                  <div className="flex-1 bg-surface rounded-2xl p-4 shadow-sm border border-border flex flex-col sm:flex-row gap-4 sm:items-center">
+                  <Card padding="p-4" className="flex-1 flex flex-col sm:flex-row gap-4 sm:items-center">
                     <div className={`w-12 h-12 rounded-full shrink-0 flex items-center justify-center ${meta.bg} ${meta.color}`}>
                       <Icon className="w-5 h-5" />
                     </div>
@@ -230,7 +231,7 @@ export function LearnerBehaviourPage({ learnerId: propLearnerId, asTab = false }
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 </div>
               );
             })}

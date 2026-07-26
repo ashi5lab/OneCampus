@@ -6,6 +6,9 @@ import {
   Zap, ChevronRight, Bell, AlertCircle, Clock, XCircle
 } from 'lucide-react';
 import { TeacherHeader } from '../../../components/TeacherHeader';
+import { Card } from '../../../components/Card';
+import { FlatList, FlatRow } from '../../../components/FlatList';
+import { SectionHeader } from '../../../components/SectionHeader';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLearners } from '../../learners/hooks/useLearners';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
@@ -205,8 +208,35 @@ export function TeacherDashboard() {
 
       <div className="px-4 relative z-20 space-y-6 pt-4">
 
-        {/* Quick-action shortcut row */}
-        <div className="flex flex-col md:flex-row gap-3">
+        {/* Quick-action shortcut row. Mobile: flat, edge-to-edge rows (no
+            per-row box) — see components/FlatList.jsx. Desktop keeps the
+            side-by-side boxed-button treatment, which reads fine as
+            multi-column content rather than a cramped stacked list. */}
+        <div className="md:hidden -mx-4">
+          <SectionHeader className="px-4">Quick actions</SectionHeader>
+          <FlatList className="bg-white">
+            <FlatRow
+              onClick={() => navigate('/app/attendance')}
+              icon={Zap}
+              iconBg="#dcfce7"
+              iconColor="#16a34a"
+              title="Mark Attendance Now"
+              subtitle="Quickly mark student attendance"
+              chevron
+            />
+            <FlatRow
+              onClick={() => navigate('/app/discipline/new')}
+              icon={ShieldAlert}
+              iconBg="#ffedd5"
+              iconColor="#ea580c"
+              title="Log Discipline"
+              subtitle="Record student behavior"
+              chevron
+            />
+          </FlatList>
+        </div>
+
+        <div className="hidden md:flex gap-3">
           <button
             type="button"
             onClick={() => navigate('/app/attendance')}
@@ -238,28 +268,50 @@ export function TeacherDashboard() {
           </button>
         </div>
 
-        {/* Today at a glance */}
+        {/* Today at a glance. Mobile: flat rows. Desktop: horizontal-scroll
+            stat tiles (unchanged) — a carousel of cards is a reasonable
+            desktop treatment, not the "stack of boxed rows" pattern this
+            redesign targets. */}
         <div>
-          <h2 className="text-[15px] font-bold text-gray-900 mb-3">Today at a glance</h2>
-          <div className="flex flex-col gap-2.5 md:flex-row md:overflow-x-auto md:pb-2 md:scroll-smooth md:[&::-webkit-scrollbar]:hidden md:[-ms-overflow-style:none] md:[scrollbar-width:none]">
+          <div className="md:hidden -mx-4">
+            <SectionHeader className="px-4">Today at a glance</SectionHeader>
+            <FlatList className="bg-white">
+              {glanceCards.map((card, idx) => {
+                const Icon = card.icon;
+                return (
+                  <FlatRow key={idx} to={card.path}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${card.color}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14.5px] font-semibold text-gray-900">{card.label}</div>
+                      {card.subtitle && <div className="text-[11px] font-semibold text-indigo-600 mt-0.5">{card.subtitle}</div>}
+                    </div>
+                    <div className="text-[16px] font-bold text-gray-900">{card.value}</div>
+                  </FlatRow>
+                );
+              })}
+            </FlatList>
+          </div>
+
+          <h2 className="hidden md:block text-[15px] font-bold text-gray-900 mb-3">Today at a glance</h2>
+          <div className="hidden md:flex gap-2.5 overflow-x-auto pb-2 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {glanceCards.map((card, idx) => {
               const Icon = card.icon;
               const CardWrapper = card.path ? Link : 'div';
               return (
-                <CardWrapper 
-                  key={idx} 
+                <CardWrapper
+                  key={idx}
                   to={card.path}
-                  className={`bg-white rounded-2xl p-3 md:p-4 shadow-sm md:min-w-[140px] flex-shrink-0 flex items-center md:flex-col md:items-start md:justify-between border border-gray-100 gap-3 md:gap-0 block ${card.path ? 'cursor-pointer hover:border-indigo-200 transition-colors active:scale-[0.98]' : ''}`}
+                  className={`bg-white rounded-2xl p-4 shadow-sm min-w-[140px] flex-shrink-0 flex flex-col items-start justify-between border border-gray-100 block ${card.path ? 'cursor-pointer hover:border-indigo-200 transition-colors active:scale-[0.98]' : ''}`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center md:mb-3 flex-shrink-0 ${card.color}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 flex-shrink-0 ${card.color}`}>
                     <Icon className="w-5 h-5" />
                   </div>
-                  <div className="flex-1 min-w-0 flex items-center justify-between md:block md:items-stretch">
-                    <div>
-                      <div className="text-[13px] md:text-[11px] font-medium text-gray-500 leading-tight">{card.label}</div>
-                      {card.subtitle && <div className="text-[10px] font-semibold text-indigo-600 md:mt-1">{card.subtitle}</div>}
-                    </div>
-                    <div className="text-[18px] md:text-2xl font-bold text-gray-900 ml-2 md:ml-0 md:mt-1">{card.value}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-medium text-gray-500 leading-tight">{card.label}</div>
+                    {card.subtitle && <div className="text-[10px] font-semibold text-indigo-600 mt-1">{card.subtitle}</div>}
+                    <div className="text-2xl font-bold text-gray-900 mt-1">{card.value}</div>
                   </div>
                 </CardWrapper>
               );
@@ -268,7 +320,7 @@ export function TeacherDashboard() {
         </div>
 
         {/* Today's Schedule */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <Card padding="p-5">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-[15px] font-bold text-gray-900">Today's Schedule</h2>
             <Link to="/app/timetable" className="text-xs font-semibold text-indigo-600">View Timetable</Link>
@@ -306,10 +358,10 @@ export function TeacherDashboard() {
               })}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Recent Notices */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <Card padding="p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[15px] font-bold text-gray-900">Recent Notices</h2>
             <Link to="/app/notices" className="text-xs font-semibold text-indigo-600">View all</Link>
@@ -334,10 +386,10 @@ export function TeacherDashboard() {
               ))}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Upcoming Events */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <Card padding="p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[15px] font-bold text-gray-900">Upcoming Events</h2>
             <Link to="/app/calendar" className="text-xs font-semibold text-indigo-600">View calendar</Link>
@@ -374,7 +426,7 @@ export function TeacherDashboard() {
               })}
             </div>
           )}
-        </div>
+        </Card>
 
       </div>
     </div>

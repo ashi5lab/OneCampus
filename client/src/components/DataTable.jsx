@@ -158,14 +158,18 @@ export function DataTable({
         <>
           {/* Mobile view. Compact mode (used by rosters that link out to a full
               profile/detail page) shows just the primary column + a chevron in
-              a flat navigable list — the rest of a row's data lives on that
-              detail page instead of being crammed into the list. Non-compact
-              rosters (no detail page to drill into) keep every column visible
-              as a self-contained card, since there's nowhere else for that
-              data or its row actions to go. Row actions (if any) render as a
-              kebab menu in both layouts so they're never dropped on mobile. */}
+              a flat, edge-to-edge navigable list — same convention as
+              FlatList/FlatRow (components/FlatList.jsx): no outer box, rows
+              flush against each other, hairline divider between them — the
+              rest of a row's data lives on that detail page instead of being
+              crammed into the list. Non-compact rosters (no detail page to
+              drill into) keep every column visible as a self-contained card,
+              since there's nowhere else for that data or its row actions to
+              go — that's a genuine card-grid, not a list, so it keeps its
+              box. Row actions (if any) render as a kebab menu in both
+              layouts so they're never dropped on mobile. */}
           {mobileCompact ? (
-            <div className="overflow-hidden rounded border border-border bg-surface md:hidden">
+            <div className="bg-surface md:hidden">
               {paginatedRows.map((row, i) => {
                 const extraCols = restColumns.filter((c) => c.mobileCompact);
                 const rowActions = actions ? actions(row).filter((a) => !a.hidden) : [];

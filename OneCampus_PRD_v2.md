@@ -527,3 +527,29 @@ Deliberately scoped to `onec_instructor_cohorts` (roster membership — the expl
 All roster/management pages with real row actions were migrated to the `actions` prop (Students, Teachers, Staff, Guardians, Units, Modules, Alumni, Access Control, Assignments, Exams, Discipline, Evaluations, PTM, Visitors, Leave, Library, Calendar, Class Members, Voicemail, Online Exams and their class-scoped tabs, Submissions rosters). Pure read-only display tables (report tabs, detail-page history tables, activity logs, bulk-upload job history) were intentionally left on the base `DataTable` — they have no actions to move and already got the pagination/sorting core improvements for free, since every table in the app shares the same component.
 
 Found and fixed one latent bug while migrating: `ClassMembersTab.jsx` was passing a `pagination` prop that `DataTable` never actually supported (only `serverPagination` existed) — paging was silently falling back to client-side slicing over just the current server page. Fixed to `serverPagination`.
+
+## Flat edge-to-edge lists + Card/FlatList/SectionHeader primitives
+
+Reported bug: mobile list rows (Class Channels, Mark Attendance's class picker, Dashboard's Quick Actions/Today at a Glance) each rendered as their own boxed card — `rounded-2xl border shadow-sm` + a gap to the next row — which compounds with the page's own 16px side padding into excess-looking margin on a phone screen. User referenced iOS Contacts/Settings as the target: rows flush against each other, separated by a hairline divider, no per-row box.
+
+### New primitives (`client/src/components/`)
+- **`Card.jsx`** — the existing "premium card" recipe (`bg-surface rounded-2xl shadow-sm border-border`, documented in `Rules.md` §3) as a component. `padding` (default `p-4`), `onClick` (hover/press affordance), `className`.
+- **`FlatList.jsx`** (`FlatList` + `FlatRow`) — the new edge-to-edge list. `FlatList` is `divide-y divide-border-subtle` (hairline between rows, never after the last, for free). `FlatRow` covers the common icon+title+subtitle+trailing/chevron row, or accepts `children` for a fully custom row (trailing/chevron still apply after custom children). `to` renders a `Link`, `onClick` a `button`, neither a static row.
+- **`SectionHeader.jsx`** — the small uppercase label above a list/section.
+
+### Where flat rows apply vs. where cards stay
+- **Flat (`FlatList`/`FlatRow`)**: any list that's a single column at every breakpoint and drills into a detail page — a roster, a class picker. Applied to: Dashboard's Quick Actions + Today at a Glance (mobile only — desktop keeps its existing multi-column/carousel treatment, which is legitimate desktop content, not a stacked-boxes list), the teacher's own "My Classes" picker (`ClassPage.jsx` — never a grid, so flat at every breakpoint), the admin Class Channels picker (mobile only — desktop is a genuine `sm:grid-cols-2 lg:grid-cols-3` grid, so it keeps `ClassCard`), and the Mark Attendance class picker (`AttendancePage.jsx` — never a grid).
+- **Still `Card`/boxed**: `DataTable`'s non-`mobileCompact` mode (a genuine card-grid — every column visible, no detail page to drill into), a multi-column grid at wider breakpoints (`ClassCard.jsx` itself, kept for the admin picker's desktop grid), and timelines (a connecting line + dot markers is a different visual metaphor from a list — Today's Schedule, the Behaviour page's incident timeline — these got `<Card>` per item, not flattened).
+- **`DataTable.jsx`'s `mobileCompact` mode**: rows were already flat internally (hairline `border-t` divider) — only the outer wrapper had its own box. Dropped that outer box; cascades to all 25 `mobileCompact` roster pages with zero per-page changes.
+
+### `ClassCard` / `ClassListRow` split
+`client/src/features/classChannel/components/ClassCard.jsx` exports `deriveClassMeta(cohort, index)` (icon/color/section/subject derivation) so both `ClassCard` (the grid card) and the new `ClassListRow.jsx` (the flat-row rendering) stay visually in sync — same class always gets the same icon/color whether it's rendered as a grid card (desktop) or a flat row (mobile).
+
+### Bug found while migrating
+`ClassMembersTab.jsx`-adjacent pattern: none this time, but see the `DataTable` section above for the prior one found in the same initiative.
+
+### Scope note — `onlineExams` module excluded
+Per a standing rule added in this session (`Rules.md` §5.9): `client/src/features/onlineExams/**` has no route registered in `App.jsx` and is not imported by any other page (verified by grep) — it's unreachable in the running app and excluded from this and future redesigns.
+
+### Deferred (see `Future_Features.md`)
+`LearnerProfilePage.jsx` (11 occurrences) and `InstructorProfilePage.jsx` (8 occurrences) still hand-roll the card recipe rather than using `<Card>` — already using correct theme tokens, so not visually broken, just not componentized yet. `MorePage.jsx`'s 3 clickable nav cards need `Card` extended with Link polymorphism (`as`/`to`) before they can adopt it.

@@ -4,6 +4,7 @@ import { PageHeader } from '../../../components/PageHeader';
 import { UserSearchSelect } from '../../../components/UserSearchSelect';
 import { Avatar } from '../../../components/Avatar';
 import { useAllUsers, useAdminChangePassword, useForceLogoutUser } from '../../profile/hooks/useProfile';
+import { Card } from '../../../components/Card';
 import { useUsersReport, useChangeUserRole, useAssignLearnerCohort } from '../../admin/hooks/useAdminReport';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import {
@@ -162,7 +163,7 @@ function UsersReportTab() {
       </div>
 
       {/* User list */}
-      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <Card padding="p-0" className="overflow-hidden">
         {isLoading ? (
           <div className="py-10 text-center text-sm text-ink-400">Loading users…</div>
         ) : users.length === 0 ? (
@@ -174,7 +175,7 @@ function UsersReportTab() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {editUser && (
         <UserEditModal user={editUser} onClose={() => setEditUser(null)} />
@@ -365,7 +366,7 @@ function UserEditModal({ user, onClose }) {
 
 function SecurityControlsTab() {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+    <Card padding="p-6">
       <div className="mb-6">
         <h2 className="text-lg font-bold text-ink-900 flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -382,7 +383,7 @@ function SecurityControlsTab() {
           <ForceLogoutForm />
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
