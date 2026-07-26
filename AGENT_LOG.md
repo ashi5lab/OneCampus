@@ -1820,3 +1820,72 @@ ode\ script to execute \ALTER TABLE ... RENAME TO ...\ for \onec_exam_questions\
 ### Expected Outcome
 - Legacy Exams and Online Exams now have fully separated tables and no longer conflict.
 - The Valuation API for legacy exams works correctly without 500 errors.
+
+## Entry 025 — Teacher Profile Page (Web) + exams.view Permission Fix + Student Photo Edit Permission
+
+**User Request 1:** "getting error missing permission exam.view" / "I need full access for teacher and admin for exam"
+**User Request 2:** "we need to implement teacher profile same as we implemented student profile page - use our theme and topbar.js and styles ... we will be allocating class to each teachers even though they have access to mark attendance and create exams and assignment for any class - so in my classes show only classes to which they are members of - give option to update profile picture and view (self only - teachers can view students and other teachers profile picture - but update, remove only self and students profile picture) - use the same theme as student profile."
+
+### Root Cause / Justification
+1. Migration 041 (Exams module) created the `onec_exams`/`onec_exam_submissions` tables but never seeded `onec_role_permissions` rows for `exams.view`/`exams.manage`/`exams.grade` — every role, including admin, was missing them on existing tenants.
+2. `DEFAULT_ROLE_PERMISSIONS.instructor` (used for new-tenant provisioning) didn't include exam permissions either, so a newly provisioned teacher would have the same gap.
+3. There was no "teacher profile" page equivalent to the redesigned Student Profile — `InstructorProfilePage.jsx` still used the old flat card layout.
+4. Teachers had no way to update a student's profile picture — the `/profile/picture/learner/:id` routes required the broad `learners.manage` permission, which instructors don't (and shouldn't, for full roster CRUD) have.
+
+### Files Changed
+
+**`server/migrations/041_add_exams.sql`**
+- Added an `INSERT INTO onec_role_permissions ... ON CONFLICT DO NOTHING` block seeding `exams.view`/`exams.manage`/`exams.grade` for admin/staff/instructor, and `exams.view` for learner/guardian.
+
+**`server/lib/permissions.js`**
+- `instructor` in `DEFAULT_ROLE_PERMISSIONS` now includes `exams.view`, `exams.manage`, `exams.grade` (full exam access for teachers, matching admin).
+- Added `learners.update_picture` to `ALL_PERMISSIONS` and to `instructor`'s default permissions — a narrow permission (photo only) separate from `learners.manage` (full roster CRUD).
+
+**`server/migrations/042_learners_update_picture_permission.sql`** (NEW)
+- Seeds `learners.update_picture` for admin + instructor, and `learners.view` for instructor, on existing tenants.
+
+**`server/scripts/run_migration.js`** (NEW)
+- Generic per-tenant migration runner: `node server/scripts/run_migration.js <file>.sql`. Replaces the one-off `run_migration_041.js` pattern going forward.
+
+**`server/middleware/permissionGuard.js`**
+- Added `requirePermission.any(...permissions)` — passes if the caller has ANY of the listed permissions. Used so student-photo routes accept either the broad `learners.manage` or the narrow `learners.update_picture`.
+
+**`server/modules/profile/routes.js`**
+- `/picture/learner/:id` POST/DELETE now use `requirePermission.any('learners.manage', 'learners.update_picture')` instead of `learners.manage` alone.
+
+**`server/modules/instructors/controller.js`**
+- `getProfile` now also returns:
+  - `stats.assignmentsCreated` / `stats.examsCreated` (COUNT WHERE created_by = instructor's user_id, exams count has a 42P01 fallback for un-migrated tenants).
+  - `myClasses`: cohorts from `onec_instructor_cohorts` (roster membership, NOT every class the teacher can act on) joined to `onec_cohorts`, with a student count and a `subject_names` aggregate pulled from `onec_allocations`/`onec_modules`.
+
+**`client/src/features/instructors/components/InstructorProfilePage.jsx`** (rewritten)
+- Restyled to match `LearnerProfilePage.jsx`: gradient banner header with `ProfilePictureUploader`/`Avatar`, stat cards (My Classes, Assignments Created, Exams Created, Attendance Marked), pill tab bar (Overview / My Classes / Attendance / More), and a sidebar (Contact, Quick Links) — same `<PageHeader title="Teacher Profile" />` topbar-configuring pattern.
+- Profile picture: `ProfilePictureUploader` has no `customUpload`/`customRemove`, and `readOnly={!isOwnProfile}` — since the self picture endpoint is already role-agnostic, this means a teacher can edit only their own picture, and viewing another teacher's profile shows their picture read-only (no admin-edits-teacher-photo path added, matching the previous instructor page's behavior).
+- "My Classes" queries `myClasses` from the new profile response — deliberately scoped to `onec_instructor_cohorts` membership, not the broader set of classes a teacher can mark attendance/create assignments for.
+- Delete now uses `<ConfirmDialog />` instead of `window.confirm` (per the no-native-alerts rule from Entry 021).
+
+**`client/src/features/learners/components/LearnerProfilePage.jsx`**
+- Added `canUpdatePicture = canManage || can('learners.update_picture')`, and swapped the `ProfilePictureUploader`'s `customUpload`/`customRemove`/`readOnly` conditions from `canManage` to `canUpdatePicture` — so a teacher with the new narrow permission can now update/remove a student's photo, without gaining full `learners.manage` access (edit/delete/cohort-reassign stay `canManage`-only).
+
+### Permission Model (picture editing)
+- **Self:** any role can update/remove their own picture via `/profile/picture` (unchanged, always was role-agnostic).
+- **Student photos:** admin (`learners.manage`) or instructor (`learners.update_picture`) can update/remove.
+- **Other teachers' photos:** nobody but the teacher themself — viewing is unrestricted (`instructors.view`), editing is not exposed for anyone else in this pass, matching the user's "update, remove only self and students" instruction.
+
+### Database Operations Needed
+Run on the server to apply to existing tenants:
+```
+node server/scripts/run_migration.js 041_add_exams.sql
+node server/scripts/run_migration.js 042_learners_update_picture_permission.sql
+```
+(041 is safe to re-run — all `ON CONFLICT DO NOTHING` / `IF NOT EXISTS`.)
+
+### Expected Outcome
+- Admin and teacher (instructor) both have full exam access (`exams.view/manage/grade`) with no more "Missing permission: exams.view" errors.
+- Teachers get a Student-Profile-quality profile page of their own, themed identically, with class membership correctly scoped to `onec_instructor_cohorts` rather than every class they have edit access to.
+- Teachers can now update/remove a student's profile picture (previously admin-only), while still unable to edit another teacher's photo.
+
+---
+
+*Log entry authored by Claude Code*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*

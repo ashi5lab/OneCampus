@@ -143,6 +143,10 @@ export function LearnerProfilePage() {
 
   const isOwnProfile = ownProfile?.learnerId === learnerId;
   const canManage = can('learners.manage');
+  // Narrower than canManage — lets a teacher update/remove a student's
+  // photo (e.g. via learners.update_picture) without granting the rest of
+  // learner record management (edit/delete/cohort reassign stays canManage-only).
+  const canUpdatePicture = canManage || can('learners.update_picture');
   const canManageGuardianLinks = can('guardian_links.manage');
 
   const uploadLearnerPic = useUploadLearnerProfilePicture(learnerId, ['learners', learnerId, 'profile']);
@@ -263,9 +267,9 @@ export function LearnerProfilePage() {
                       name={`${learner.first_name} ${learner.last_name}`}
                       pictureUrl={learner.profile_picture_url}
                       invalidateKey={['learners', learnerId, 'profile']}
-                      customUpload={canManage && !isOwnProfile ? uploadLearnerPic : undefined}
-                      customRemove={canManage && !isOwnProfile ? removeLearnerPic : undefined}
-                      readOnly={!isOwnProfile && !canManage}
+                      customUpload={canUpdatePicture && !isOwnProfile ? uploadLearnerPic : undefined}
+                      customRemove={canUpdatePicture && !isOwnProfile ? removeLearnerPic : undefined}
+                      readOnly={!isOwnProfile && !canUpdatePicture}
                       containerClassName="w-24 h-24 md:w-[104px] md:h-[104px] rounded-full border-[3px] border-white shadow-md flex items-center justify-center bg-white/10"
                     />
                   </div>

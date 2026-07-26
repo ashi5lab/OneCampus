@@ -455,3 +455,53 @@ draft → created → grading_in_progress → completed
 
 ### Class Channel Integration
 The Class Channel's Exams tab (`ClassExamsTab`) shows exams filtered to that cohort, with columns: Exam Name, Subject, Date, Taken By.
+
+---
+
+## Teacher Profile
+
+### Overview
+A teacher-facing profile page (`/app/instructors/:id`) restyled to match the Student Profile page's theme — gradient banner header, stat cards, pill tab bar, and a sidebar — rather than the old flat card layout.
+
+### Layout
+- **Banner**: gradient header (`from-[#4b43c4] to-[#3a34a8]`) with avatar, name, staff ID, phone, designation badge (principal/vice principal), and an Edit Profile button (`instructors.manage` only).
+- **Stat cards** (in-banner): My Classes (count), Assignments Created, Exams Created, Attendance Marked.
+- **Tabs**: Overview, My Classes, Attendance, More.
+  - **Overview**: Subjects Taught, a My Classes preview (first 5), Personal Details.
+  - **My Classes**: full grid of classes the teacher is a member of, each showing student count and subject(s) taught in that class.
+  - **Attendance**: recent attendance the teacher has marked (reused from the previous page).
+  - **More**: Download ID Card, Delete Profile (via `ConfirmDialog`, not `window.confirm`).
+- **Sidebar**: Contact card, Quick Links (My Classes / Timetable / Assignments / Exams).
+
+### "My Classes" scoping
+Deliberately scoped to `onec_instructor_cohorts` (roster membership — the explicit class-teacher allocation), **not** every class the teacher can act on. A teacher can mark attendance and create assignments/exams for any class via the module-level permission grants, but the profile's "My Classes" list only shows classes they're actually assigned to.
+
+### Profile picture permissions
+- **Self**: any user (any role) can update/remove their own picture via `/profile/picture` — always was role-agnostic.
+- **Students**: admin (`learners.manage`) or teacher (`learners.update_picture`, new narrow permission) can update/remove.
+- **Other teachers**: view-only for everyone except the teacher themself — no "admin edits another teacher's photo" path is wired up in this pass.
+- **Viewing** any profile picture (own, student, other teacher) has no permission gate beyond the existing roster-view permission (`instructors.view` / `learners.view`) needed to reach the profile page at all.
+
+### Server API
+`GET /api/v1/instructors/:id/profile` response shape:
+```json
+{
+  "data": {
+    "instructor": { ... },
+    "stats": {
+      "attendanceMarked": 0,
+      "scoresGraded": 0,
+      "assignmentsCreated": 0,
+      "examsCreated": 0
+    },
+    "recentAttendance": [ ... ],
+    "myClasses": [
+      { "id": 1, "name": "Class S1 - A", "student_count": 38, "subject_names": "Mathematics" }
+    ]
+  }
+}
+```
+
+### Permissions
+- `learners.update_picture` (new) — narrower than `learners.manage`; grants only student profile-picture upload/remove. Granted to `instructor` by default (see `server/lib/permissions.js`).
+- Gated via `requirePermission.any('learners.manage', 'learners.update_picture')` on `/profile/picture/learner/:id` (see `server/middleware/permissionGuard.js`).

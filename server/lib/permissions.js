@@ -14,7 +14,7 @@ const ALL_PERMISSIONS = [
   'cohorts.view', 'cohorts.manage',
   'modules.view', 'modules.manage',
   'instructors.view', 'instructors.manage',
-  'learners.view', 'learners.manage',
+  'learners.view', 'learners.manage', 'learners.update_picture',
   'guardians.view', 'guardians.manage',
   'attendance.view', 'attendance.mark',
   'evaluations.view', 'evaluations.manage', 'evaluations.grade',
@@ -56,7 +56,7 @@ const ALL_PERMISSIONS = [
 const DEFAULT_ROLE_PERMISSIONS = {
   admin: ALL_PERMISSIONS,
   staff: ['calendar.view', 'notices.view'],
-  instructor: ['calendar.view', 'notices.view', 'exams.view', 'exams.manage', 'exams.grade'],
+  instructor: ['calendar.view', 'notices.view', 'exams.view', 'exams.manage', 'exams.grade', 'learners.view', 'learners.update_picture'],
   learner: ['calendar.view', 'notices.view'],
   guardian: ['calendar.view', 'notices.view']
 };

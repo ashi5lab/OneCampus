@@ -40,7 +40,7 @@ const handleUpload = (req, res, next) => {
 router.post('/picture', handleUpload, controller.uploadProfilePicture);
 router.delete('/picture', controller.removeProfilePicture);
 
-router.post('/picture/learner/:id', requirePermission('learners.manage'), handleUpload, controller.uploadLearnerProfilePicture);
-router.delete('/picture/learner/:id', requirePermission('learners.manage'), controller.removeLearnerProfilePicture);
+router.post('/picture/learner/:id', requirePermission.any('learners.manage', 'learners.update_picture'), handleUpload, controller.uploadLearnerProfilePicture);
+router.delete('/picture/learner/:id', requirePermission.any('learners.manage', 'learners.update_picture'), controller.removeLearnerProfilePicture);
 
 module.exports = router;
