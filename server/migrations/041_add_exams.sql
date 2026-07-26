@@ -60,3 +60,18 @@ CREATE INDEX IF NOT EXISTS idx_onec_exams_taken_by     ON onec_exams(taken_by);
 CREATE INDEX IF NOT EXISTS idx_onec_exams_exam_date    ON onec_exams(exam_date);
 CREATE INDEX IF NOT EXISTS idx_onec_exam_cohorts_exam  ON onec_exam_cohorts(exam_id);
 CREATE INDEX IF NOT EXISTS idx_onec_exam_submissions   ON onec_exam_submissions(exam_id, learner_id);
+
+-- 7. Seed permissions for all roles (ON CONFLICT DO NOTHING makes this idempotent)
+INSERT INTO onec_role_permissions (role, permission) VALUES
+  ('admin',      'exams.view'),
+  ('admin',      'exams.manage'),
+  ('admin',      'exams.grade'),
+  ('staff',      'exams.view'),
+  ('staff',      'exams.manage'),
+  ('staff',      'exams.grade'),
+  ('instructor', 'exams.view'),
+  ('instructor', 'exams.manage'),
+  ('instructor', 'exams.grade'),
+  ('learner',    'exams.view'),
+  ('guardian',   'exams.view')
+ON CONFLICT (role, permission) DO NOTHING;
