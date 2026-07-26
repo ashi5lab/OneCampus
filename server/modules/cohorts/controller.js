@@ -1,5 +1,10 @@
 const { z } = require('zod');
-const { parsePagination } = require('../../lib/pagination');
+const { parsePagination, resolveSort } = require('../../lib/pagination');
+
+const COHORTS_SORT_MAP = {
+  name: 'c.name',
+  time_block: 'c.time_block'
+};
 
 const cohortSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -26,16 +31,18 @@ async function getAll(req, res) {
     // avoiding the aggregation dance for a single count column.
     const learnerCountSelect = `(SELECT COUNT(*)::int FROM onec_learners l WHERE l.cohort_id = c.id) AS learner_count`;
 
+    const orderBy = resolveSort(req.query, COHORTS_SORT_MAP, 'c.id DESC');
+
     if (!pagination) {
       const result = await req.db.query(
-        `SELECT c.*, ${advisorSelect}, ${learnerCountSelect} FROM onec_cohorts c ${advisorJoin} ORDER BY c.id DESC`
+        `SELECT c.*, ${advisorSelect}, ${learnerCountSelect} FROM onec_cohorts c ${advisorJoin} ORDER BY ${orderBy}`
       );
       return res.json({ data: result.rows });
     }
 
     const [rows, count] = await Promise.all([
       req.db.query(
-        `SELECT c.*, ${advisorSelect}, ${learnerCountSelect} FROM onec_cohorts c ${advisorJoin} ORDER BY c.id DESC LIMIT $1 OFFSET $2`,
+        `SELECT c.*, ${advisorSelect}, ${learnerCountSelect} FROM onec_cohorts c ${advisorJoin} ORDER BY ${orderBy} LIMIT $1 OFFSET $2`,
         [pagination.limit, pagination.offset]
       ),
       req.db.query('SELECT COUNT(*)::int AS total FROM onec_cohorts')

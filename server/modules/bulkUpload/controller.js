@@ -1,5 +1,11 @@
 const multer = require('multer');
-const { parsePagination } = require('../../lib/pagination');
+const { parsePagination, resolveSort } = require('../../lib/pagination');
+
+const BULK_UPLOAD_SORT_MAP = {
+  file: 'j.original_filename',
+  status: 'j.status',
+  created_at: 'j.created_at'
+};
 const { ENTITY_FIELDS } = require('../../lib/bulkUploadFields');
 const { templateAsXlsxBuffer, templateAsCsvBuffer, failuresAsXlsxBuffer, credentialsAsXlsxBuffer } = require('../../lib/bulkUploadTemplates');
 const { MAX_DATA_ROWS, parseUploadedFile, buildHeaderKeyMap, getMissingRequiredHeaders, processJob } = require('../../lib/bulkUploadProcessor');
@@ -122,11 +128,12 @@ async function listJobs(req, res) {
     }
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const baseQuery = `FROM onec_bulk_upload_jobs j LEFT JOIN onec_users u ON j.created_by = u.id ${whereClause}`;
+    const orderBy = resolveSort(req.query, BULK_UPLOAD_SORT_MAP, 'j.id DESC');
 
     if (!pagination) {
       const result = await req.db.query(
         `SELECT j.id, j.entity_type, j.original_filename, j.status, j.total_rows, j.success_count, j.failure_count, j.created_at, j.completed_at, u.username AS created_by_username
-         ${baseQuery} ORDER BY j.id DESC`,
+         ${baseQuery} ORDER BY ${orderBy}`,
         params
       );
       return res.json({ data: result.rows });
@@ -136,7 +143,7 @@ async function listJobs(req, res) {
     const [rows, count] = await Promise.all([
       req.db.query(
         `SELECT j.id, j.entity_type, j.original_filename, j.status, j.total_rows, j.success_count, j.failure_count, j.created_at, j.completed_at, u.username AS created_by_username
-         ${baseQuery} ORDER BY j.id DESC LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+         ${baseQuery} ORDER BY ${orderBy} LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
         pageParams
       ),
       req.db.query(`SELECT COUNT(*)::int AS total ${baseQuery}`, params)

@@ -28,4 +28,23 @@ function parsePagination(query) {
   return { pagination: { page, pageSize, limit: pageSize, offset: (page - 1) * pageSize }, error: null };
 }
 
-module.exports = { parsePagination };
+// Resolves a client-requested `?sort=`/`?order=` pair into a ready-to-use
+// SQL ORDER BY clause, via a per-endpoint whitelist (`sortMap`: public sort
+// key -> literal SQL column expression chosen by the server). The client's
+// `sort` value is only ever used as a lookup key into that whitelist —
+// never concatenated into the query — so this is safe against SQL
+// injection even though the result is spliced directly into a query
+// string. Falls back to `defaultOrderBy` (the endpoint's pre-existing
+// hardcoded ORDER BY, e.g. 'l.id DESC') when `sort` is absent or not in
+// the whitelist, so every DataTable-driven list keeps its previous default
+// ordering until a caller actually clicks a sortable column header.
+function resolveSort(query, sortMap, defaultOrderBy) {
+  const key = query.sort;
+  if (typeof key === 'string' && Object.prototype.hasOwnProperty.call(sortMap, key)) {
+    const order = query.order === 'asc' ? 'ASC' : 'DESC';
+    return `${sortMap[key]} ${order}`;
+  }
+  return defaultOrderBy;
+}
+
+module.exports = { parsePagination, resolveSort };
