@@ -209,9 +209,18 @@ async function getProfile(req, res) {
     if (instructorResult.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     const instructor = instructorResult.rows[0];
 
-    const [attendanceCount, scoresCount, recentAttendance] = await Promise.all([
+    // assignmentsCreated/examsCreated count 'created_by' only (not 'taken_by')
+    // — this stat tracks authorship, matching "My Assignments"/"My Exams" on
+    // TeacherDashboard which lists what the teacher built, not who's taking
+    // attendance/grading for it.
+    const [attendanceCount, scoresCount, assignmentsCount, examsCount, recentAttendance, myClasses] = await Promise.all([
       req.db.query('SELECT COUNT(*)::int AS count FROM onec_attendance WHERE marked_by = $1', [instructor.user_id]),
       req.db.query('SELECT COUNT(*)::int AS count FROM onec_learner_scores WHERE graded_by = $1', [instructor.user_id]),
+      req.db.query('SELECT COUNT(*)::int AS count FROM onec_assignments WHERE created_by = $1', [instructor.user_id]),
+      req.db.query('SELECT COUNT(*)::int AS count FROM onec_exams WHERE created_by = $1', [instructor.user_id]).catch((err) => {
+        if (err.code !== '42P01') throw err;
+        return { rows: [{ count: 0 }] };
+      }),
       req.db.query(
         `SELECT a.id, a.date, a.status, l.first_name, l.last_name
          FROM onec_attendance a
@@ -219,6 +228,23 @@ async function getProfile(req, res) {
          WHERE a.marked_by = $1
          ORDER BY a.date DESC LIMIT 10`,
         [instructor.user_id]
+      ),
+      // "My Classes" — only cohorts this instructor is a member of
+      // (onec_instructor_cohorts), not every class they can act on (a
+      // teacher can mark attendance/create assignments for any class, but
+      // this list is deliberately scoped to their own roster membership).
+      req.db.query(
+        `SELECT c.id, c.name,
+                (SELECT COUNT(*)::int FROM onec_learners l WHERE l.cohort_id = c.id) AS student_count,
+                (SELECT STRING_AGG(DISTINCT m.name, ', ')
+                   FROM onec_allocations al
+                   JOIN onec_modules m ON al.module_id = m.id
+                  WHERE al.cohort_id = c.id AND al.instructor_id = $1) AS subject_names
+         FROM onec_instructor_cohorts ic
+         JOIN onec_cohorts c ON ic.cohort_id = c.id
+         WHERE ic.instructor_id = $1
+         ORDER BY c.name`,
+        [id]
       )
     ]);
 
@@ -227,9 +253,12 @@ async function getProfile(req, res) {
         instructor,
         stats: {
           attendanceMarked: attendanceCount.rows[0].count,
-          scoresGraded: scoresCount.rows[0].count
+          scoresGraded: scoresCount.rows[0].count,
+          assignmentsCreated: assignmentsCount.rows[0].count,
+          examsCreated: examsCount.rows[0].count
         },
-        recentAttendance: recentAttendance.rows
+        recentAttendance: recentAttendance.rows,
+        myClasses: myClasses.rows
       }
     });
   } catch (err) {
