@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DataTable } from '../../../components/DataTable';
 import { PageHeader } from '../../../components/PageHeader';
@@ -254,40 +255,28 @@ export function CalendarPage() {
             rows={rawEvents || []}
             rowKey={(row) => row.id}
             emptyMessage="No calendar events yet."
+            mobileCompact
+            actions={(row) => [
+              { key: 'edit', label: 'Edit', icon: Pencil, onClick: () => { setEditingEvent(row); setShowForm(true); } },
+              {
+                key: 'delete',
+                label: 'Delete',
+                icon: Trash2,
+                variant: 'danger',
+                confirm: `Delete "${row.title}"?`,
+                onClick: () => deleteEvent.mutate(row.id)
+              }
+            ]}
             columns={[
-              { key: 'title', header: 'Title', render: (row) => row.title },
+              { key: 'title', header: 'Title', sortable: true, render: (row) => row.title },
               {
                 key: 'type',
                 header: 'Type',
+                mobileCompact: true,
                 render: (row) => ITEM_TYPE_META[row.event_type]?.label || row.event_type
               },
               { key: 'schedule', header: 'Schedule', render: (row) => recurrenceSummary(row) },
-              { key: 'audience', header: 'Audience', render: (row) => row.audience },
-              {
-                key: 'actions',
-                header: '',
-                render: (row) => (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setEditingEvent(row);
-                        setShowForm(true);
-                      }}
-                      className="text-xs font-semibold text-ink-500 hover:text-ink-900"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Delete "${row.title}"?`)) deleteEvent.mutate(row.id);
-                      }}
-                      className="text-xs font-semibold text-danger hover:opacity-80"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )
-              }
+              { key: 'audience', header: 'Audience', render: (row) => row.audience }
             ]}
           />
         </div>
