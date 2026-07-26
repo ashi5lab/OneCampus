@@ -47,39 +47,34 @@ export function VoicemailTab() {
         </div>
       )
     },
-    {
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          {canApprove && row.status === 'pending_approval' && (
-            <>
-              <button
-                onClick={() => approveVoicemail.mutate(row.id)}
-                className="text-xs font-semibold text-success hover:opacity-80"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => {
-                  const reason = window.prompt('Reason for rejecting (optional):') ?? undefined;
-                  rejectVoicemail.mutate({ id: row.id, reason });
-                }}
-                className="text-xs font-semibold text-danger hover:opacity-80"
-              >
-                Reject
-              </button>
-            </>
-          )}
-          {canManage && (row.status === 'approved' || row.status === 'sent') && (
-            <button onClick={() => setSharing(row)} className="text-xs font-semibold text-accent-dark hover:underline">
-              {row.status === 'sent' ? 'Share again' : 'Share'}
-            </button>
-          )}
-        </div>
-      )
-    }
   ];
+
+  function voicemailActions(row) {
+    return [
+      {
+        key: 'approve',
+        label: 'Approve',
+        hidden: !(canApprove && row.status === 'pending_approval'),
+        onClick: () => approveVoicemail.mutate(row.id)
+      },
+      {
+        key: 'reject',
+        label: 'Reject',
+        variant: 'danger',
+        hidden: !(canApprove && row.status === 'pending_approval'),
+        onClick: () => {
+          const reason = window.prompt('Reason for rejecting (optional):') ?? undefined;
+          rejectVoicemail.mutate({ id: row.id, reason });
+        }
+      },
+      {
+        key: 'share',
+        label: row.status === 'sent' ? 'Share again' : 'Share',
+        hidden: !(canManage && (row.status === 'approved' || row.status === 'sent')),
+        onClick: () => setSharing(row)
+      }
+    ];
+  }
 
   return (
     <div>
@@ -89,7 +84,7 @@ export function VoicemailTab() {
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {voicemails && (
-          <DataTable columns={columns} rows={voicemails} rowKey={(row) => row.id} emptyMessage="No voicemails recorded yet." />
+          <DataTable columns={columns} rows={voicemails} rowKey={(row) => row.id} emptyMessage="No voicemails recorded yet." actions={voicemailActions} />
         )}
       </div>
 

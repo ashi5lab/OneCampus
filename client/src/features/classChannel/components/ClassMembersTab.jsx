@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { UserMinus } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { DataTable } from '../../../components/DataTable';
 import { useClassMembersPaginated, useRemoveClassTeacher, useAddClassTeacher } from '../hooks/useClassMembers';
@@ -101,30 +102,27 @@ export function ClassMembersTab({ cohortId, cohort }) {
       )
     },
     {
-      key: 'actions',
+      key: 'tutor',
       header: '',
-      render: (row) => {
-        if (!canModerate || row.role !== 'instructor') return null;
-        if (row.role_id === cohort.advisor_id) return <span className="text-[11px] text-ink-400">Class Tutor</span>;
-        
-        return (
-          <div className="flex justify-end">
-            <button
-              onClick={() => {
-                if (window.confirm(`Remove ${row.first_name} from this class?`)) {
-                  removeTeacher.mutate(row.role_id);
-                }
-              }}
-              className="text-xs font-semibold text-danger hover:opacity-80"
-              disabled={removeTeacher.isPending}
-            >
-              Remove
-            </button>
-          </div>
-        );
-      }
+      render: (row) => (row.role === 'instructor' && row.role_id === cohort.advisor_id ? <span className="text-[11px] text-ink-400">Class Tutor</span> : null)
     }
   ];
+
+  function memberActions(row) {
+    const canRemove = canModerate && row.role === 'instructor' && row.role_id !== cohort.advisor_id;
+    return [
+      {
+        key: 'remove',
+        label: 'Remove',
+        icon: UserMinus,
+        variant: 'danger',
+        hidden: !canRemove,
+        disabled: removeTeacher.isPending,
+        confirm: `Remove ${row.first_name} from this class?`,
+        onClick: () => removeTeacher.mutate(row.role_id)
+      }
+    ];
+  }
 
   return (
     // Natural height on purpose — the scrolling happens in ClassChannel's
@@ -187,16 +185,19 @@ export function ClassMembersTab({ cohortId, cohort }) {
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message || 'Error loading members'}</div>}
         {data && (
-          <DataTable 
-            columns={columns} 
-            rows={data.data} 
+          <DataTable
+            columns={columns}
+            rows={data.data}
             rowKey={(r) => `${r.role}-${r.id}`}
-            pagination={{
+            mobileCompact
+            actions={memberActions}
+            serverPagination={{
               page: data.meta.page,
-              limit: data.meta.limit,
+              pageSize: data.meta.limit,
               total: data.meta.total,
               onPageChange: setPage
             }}
+            pageSizeOptions={[data.meta.limit]}
           />
         )}
       </div>
