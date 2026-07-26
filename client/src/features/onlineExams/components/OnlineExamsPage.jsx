@@ -8,6 +8,7 @@ import { Badge } from '../../../components/Badge';
 import { useOnlineExams, useOnlineExam, useCreateOnlineExam, useUpdateOnlineExam, useDeleteOnlineExam } from '../hooks/useOnlineExams';
 import { showToast } from '../../../lib/toast';
 import { ExamFormModal } from './ExamFormModal';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 const STATUS_LABEL = { in_progress: 'In progress', submitted: 'Submitted', graded: 'Graded' };
@@ -23,6 +24,7 @@ export function OnlineExamsPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingExamId, setEditingExamId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const columns = [
     {
@@ -62,9 +64,7 @@ export function OnlineExamsPage() {
               Edit
             </button>
             <button
-              onClick={() => {
-                if (window.confirm(`Delete "${row.title}"?`)) deleteExam.mutate(row.id);
-              }}
+              onClick={() => setConfirmDelete(row)}
               className="text-xs font-semibold text-danger hover:opacity-80"
             >
               Delete
@@ -112,6 +112,21 @@ export function OnlineExamsPage() {
           examId={editingExamId}
           onClose={() => setEditingExamId(null)}
           updateExam={updateExam}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          message={`Delete "${confirmDelete.title}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger={true}
+          onConfirm={() => {
+            deleteExam.mutate(confirmDelete.id, {
+              onSuccess: () => { showToast.success('Exam deleted.'); setConfirmDelete(null); },
+              onError: (e) => { showToast.error(e.message); setConfirmDelete(null); }
+            });
+          }}
+          onCancel={() => setConfirmDelete(null)}
         />
       )}
     </div>

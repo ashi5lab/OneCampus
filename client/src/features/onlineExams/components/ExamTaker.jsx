@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMySubmission, useStartExam, useSubmitExam } from '../hooks/useOnlineExams';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 
 const STATUS_LABEL = { in_progress: 'In progress', submitted: 'Submitted — awaiting grading', graded: 'Graded' };
 
@@ -12,6 +13,7 @@ export function ExamTaker({ exam }) {
   const startExam = useStartExam(exam.id);
   const submitExam = useSubmitExam(exam.id);
   const [answers, setAnswers] = useState({});
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
 
   const submission = data?.submission;
 
@@ -82,7 +84,11 @@ export function ExamTaker({ exam }) {
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!window.confirm('Submit your answers? You cannot change them after submitting.')) return;
+    setConfirmSubmit(true);
+  }
+
+  function handleConfirmSubmit() {
+    setConfirmSubmit(false);
     submitExam.mutate({
       answers: questions.map((q) => ({
         question_id: q.id,
@@ -134,6 +140,15 @@ export function ExamTaker({ exam }) {
       >
         {submitExam.isPending ? 'Submitting…' : 'Submit Exam'}
       </button>
+      {confirmSubmit && (
+        <ConfirmDialog
+          message="Submit your answers? You cannot change them after submitting."
+          confirmLabel="Submit"
+          danger={false}
+          onConfirm={handleConfirmSubmit}
+          onCancel={() => setConfirmSubmit(false)}
+        />
+      )}
     </form>
   );
 }

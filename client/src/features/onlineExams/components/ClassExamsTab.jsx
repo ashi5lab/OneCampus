@@ -10,6 +10,7 @@ import { useMarkActivityContextViewed } from '../../activities/hooks/useActiviti
 import { CreateExamPage } from '../../exams/components/CreateExamPage';
 import { ExamCalendar } from './ExamCalendar';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 
 const STATUS_LABEL = { in_progress: 'In progress', submitted: 'Submitted', graded: 'Graded' };
 
@@ -29,6 +30,7 @@ export function ClassExamsTab({ cohortId }) {
   useMarkActivityContextViewed(`exams_${cohortId}`);
 
   const [editingExamId, setEditingExamId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [view, setView] = useState('list'); // 'list', 'calendar', or 'create'
 
   const scoped = useMemo(() => (exams || []).filter((e) => e.cohort_id === cohortId), [exams, cohortId]);
@@ -69,9 +71,7 @@ export function ClassExamsTab({ cohortId }) {
               Edit
             </button>
             <button
-              onClick={() => {
-                if (window.confirm(`Delete "${row.title}"?`)) deleteExam.mutate(row.id);
-              }}
+              onClick={() => setConfirmDelete(row)}
               className="text-xs font-semibold text-danger hover:opacity-80"
             >
               Delete
@@ -160,6 +160,21 @@ export function ClassExamsTab({ cohortId }) {
 
       {editingExamId && (
         <EditExamModal examId={editingExamId} onClose={() => setEditingExamId(null)} updateExam={updateExam} />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          message={`Delete "${confirmDelete.title}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger={true}
+          onConfirm={() => {
+            deleteExam.mutate(confirmDelete.id, {
+              onSuccess: () => { showToast.success('Exam deleted.'); setConfirmDelete(null); },
+              onError: (e) => { showToast.error(e.message); setConfirmDelete(null); }
+            });
+          }}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
     </div>
   );

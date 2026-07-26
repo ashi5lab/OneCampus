@@ -1,0 +1,12 @@
+const { Client } = require('pg');
+const client = new Client({ connectionString: 'postgresql://postgres:YTmKPZPXRhGBSLCwqcFcmCSRtbqWnQUd@switchback.proxy.rlwy.net:34002/railway' });
+async function run() {
+  await client.connect();
+  const res = await client.query('SELECT * FROM public.tenants');
+  for (const t of res.rows) {
+    const adminPerms = await client.query(SELECT * FROM  + t.schema_name + .onec_role_permissions WHERE role = 'admin' AND permission = 'exams.view');
+    console.log(t.schema_name, 'admin has exams.view:', adminPerms.rowCount > 0);
+  }
+  await client.end();
+}
+run().catch(console.error);

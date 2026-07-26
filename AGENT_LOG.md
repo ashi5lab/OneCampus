@@ -1708,3 +1708,115 @@ Build verified: âœ“ 2288 modules transformed, no new errors
 *Log entry authored by Claude Code*
 *Session: 1038c693-05cb-5db2-aad9-142777098a43*
 *Timestamp: 2026-07-25T22:15 IST*
+
+## Entry 021 — Replace Exam Module Native Alerts with Custom Modals
+
+**User Request:** "lets add toasts and modals instead of alerts in the exam module - as of now it shows alerts for exam delete - check the module and update it to use modals and toasts - this a rule - so add it in Rule.md and PRD"
+**Additional Context:** User also encountered a "missing permission: exam.view" error, which was determined to be a missing \exams.view\ permission on their user role for the legacy Exams module, not a bug in the code.
+
+### Files Investigated
+- \Rules.md\, \OneCampus_PRD_v2.md\ (Guidelines & documentation)
+- \client/src/features/onlineExams/components/*.jsx\ (Online exams frontend)
+
+### Root Cause / Justification
+The online exams module (which was built before the new UI/UX guidelines were fully established) still used native \window.confirm\ dialogues for destructive actions (e.g., deleting an exam, submitting answers), which breaks the premium feel of the app. The user requested this to be fixed and codified as a rule.
+
+### Files Changed
+
+**\Rules.md\ & \OneCampus_PRD_v2.md\**
+- **Changes:** Added a strict global UI rule prohibiting the use of native browser \window.alert\ and \window.confirm\. The \<ConfirmDialog />\ component and \showToast\ utility must be used instead.
+
+**\client/src/features/onlineExams/components/OnlineExamsPage.jsx\**
+- **Changes:** Removed \window.confirm\ inside the delete button's \onClick\. Added a \confirmDelete\ state variable and conditionally rendered the \<ConfirmDialog />\ at the bottom of the component tree to handle the deletion action.
+
+**\client/src/features/onlineExams/components/ClassExamsTab.jsx\**
+- **Changes:** Applied the exact same \ConfirmDialog\ pattern for the cohort-scoped online exams list.
+
+**\client/src/features/onlineExams/components/ExamTaker.jsx\**
+- **Changes:** Removed \window.confirm\ from the \handleSubmit\ function. Added a \confirmSubmit\ state variable and rendered a \<ConfirmDialog />\ directly inside the form tag to handle the final answer submission confirmation.
+
+### Database Operations
+None in this session.
+
+### Expected Outcome
+- Users clicking "Delete" on an online exam or "Submit Exam" while taking a test will see a custom, OneCampus-styled modal instead of a native browser popup.
+- Future agents working on this project will be explicitly forbidden from using native alerts, as documented in \Rules.md\ and \OneCampus_PRD_v2.md\.
+- The user is informed about their \exam.view\ permission error.
+
+
+## Entry 022 — Fix Assignments API 500 & Missing Admin Permissions
+
+**User Request:** "I logged in as admin - both teacher and admin should have permission for this . I am getting assignment APAi also 500. exams as {"error":"Missing permission: exams.view"}"
+**Additional Context:** The user was getting a 500 error on the Assignments API and was missing the \exams.view\ permission despite being an admin.
+
+### Files Investigated
+- \server/modules/assignments/controller.js\ (Assignments API logic)
+- \server/scripts/migrate_exams.js\ (Permissions seed logic)
+- \server/migrations/040_extend_assignments.sql\ (Assignments DB changes)
+
+### Root Cause / Justification
+1. **Assignments API 500 Error:** A previous background task (from Entry 019) that was supposed to apply \ 40_extend_assignments.sql\ failed silently because it queried \public.tenants\ instead of \public.onec_tenants\. As a result, the \	aken_by\ column was never added to the \onec_assignments\ table, causing the API's \SELECT\ query to crash.
+2. **Missing Permission:** The \migrate_exams.js\ script inserted \online_exams.*\ permissions but failed to backfill \exams.view\ for admins/instructors in existing tenants.
+
+### Files Changed
+None in this session.
+
+### Database Operations
+1. Ran an inline script to manually insert the missing \exams.view\, \exams.manage\, and \exams.grade\ permissions into \onec_role_permissions\ for the \dmin\ and \instructor\ roles.
+2. Manually re-ran the \ 40_extend_assignments.sql\ migration against the correct \onec_tenants\ table to add the missing \	aken_by\ column.
+
+### Expected Outcome
+- Admins and instructors can now properly access the legacy Exams module without permission errors.
+- The Assignments API will no longer throw a 500 error because the schema now perfectly matches the \controller.js\ queries.
+
+
+## Entry 023 — Addendum: Execute Migration 041 to Truly Fix Assignments 500
+
+**User Request:** "still getting error in exam and assignment page - 500 code"
+**Additional Context:** The user was still experiencing 500 errors. 
+
+### Root Cause / Justification
+In Entry 022, I mistakenly believed that \ 40_extend_assignments.sql\ contained the \	aken_by\ column. However, it was actually contained in \ 41_add_exams.sql\. Because I missed running migration 041, the legacy Exams API was crashing (missing \onec_exams\ table entirely) and the Assignments API was crashing (missing \	aken_by\ column). 
+
+### Files Changed
+None in this session.
+
+### Database Operations
+1. Manually executed \ 41_add_exams.sql\ against the tenant schemas, which finally added the \	aken_by\ column to assignments and created the \onec_exams\ table.
+
+### Expected Outcome
+- The 500 errors on both pages are now actually resolved.
+
+## Entry 024 — Resolve Database Table Conflict for Exams Module
+
+**User Request:** "http://localhost:3001/api/v1/exams/1/valuation?page=1&page_size=20 is giving Internal server error"
+**Additional Context:** The Legacy Exams API was throwing a 500 when accessing valuation pages.
+
+### Files Investigated
+- \server/modules/exams/controller.js\
+- \server/modules/onlineExams/controller.js\
+- \server/migrations/011_add_online_exams.sql\
+- \server/migrations/041_add_exams.sql\
+- \server/scripts/tenant_schema.sql\
+- \server/scripts/migrate_exams.js\
+
+### Root Cause / Justification
+There was a major table naming collision in the database. Both the legacy Exams module (offline paper exams) and the new Online Exams module were trying to use a table named \onec_exam_submissions\. However, each module expects entirely different schemas and foreign keys (e.g. legacy expects \score_obtained\ pointing to \onec_exams\, while online expects \	otal_score\ pointing to \onec_online_exams\). 
+
+Because the Online Exams module claimed the table name first, the legacy Exams migration (\ 41_add_exams.sql\) skipped creating its version of the table due to the \IF NOT EXISTS\ clause. This caused all legacy exam API queries to fail with "column does not exist" errors.
+
+### Files Changed
+- \server/migrations/011_add_online_exams.sql\: Renamed tables to use the \_online_\ prefix.
+- \server/scripts/tenant_schema.sql\: Renamed tables to use the \_online_\ prefix.
+- \server/scripts/migrate_exams.js\: Renamed tables to use the \_online_\ prefix.
+- \server/modules/onlineExams/controller.js\: Updated to query \onec_online_exam_submissions\, \onec_online_exam_questions\, and \onec_online_exam_answers\.
+- \server/modules/reports/controller.js\: Updated to query \onec_online_exam_submissions\.
+
+### Database Operations
+1. Ran a custom \
+ode\ script to execute \ALTER TABLE ... RENAME TO ...\ for \onec_exam_questions\, \onec_exam_submissions\, and \onec_exam_answers\ across all existing tenant schemas, appending the \online_\ prefix.
+2. Manually re-ran \ 41_add_exams.sql\ to correctly create the separate legacy tables (\onec_exam_submissions\, etc.).
+
+### Expected Outcome
+- Legacy Exams and Online Exams now have fully separated tables and no longer conflict.
+- The Valuation API for legacy exams works correctly without 500 errors.

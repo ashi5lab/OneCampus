@@ -66,7 +66,7 @@ async function insertQuestions(req, examId, questions) {
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
     await req.db.query(
-      `INSERT INTO onec_exam_questions (exam_id, question_text, question_type, options, correct_option, max_score, order_index)
+      `INSERT INTO onec_online_exam_questions (exam_id, question_text, question_type, options, correct_option, max_score, order_index)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         examId,
@@ -89,7 +89,7 @@ async function insertQuestions(req, examId, questions) {
 async function listExams(req, res) {
   try {
     let query = `SELECT e.*, m.name AS module_name, c.name AS cohort_name,
-                   (SELECT COUNT(*) FROM onec_exam_questions q WHERE q.exam_id = e.id) AS question_count`;
+                   (SELECT COUNT(*) FROM onec_online_exam_questions q WHERE q.exam_id = e.id) AS question_count`;
     const params = [];
 
     const hasClassView = await hasPermission(req, 'class.view');
@@ -108,7 +108,7 @@ async function listExams(req, res) {
                  FROM onec_online_exams e
                  JOIN onec_modules m ON e.module_id = m.id
                  JOIN onec_cohorts c ON e.cohort_id = c.id
-                 LEFT JOIN onec_exam_submissions s ON s.exam_id = e.id AND s.learner_id = $2
+                 LEFT JOIN onec_online_exam_submissions s ON s.exam_id = e.id AND s.learner_id = $2
                  WHERE e.cohort_id = $1`;
     } else if (req.user.role === 'instructor' && !req.tenantConfig.config?.rules?.global_teacher_visibility) {
       params.push(req.user.userId);
@@ -149,7 +149,7 @@ async function getExam(req, res) {
     if (examResult.rows.length === 0) return res.status(404).json({ error: 'Not found' });
 
     const questionsResult = await req.db.query(
-      'SELECT * FROM onec_exam_questions WHERE exam_id = $1 ORDER BY order_index ASC',
+      'SELECT * FROM onec_online_exam_questions WHERE exam_id = $1 ORDER BY order_index ASC',
       [id]
     );
     const questions = questionsResult.rows.map((q) => (isGrader ? q : { ...q, correct_option: null }));
@@ -191,8 +191,8 @@ async function createExam(req, res) {
 }
 
 // If learners have already started submitting, replacing the question set
-// would cascade-delete their in-progress/graded answers (onec_exam_questions
-// -> onec_exam_answers is ON DELETE CASCADE). To avoid silently destroying
+// would cascade-delete their in-progress/graded answers (onec_online_exam_questions
+// -> onec_online_exam_answers is ON DELETE CASCADE). To avoid silently destroying
 // that data, once a submission exists this only updates exam metadata —
 // questions become frozen; delete and recreate the exam instead.
 async function updateExam(req, res) {
@@ -202,7 +202,7 @@ async function updateExam(req, res) {
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
     const { title, description, module_id, cohort_id, grading_type, duration_minutes, questions } = parsed.data;
 
-    const submissionCount = await req.db.query('SELECT COUNT(*) FROM onec_exam_submissions WHERE exam_id = $1', [id]);
+    const submissionCount = await req.db.query('SELECT COUNT(*) FROM onec_online_exam_submissions WHERE exam_id = $1', [id]);
     const hasSubmissions = Number(submissionCount.rows[0].count) > 0;
 
     // Access control: only admin or the creator can edit
@@ -234,7 +234,7 @@ async function updateExam(req, res) {
         await req.db.query('ROLLBACK');
         return res.status(404).json({ error: 'Not found' });
       }
-      await req.db.query('DELETE FROM onec_exam_questions WHERE exam_id = $1', [id]);
+      await req.db.query('DELETE FROM onec_online_exam_questions WHERE exam_id = $1', [id]);
       await insertQuestions(req, id, questions);
       await req.db.query('COMMIT');
       res.json({ data: result.rows[0] });
@@ -306,7 +306,7 @@ async function startSubmission(req, res) {
     if (examResult.rows.length === 0) return res.status(404).json({ error: 'Exam not found' });
 
     const result = await req.db.query(
-      `INSERT INTO onec_exam_submissions (exam_id, learner_id, status, started_at)
+      `INSERT INTO onec_online_exam_submissions (exam_id, learner_id, status, started_at)
        VALUES ($1, $2, 'in_progress', CURRENT_TIMESTAMP)
        ON CONFLICT (exam_id, learner_id) DO UPDATE SET exam_id = EXCLUDED.exam_id
        RETURNING *`,
@@ -332,7 +332,7 @@ async function getMySubmission(req, res) {
     const exam = examResult.rows[0];
 
     const submissionResult = await req.db.query(
-      'SELECT * FROM onec_exam_submissions WHERE exam_id = $1 AND learner_id = $2',
+      'SELECT * FROM onec_online_exam_submissions WHERE exam_id = $1 AND learner_id = $2',
       [id, ownLearnerId]
     );
     if (submissionResult.rows.length === 0) return res.json({ data: { exam, submission: null, answers: [] } });
@@ -343,8 +343,8 @@ async function getMySubmission(req, res) {
               q.question_text, q.question_type, q.options, q.max_score, q.order_index,
               CASE WHEN $2 THEN a.score_obtained ELSE NULL END AS score_obtained,
               CASE WHEN $2 THEN a.feedback ELSE NULL END AS feedback
-       FROM onec_exam_answers a
-       JOIN onec_exam_questions q ON a.question_id = q.id
+       FROM onec_online_exam_answers a
+       JOIN onec_online_exam_questions q ON a.question_id = q.id
        WHERE a.submission_id = $1
        ORDER BY q.order_index ASC`,
       [submission.id, exam.published]
@@ -373,7 +373,7 @@ async function submitAnswers(req, res) {
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
     const submissionResult = await req.db.query(
-      'SELECT * FROM onec_exam_submissions WHERE exam_id = $1 AND learner_id = $2',
+      'SELECT * FROM onec_online_exam_submissions WHERE exam_id = $1 AND learner_id = $2',
       [id, ownLearnerId]
     );
     if (submissionResult.rows.length === 0) return res.status(400).json({ error: 'Start the exam before submitting' });
@@ -383,7 +383,7 @@ async function submitAnswers(req, res) {
     const examResult = await req.db.query('SELECT grading_type FROM onec_online_exams WHERE id = $1', [id]);
     const gradingType = examResult.rows[0]?.grading_type;
 
-    const questionsResult = await req.db.query('SELECT id, correct_option, max_score FROM onec_exam_questions WHERE exam_id = $1', [id]);
+    const questionsResult = await req.db.query('SELECT id, correct_option, max_score FROM onec_online_exam_questions WHERE exam_id = $1', [id]);
     const questionsById = new Map(questionsResult.rows.map((q) => [q.id, q]));
 
     await req.db.query('BEGIN');
@@ -399,7 +399,7 @@ async function submitAnswers(req, res) {
             : null;
 
         await req.db.query(
-          `INSERT INTO onec_exam_answers (submission_id, question_id, answer_text, selected_option, score_obtained)
+          `INSERT INTO onec_online_exam_answers (submission_id, question_id, answer_text, selected_option, score_obtained)
            VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (submission_id, question_id)
            DO UPDATE SET answer_text = EXCLUDED.answer_text, selected_option = EXCLUDED.selected_option, score_obtained = EXCLUDED.score_obtained`,
@@ -409,11 +409,11 @@ async function submitAnswers(req, res) {
 
       if (gradingType === 'auto') {
         const totalResult = await req.db.query(
-          'SELECT COALESCE(SUM(score_obtained), 0) AS total FROM onec_exam_answers WHERE submission_id = $1',
+          'SELECT COALESCE(SUM(score_obtained), 0) AS total FROM onec_online_exam_answers WHERE submission_id = $1',
           [submission.id]
         );
         const updated = await req.db.query(
-          `UPDATE onec_exam_submissions SET status = 'graded', submitted_at = CURRENT_TIMESTAMP, total_score = $1, graded_at = CURRENT_TIMESTAMP
+          `UPDATE onec_online_exam_submissions SET status = 'graded', submitted_at = CURRENT_TIMESTAMP, total_score = $1, graded_at = CURRENT_TIMESTAMP
            WHERE id = $2 RETURNING *`,
           [totalResult.rows[0].total, submission.id]
         );
@@ -422,7 +422,7 @@ async function submitAnswers(req, res) {
       }
 
       const updated = await req.db.query(
-        `UPDATE onec_exam_submissions SET status = 'submitted', submitted_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
+        `UPDATE onec_online_exam_submissions SET status = 'submitted', submitted_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
         [submission.id]
       );
       await req.db.query('COMMIT');
@@ -444,7 +444,7 @@ async function listSubmissions(req, res) {
     const { id } = req.params;
     const result = await req.db.query(
       `SELECT s.*, l.first_name, l.last_name, l.registry_no
-       FROM onec_exam_submissions s
+       FROM onec_online_exam_submissions s
        JOIN onec_learners l ON s.learner_id = l.id
        WHERE s.exam_id = $1
        ORDER BY s.submitted_at DESC NULLS LAST`,
@@ -462,7 +462,7 @@ async function getSubmissionDetail(req, res) {
     const { submissionId } = req.params;
     const submissionResult = await req.db.query(
       `SELECT s.*, l.first_name, l.last_name, l.registry_no
-       FROM onec_exam_submissions s
+       FROM onec_online_exam_submissions s
        JOIN onec_learners l ON s.learner_id = l.id
        WHERE s.id = $1`,
       [submissionId]
@@ -471,8 +471,8 @@ async function getSubmissionDetail(req, res) {
 
     const answersResult = await req.db.query(
       `SELECT a.*, q.question_text, q.question_type, q.options, q.correct_option, q.max_score, q.order_index
-       FROM onec_exam_answers a
-       JOIN onec_exam_questions q ON a.question_id = q.id
+       FROM onec_online_exam_answers a
+       JOIN onec_online_exam_questions q ON a.question_id = q.id
        WHERE a.submission_id = $1
        ORDER BY q.order_index ASC`,
       [submissionId]
@@ -495,18 +495,18 @@ async function gradeSubmission(req, res) {
     try {
       for (const score of parsed.data.scores) {
         await req.db.query(
-          `UPDATE onec_exam_answers SET score_obtained = $1, feedback = $2
+          `UPDATE onec_online_exam_answers SET score_obtained = $1, feedback = $2
            WHERE submission_id = $3 AND question_id = $4`,
           [score.score_obtained, score.feedback ?? null, submissionId, score.question_id]
         );
       }
 
       const totalResult = await req.db.query(
-        'SELECT COALESCE(SUM(score_obtained), 0) AS total FROM onec_exam_answers WHERE submission_id = $1',
+        'SELECT COALESCE(SUM(score_obtained), 0) AS total FROM onec_online_exam_answers WHERE submission_id = $1',
         [submissionId]
       );
       const updated = await req.db.query(
-        `UPDATE onec_exam_submissions SET status = 'graded', total_score = $1, graded_by = $2, graded_at = CURRENT_TIMESTAMP
+        `UPDATE onec_online_exam_submissions SET status = 'graded', total_score = $1, graded_by = $2, graded_at = CURRENT_TIMESTAMP
          WHERE id = $3 RETURNING *`,
         [totalResult.rows[0].total, req.user.userId, submissionId]
       );

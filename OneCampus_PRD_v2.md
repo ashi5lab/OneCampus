@@ -16,6 +16,7 @@ OneCampus aims to become the simplest and most enjoyable school management platf
 
 ## Global UI Components
 - **UserSearchSelect**: For any user selection input (student, teacher, guardian, staff), the `<UserSearchSelect />` autocomplete component MUST be used instead of standard HTML dropdowns. Users are fetched via `useAllUsers()` and filtered by `roles`. Supports layout toggles via `showUsername`, `showClass`, and `showRole` boolean props (all default to true).
+- **Modals and Alerts**: The use of native browser `window.alert` and `window.confirm` is strictly prohibited. Use the `<ConfirmDialog />` component for any action confirmations and `showToast` for notifications.
 
 ## Users
 - Student

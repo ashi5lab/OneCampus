@@ -57,7 +57,7 @@ async function overview(req, res) {
          FROM total_possible, total_absences`
       ),
       req.db.query(`SELECT COUNT(*) FROM onec_assignments WHERE due_date >= CURRENT_DATE`),
-      req.db.query(`SELECT COUNT(*) FROM onec_exam_submissions WHERE status = 'submitted'`),
+      req.db.query(`SELECT COUNT(*) FROM onec_online_exam_submissions WHERE status = 'submitted'`),
       req.db.query(`SELECT COUNT(*) FROM onec_online_exams WHERE published = true`),
       req.db.query(
         `SELECT COUNT(*) AS total_books, COALESCE(SUM(total_copies), 0) AS total_copies FROM onec_library_books`
@@ -207,7 +207,7 @@ async function onlineExamsReport(req, res) {
        FROM onec_online_exams e
        JOIN onec_modules m ON e.module_id = m.id
        JOIN onec_cohorts c ON e.cohort_id = c.id
-       LEFT JOIN onec_exam_submissions s ON s.exam_id = e.id
+       LEFT JOIN onec_online_exam_submissions s ON s.exam_id = e.id
        GROUP BY e.id, e.title, e.grading_type, e.published, e.max_score, m.name, c.name, e.cohort_id
        ORDER BY e.id DESC`
     );
@@ -291,7 +291,7 @@ async function dashboardAll(req, res) {
     req.db.query(`
       SELECT
         (SELECT COUNT(*) FROM onec_assignment_submissions WHERE submitted_at >= CURRENT_DATE - INTERVAL '7 days') AS assignments_submitted,
-        (SELECT COUNT(*) FROM onec_exam_submissions WHERE submitted_at >= CURRENT_DATE - INTERVAL '7 days') AS exams_taken
+        (SELECT COUNT(*) FROM onec_online_exam_submissions WHERE submitted_at >= CURRENT_DATE - INTERVAL '7 days') AS exams_taken
     `),
     req.db.query(`
       SELECT
@@ -434,7 +434,7 @@ async function dashboardMine(req, res) {
       req.db.query(
         `SELECT e.id, e.title
          FROM onec_online_exams e
-         LEFT JOIN onec_exam_submissions sub ON sub.exam_id = e.id AND sub.learner_id = $1
+         LEFT JOIN onec_online_exam_submissions sub ON sub.exam_id = e.id AND sub.learner_id = $1
          WHERE e.cohort_id = $2 AND sub.id IS NULL
          ORDER BY e.id DESC LIMIT 2`,
         [learner.id, learner.cohort_id]
@@ -599,7 +599,7 @@ async function analytics(req, res) {
                ROUND((COUNT(s.*) FILTER (WHERE s.status = 'graded' AND s.total_score >= e.max_score * 0.4)::numeric
                       / NULLIF(COUNT(s.*) FILTER (WHERE s.status = 'graded'), 0) * 100), 1) AS pass_rate
         FROM onec_online_exams e
-        LEFT JOIN onec_exam_submissions s ON s.exam_id = e.id
+        LEFT JOIN onec_online_exam_submissions s ON s.exam_id = e.id
         WHERE e.published = true
         GROUP BY e.id, e.title
         HAVING COUNT(s.*) FILTER (WHERE s.status = 'graded') > 0

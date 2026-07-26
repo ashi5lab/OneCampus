@@ -288,7 +288,7 @@ CREATE TABLE onec_online_exams (
     publish_marks BOOLEAN DEFAULT false
 );
 
-CREATE TABLE onec_exam_questions (
+CREATE TABLE onec_online_exam_questions (
     id SERIAL PRIMARY KEY,
     exam_id INT REFERENCES onec_online_exams(id) ON DELETE CASCADE,
     question_text TEXT NOT NULL,
@@ -299,7 +299,7 @@ CREATE TABLE onec_exam_questions (
     order_index INT NOT NULL DEFAULT 0
 );
 
-CREATE TABLE onec_exam_submissions (
+CREATE TABLE onec_online_exam_submissions (
     id SERIAL PRIMARY KEY,
     exam_id INT REFERENCES onec_online_exams(id) ON DELETE CASCADE,
     learner_id INT REFERENCES onec_learners(id) ON DELETE CASCADE,
@@ -312,10 +312,10 @@ CREATE TABLE onec_exam_submissions (
     UNIQUE(exam_id, learner_id)
 );
 
-CREATE TABLE onec_exam_answers (
+CREATE TABLE onec_online_exam_answers (
     id SERIAL PRIMARY KEY,
-    submission_id INT REFERENCES onec_exam_submissions(id) ON DELETE CASCADE,
-    question_id INT REFERENCES onec_exam_questions(id) ON DELETE CASCADE,
+    submission_id INT REFERENCES onec_online_exam_submissions(id) ON DELETE CASCADE,
+    question_id INT REFERENCES onec_online_exam_questions(id) ON DELETE CASCADE,
     answer_text TEXT,
     selected_option INT,
     score_obtained DECIMAL(6,2),
