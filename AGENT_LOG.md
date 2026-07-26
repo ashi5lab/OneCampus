@@ -1933,3 +1933,59 @@ None — this was entirely a client component API rewrite + server `ORDER BY` wh
 
 *Log entry authored by Claude Code*
 *Session: 1038c693-05cb-5db2-aad9-142777098a43*
+
+## Entry 027 — Flat Edge-to-Edge List Rows + Card/FlatList/SectionHeader Reusable Primitives
+
+**User Request:** Reported (with 4 screenshots) excess left/right margin on mobile — Class Channels, Mark Attendance, and Dashboard all render list rows as individually boxed cards (rounded/bordered/shadowed, gap between them), referencing iOS Contacts as the target design ("we don't need box margin or right and left... let keep a small margin on all pages but without box"). Asked for a plan + mockup before implementing. After the mockup was approved and corrected (real Topbar.jsx style, fully-flat Dashboard), asked "will this be a big work?" for generalizing to all boxes/cards as reusable components, then set a standing rule ("we don't need to make changes to onlineexam module as this is not used now") before approving the full plan.
+
+### Plan Presented (approved before implementation)
+1. Build `Card`/`FlatList`+`FlatRow`/`SectionHeader` reusable primitives.
+2. Fix `DataTable.jsx`'s mobile-compact wrapper (drop outer box — cascades to 25 usages).
+3. Migrate the 3 originally-reported screens (Dashboard, Class Channels, Mark Attendance) to flat rows.
+4. Migrate remaining hand-rolled card usages to `<Card>` (stopped partway through by user choice — see below).
+5. Docs.
+
+### Standing Rule Added (Rules.md §5.9)
+`client/src/features/onlineExams/**` (+ `server/modules/onlineExams/**`) is unused — no route in `App.jsx`, no imports from any other page, verified by grep. Excluded from this and future redesigns. Documented the verification method (check indirect imports from sibling feature folders too, not just `App.jsx`) since 6 other modules initially looked unused by a naive `App.jsx`-only grep but turned out to be legitimately used as tabs/sub-components (`staff`, `idCards`, `admin`, `auth`, `home`, `substitutes`).
+
+### Root Cause
+`DataTable.jsx`'s `mobileCompact` mode wrapped its (already internally flat, hairline-divided) rows in an outer `rounded border border-border bg-surface` box. Every hand-rolled list outside `DataTable` (`ClassCard.jsx`, `TeacherDashboard.jsx`'s quick actions/today-glance, `AttendancePage.jsx`'s class picker) independently reinvented the same "each row is its own `rounded-2xl border shadow-sm` card with a gap to the next" pattern, which compounds with the page's own 16px side padding into the reported excess margin.
+
+### Files Changed — Primitives
+- `client/src/components/Card.jsx` (NEW) — the "premium card" recipe as a component.
+- `client/src/components/FlatList.jsx` (NEW) — `FlatList` (`divide-y divide-border-subtle` container) + `FlatRow` (icon+title+subtitle+trailing/chevron scaffold, or `children` for custom rows; `trailing`/`chevron` apply after custom children too).
+- `client/src/components/SectionHeader.jsx` (NEW) — the small uppercase list/section label.
+
+### Files Changed — DataTable core
+- `client/src/components/DataTable.jsx` — dropped the outer box on `mobileCompact` mode's wrapper div. Non-compact mode (card-grid, ~20 usages) left as-is — genuine multi-column grid, not a list.
+
+### Files Changed — the 3 mocked screens
+- `client/src/features/dashboard/components/TeacherDashboard.jsx` — Quick Actions + Today at a Glance: flat rows on mobile (`md:hidden`), existing boxed/carousel treatment kept on desktop (legitimate multi-column content). Today's Schedule/Recent Notices/Upcoming Events also migrated to `<Card>` (not flattened — timeline/list-inside-a-card, not the boxed-stack antipattern).
+- `client/src/features/classChannel/components/ClassCard.jsx` — extracted `deriveClassMeta()` (icon/color/section/subject) so the new flat row stays visually in sync with the grid card.
+- `client/src/features/classChannel/components/ClassListRow.jsx` (NEW) — flat-row rendering of the same cohort data as `ClassCard`.
+- `client/src/features/classChannel/components/AdminClassChannelsPage.jsx` — mobile: `ClassListRow` in a `FlatList`; desktop: unchanged `ClassCard` grid (`sm:grid-cols-2 lg:grid-cols-3` is a genuine grid).
+- `client/src/features/classChannel/components/ClassPage.jsx` — teacher's "My Classes" picker, never a grid at any breakpoint — fully flat now, `ClassCard` import removed.
+- `client/src/features/attendance/components/AttendancePage.jsx` — Mark Attendance class picker: local `ClassCard` renamed `ClassRow`, flat at every breakpoint; status/present badges moved inline under the class name.
+
+### Files Changed — Phase 4 (Card migration, partial by user choice)
+`DisciplineFormPage.jsx`, `DisciplinePage.jsx`, `CreateExamPage.jsx`, `HomeInsightsPage.jsx` (7 card functions: StatCard, TodayScheduleCard, RecentMessagesCard, RecentActivityCard, CalendarWidget, DueAssignmentsCard, NoticesCard, QuickActionsCard), `AdminToolsPage.jsx` (user list wrapper + Security Controls tab), `LearnerBehaviourPage.jsx` (stats grid + per-record timeline cards, kept as individual `Card`s per item since the connecting line/dot markers are a timeline, not a list).
+
+**Stopped here by explicit user choice** (asked via AskUserQuestion) rather than continuing into `LearnerProfilePage.jsx` (11 occurrences) and `InstructorProfilePage.jsx` (8 occurrences) — both already use correct theme tokens (`bg-surface`/`border-border`), so not visually broken, just not componentized. Deferred to `Future_Features.md` along with `MorePage.jsx`'s 3 Link-based nav cards (needs `Card` extended with `as`/`to` polymorphism first).
+
+### Files Changed — Docs
+- `Rules.md` §2/§3 — documented `Card`/`FlatList`/`FlatRow`/`SectionHeader` as the mandatory pattern, including the "not every repeating item is a FlatList row" guidance (grids and timelines keep their box).
+- `OneCampus_PRD_v2.md` — full writeup of the redesign, scope decisions, and the `onlineExams` exclusion.
+- `Future_Features.md` — new "UI Reusability" section for the deferred profile-page migration.
+
+### Database Operations
+None — client-only component/styling work.
+
+### Expected Outcome
+- Class Channels, Mark Attendance, and Dashboard no longer show boxed-card-with-gaps rows on mobile — flush, edge-to-edge, hairline-divided, matching the iOS Contacts reference the user provided.
+- Future card/list restyling is a one-file change in `Card.jsx`/`FlatList.jsx` instead of a hunt through every page.
+- PR (single branch, one commit per module/feature) — see PR #123.
+
+---
+
+*Log entry authored by Claude Code*
+*Session: 1038c693-05cb-5db2-aad9-142777098a43*
