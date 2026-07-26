@@ -45,23 +45,13 @@ export function VisitorLogPage() {
       header: 'Status',
       render: (row) => (row.check_out_time ? <Badge variant="inactive">Checked Out</Badge> : <Badge variant="active">On Campus</Badge>)
     },
-    {
-      key: 'actions',
-      header: '',
-      render: (row) =>
-        !row.check_out_time && (
-          <div className="flex justify-end">
-            <button
-              onClick={() => checkOut.mutate(row.id)}
-              disabled={checkOut.isPending}
-              className="text-xs font-semibold text-accent-dark hover:underline disabled:opacity-60"
-            >
-              Check Out
-            </button>
-          </div>
-        )
-    }
   ];
+
+  function visitorActions(row) {
+    return [
+      { key: 'checkout', label: 'Check Out', hidden: !!row.check_out_time, disabled: checkOut.isPending, onClick: () => checkOut.mutate(row.id) }
+    ];
+  }
 
   return (
     <div>
@@ -112,7 +102,7 @@ export function VisitorLogPage() {
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {visitors && (
-          <DataTable columns={columns} rows={visitors} rowKey={(row) => row.id} emptyMessage="No visitors logged for this date." />
+          <DataTable columns={columns} rows={visitors} rowKey={(row) => row.id} emptyMessage="No visitors logged for this date." mobileCompact actions={visitorActions} />
         )}
       </div>
 
