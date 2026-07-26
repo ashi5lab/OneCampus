@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Pencil, Trash2, IdCard } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { StatCard } from '../../../components/StatCard';
 import { DataTable } from '../../../components/DataTable';
@@ -18,25 +19,21 @@ const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
 export function StaffPage() {
   const { can } = useAuth();
 
-  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [gender, setGender] = useState('');
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 10;
+  const [pageSize, setPageSize] = useState(10);
+  const [sort, setSort] = useState(null);
 
-  useEffect(() => {
-    const timeout = setTimeout(() => setSearch(searchInput), 300);
-    return () => clearTimeout(timeout);
-  }, [searchInput]);
-
-  const filters = { search: search || undefined, gender: gender || undefined };
+  const filters = { search: search || undefined, gender: gender || undefined, sort: sort?.key, order: sort?.dir };
+  const hasActiveFilters = Boolean(search || gender);
   // Back to page 1 whenever a filter changes — otherwise a filtered-down
   // result set can leave the view stuck on a now out-of-range page.
   useEffect(() => {
     setPage(1);
   }, [search, gender]);
 
-  const { data: result, isLoading, error } = useStaffPage({ page, pageSize: PAGE_SIZE, filters });
+  const { data: result, isLoading, error } = useStaffPage({ page, pageSize: pageSize === 'all' ? 200 : pageSize, filters });
   const staff = result?.data;
   const meta = result?.meta;
   const createStaff = useCreateStaff();
@@ -52,6 +49,7 @@ export function StaffPage() {
     {
       key: 'name',
       header: 'Staff Member',
+      sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2.5">
           <Avatar name={`${row.first_name} ${row.last_name}`} src={row.profile_picture_url} size={32} />
@@ -62,7 +60,7 @@ export function StaffPage() {
         </div>
       )
     },
-    { key: 'phone', header: 'Phone', render: (row) => row.phone || '—' },
+    { key: 'phone', header: 'Phone', mobileCompact: true, render: (row) => row.phone || '—' },
     { key: 'gender', header: 'Gender', render: (row) => GENDER_LABEL[row.meta?.gender] || '—' }
   ];
 
@@ -80,32 +78,20 @@ export function StaffPage() {
     });
   }
 
-  if (can('staff.manage')) {
-    columns.push({
-      key: 'actions',
-      header: '',
-      render: (row) => (
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => idCardsApi.downloadStaffCard(row.id, row.staff_id)}
-            className="text-xs font-semibold text-ink-500 hover:text-ink-900"
-          >
-            ID Card
-          </button>
-          <button onClick={() => setEditingStaff(row)} className="text-xs font-semibold text-ink-500 hover:text-ink-900">Edit</button>
-          <button
-            onClick={() => {
-              if (window.confirm(`Are you sure you want to delete ${row.first_name} ${row.last_name}?`)) {
-                deleteStaff.mutate(row.id);
-              }
-            }}
-            className="text-xs font-semibold text-danger hover:opacity-80"
-          >
-            Delete
-          </button>
-        </div>
-      )
-    });
+  function staffActions(row) {
+    return [
+      { key: 'id-card', label: 'ID Card', icon: IdCard, hidden: !can('staff.manage'), onClick: () => idCardsApi.downloadStaffCard(row.id, row.staff_id) },
+      { key: 'edit', label: 'Edit', icon: Pencil, hidden: !can('staff.manage'), onClick: () => setEditingStaff(row) },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !can('staff.manage'),
+        confirm: `Are you sure you want to delete ${row.first_name} ${row.last_name}?`,
+        onClick: () => deleteStaff.mutate(row.id)
+      }
+    ];
   }
 
   if (showForm || editingStaff) {
@@ -164,39 +150,6 @@ export function StaffPage() {
         <StatCard label="Total Staff" value={isLoading ? '—' : meta?.total ?? 0} />
       </div>
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <label className="min-w-[200px] flex-1">
-          <div className="mb-1 text-xs font-semibold text-ink-700">Search</div>
-          <input
-            className="input"
-            placeholder="Search by name or staff ID…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-        </label>
-        <label className="w-[140px]">
-          <div className="mb-1 text-xs font-semibold text-ink-700">Gender</div>
-          <select className="input" value={gender} onChange={(e) => setGender(e.target.value)}>
-            <option value="">All</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </label>
-        {(searchInput || gender) && (
-          <button
-            type="button"
-            onClick={() => {
-              setSearchInput('');
-              setGender('');
-            }}
-            className="rounded border border-border px-3 py-2 text-xs font-semibold text-ink-700 hover:bg-surface-muted"
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
-
       <div className="overflow-hidden rounded border border-border bg-surface">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && (
@@ -208,7 +161,36 @@ export function StaffPage() {
             rows={staff}
             rowKey={(row) => row.id}
             emptyMessage="No matching staff members."
-            serverPagination={{ page, pageSize: PAGE_SIZE, total: meta?.total ?? 0, onPageChange: setPage }}
+            mobileCompact
+            actions={staffActions}
+            sort={sort}
+            onSortChange={(key) => setSort((prev) => {
+              if (!prev || prev.key !== key) return { key, dir: 'asc' };
+              if (prev.dir === 'asc') return { key, dir: 'desc' };
+              return null;
+            })}
+            filters={{
+              search: { value: search, onChange: setSearch, placeholder: 'Search by name or staff ID…' },
+              fields: [
+                {
+                  key: 'gender',
+                  type: 'select',
+                  label: 'Gender',
+                  value: gender,
+                  onChange: setGender,
+                  options: [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }]
+                }
+              ],
+              hasActiveFilters,
+              onClear: () => { setSearch(''); setGender(''); }
+            }}
+            serverPagination={{
+              page,
+              pageSize: pageSize === 'all' ? 200 : pageSize,
+              total: meta?.total ?? 0,
+              onPageChange: setPage,
+              onPageSizeChange: (size) => { setPageSize(size); setPage(1); }
+            }}
           />
         )}
       </div>
