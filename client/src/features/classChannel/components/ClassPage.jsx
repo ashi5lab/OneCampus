@@ -2,7 +2,6 @@ import { useParams } from 'react-router-dom';
 import { PageHeader } from '../../../components/PageHeader';
 import { useMyCohorts } from '../hooks/useClassChannel';
 import { ClassChannel } from './ClassChannel';
-import { ClassCard } from './ClassCard';
 
 // Handles both /app/class (no id) and /app/class/:cohortId. A caller with
 // exactly one class skips straight to its channel; more than one shows a
@@ -43,22 +42,31 @@ export function ClassPage() {
 
 import { TeacherHeader } from '../../../components/TeacherHeader';
 import { CalendarDays } from 'lucide-react';
+import { FlatList } from '../../../components/FlatList';
+import { ClassListRow } from './ClassListRow';
 
+// Never a grid — a teacher's own class list is always one column, at every
+// breakpoint (unlike the admin Class Channels picker, which is a genuine
+// multi-column grid on wider screens), so this is flat rows everywhere.
 function ClassPicker({ cohorts }) {
   return (
     <div className="bg-[#f8f9fe] min-h-screen pb-24 font-body">
-      <TeacherHeader 
-        title="My Classes" 
-        subtitle="All classes you're teaching" 
-        showSearch={true} 
-        searchPlaceholder="Search classes..." 
-        actionIcon="filter" 
+      <TeacherHeader
+        title="My Classes"
+        subtitle="All classes you're teaching"
+        showSearch={true}
+        searchPlaceholder="Search classes..."
+        actionIcon="filter"
       />
-      
+
       <div className="px-4 relative z-20 space-y-4 pt-4">
-        {cohorts.map((c, i) => (
-          <ClassCard key={c.id} cohort={c} to={`/app/class/${c.id}`} index={i} />
-        ))}
+        <div className="-mx-4">
+          <FlatList className="bg-white">
+            {cohorts.map((c, i) => (
+              <ClassListRow key={c.id} cohort={c} to={`/app/class/${c.id}`} index={i} />
+            ))}
+          </FlatList>
+        </div>
 
         {/* Timetable Promo Banner */}
         <div className="mt-8 bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center gap-4">

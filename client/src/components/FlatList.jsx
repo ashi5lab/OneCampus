@@ -19,7 +19,8 @@ export function FlatList({ children, className = '' }) {
 //   line of meta + trailing value or arrow" row shape. For anything more
 //   custom (multiple meta lines, inline badges, a form control), pass
 //   `children` instead and lay it out yourself — FlatRow still supplies the
-//   tap target, padding, and divider.
+//   tap target, padding, and divider. `trailing`/`chevron` still apply
+//   after custom `children`, so a custom row can keep the standard arrow.
 export function FlatRow({
   icon: Icon,
   iconBg = 'var(--accent-light)',
@@ -59,10 +60,10 @@ export function FlatRow({
             <div className="truncate text-[14.5px] font-semibold text-ink-900">{title}</div>
             {subtitle && <div className="mt-0.5 truncate text-[12.5px] text-ink-500">{subtitle}</div>}
           </div>
-          {trailing}
-          {chevron && <ChevronRight className="h-4 w-4 flex-shrink-0 text-ink-300" />}
         </>
       )}
+      {trailing}
+      {chevron && <ChevronRight className="h-4 w-4 flex-shrink-0 text-ink-300" />}
     </Component>
   );
 }

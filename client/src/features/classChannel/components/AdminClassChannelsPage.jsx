@@ -1,8 +1,10 @@
 import { useParams } from 'react-router-dom';
 import { PageHeader } from '../../../components/PageHeader';
+import { FlatList } from '../../../components/FlatList';
 import { useCohorts } from '../../cohorts/hooks/useCohorts';
 import { ClassChannel } from './ClassChannel';
 import { ClassCard } from './ClassCard';
+import { ClassListRow } from './ClassListRow';
 
 export function AdminClassChannelsPage() {
   const { cohortId: cohortIdParam } = useParams();
@@ -43,7 +45,20 @@ function AdminClassPicker({ cohorts }) {
   return (
     <div>
       <PageHeader title="Class Channels" />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+
+      {/* Mobile: flat edge-to-edge list. Desktop: the ClassCard grid below
+          is a genuine multi-column layout, not a stack of boxed rows, so it
+          keeps its card treatment (per Rules.md — desktop uses multi-column
+          layouts). */}
+      <div className="sm:hidden -mx-4">
+        <FlatList className="bg-white">
+          {cohorts.map((c, i) => (
+            <ClassListRow key={c.id} cohort={c} to={`/app/class-channels/${c.id}`} index={i} />
+          ))}
+        </FlatList>
+      </div>
+
+      <div className="hidden sm:grid grid-cols-2 gap-3 lg:grid-cols-3">
         {cohorts.map((c, i) => (
           <ClassCard key={c.id} cohort={c} to={`/app/class-channels/${c.id}`} index={i} />
         ))}
