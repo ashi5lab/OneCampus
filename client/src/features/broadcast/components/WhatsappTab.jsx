@@ -112,7 +112,7 @@ export function WhatsappTab() {
         </form>
       )}
 
-      <div className="overflow-hidden rounded border border-border bg-surface">
+      <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {history && <DataTable columns={columns} rows={history} rowKey={(row) => row.id} emptyMessage="No WhatsApp messages sent yet." />}

@@ -182,7 +182,7 @@ function CohortTeachersTab({ cohortId }) {
   }
 
   return (
-    <div className="overflow-hidden rounded border border-border bg-surface p-5">
+    <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0 p-5">
       {linkedInstructors.length === 0 && (
         <div className="mb-3 rounded border border-border bg-surface-muted p-3 text-[12.5px] text-ink-500">
           No {t('instructors').toLowerCase()} assigned yet.

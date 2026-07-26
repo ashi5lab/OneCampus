@@ -169,7 +169,7 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
       )}
 
       {/* Main Content */}
-      <div className="mt-4">
+      <div className="mt-4 pb-36">
         {/* Sticky Controls Header */}
         <div className="sticky top-0 z-40 bg-[#f8f9fe] pt-4 pb-3 px-4 space-y-3 border-b border-gray-100 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.05)] -mx-4 sm:mx-0 sm:px-0 sm:border-0 sm:shadow-none sm:pb-0">
           {/* Search Students Autocomplete */}
@@ -248,7 +248,7 @@ export function AttendanceRoster({ lockedCohortId, embedded = false }) {
         ) : paginatedRoster.length === 0 ? (
           <div className="text-center py-10 text-gray-400 text-[14px]">No students found.</div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <div className="bg-surface md:bg-white md:rounded-2xl md:shadow-sm border-0 md:border border-gray-100 divide-y divide-surface-muted -mx-4 md:mx-0">
             {paginatedRoster.map((learner, idx) => {
               const globalIdx = (page - 1) * pageSize + idx + 1;
               const currentStatus = statuses[learner.id] || 'present';

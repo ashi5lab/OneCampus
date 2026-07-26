@@ -132,7 +132,7 @@ export function LeavePage() {
             <StatCard label="Total Requests" value={mineLoading ? '—' : mine.length} />
             <StatCard label="Pending" value={mineLoading ? '—' : pendingMine} />
           </div>
-          <div className="overflow-hidden rounded border border-border bg-surface">
+          <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
             {mineLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
             {mineError && <div className="p-8 text-center text-sm font-semibold text-danger">{mineError.message}</div>}
             {mine && <DataTable columns={mineColumns} rows={mine} rowKey={(row) => row.id} emptyMessage="No leave requests yet." mobileCompact actions={mineActions} />}
@@ -146,7 +146,7 @@ export function LeavePage() {
             <StatCard label="In Queue" value={queueLoading ? '—' : queue.length} />
             <StatCard label="Awaiting Review" value={queueLoading ? '—' : pendingQueue} />
           </div>
-          <div className="overflow-hidden rounded border border-border bg-surface">
+          <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
             {queueLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
             {queueError && <div className="p-8 text-center text-sm font-semibold text-danger">{queueError.message}</div>}
             {queue && (

@@ -70,7 +70,7 @@ export function MessagesPage() {
 
       <div className="space-y-2">
         {(data || []).map((msg) => (
-          <div key={msg.id} className="overflow-hidden rounded border border-border bg-surface">
+          <div key={msg.id} className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
             <button onClick={() => handleExpand(msg)} className="flex w-full items-start justify-between gap-3 p-4 text-left">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

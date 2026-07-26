@@ -4,6 +4,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useAllFeatureLinks } from '../../../hooks/useNavLinks';
 import { ModuleBadge } from '../../../components/ModuleBadge';
 import { PageHeader } from '../../../components/PageHeader';
+import { FlatList, FlatRow } from '../../../components/FlatList';
+import { SectionHeader } from '../../../components/SectionHeader';
 
 // Grouping mapping based on the module keys
 const CATEGORIES = [
@@ -133,29 +135,24 @@ export function MorePage() {
       </div>
 
       {/* Mobile Layout: Categorized Lists */}
-      <div className="md:hidden space-y-6">
+      <div className="md:hidden space-y-6 -mx-4">
         {categorizedData.map((category, catIdx) => (
-          <div key={catIdx} className="space-y-2">
-            <h3 className="text-xs font-bold text-ink-400 uppercase tracking-wider px-1">
-              {category.name}
-            </h3>
-            <div className="rounded-2xl border border-border bg-surface divide-y divide-border overflow-hidden">
+          <div key={catIdx} className="space-y-1">
+            <SectionHeader className="px-4">{category.name}</SectionHeader>
+            <FlatList className="bg-white">
               {category.items.map((item) => (
-                <Link
+                <FlatRow
                   key={item.key}
                   to={item.to}
-                  className="flex items-center gap-4 p-4 active:bg-gray-50/50 transition-colors"
+                  chevron
                 >
                   <ModuleBadge moduleKey={item.key} label={item.label} size={36} />
-                  <span className="flex-1 min-w-0 text-[14px] font-semibold text-ink-900">
+                  <span className="flex-1 min-w-0 text-[14.5px] font-semibold text-ink-900">
                     {item.label}
                   </span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="text-ink-400 flex-shrink-0">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
-                  </svg>
-                </Link>
+                </FlatRow>
               ))}
-            </div>
+            </FlatList>
           </div>
         ))}
       </div>

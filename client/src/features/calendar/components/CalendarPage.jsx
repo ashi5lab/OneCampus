@@ -130,7 +130,7 @@ export function CalendarPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
         {/* Month grid */}
-        <div className="overflow-hidden rounded border border-border bg-surface">
+        <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <button onClick={() => goToMonth(-1)} className="rounded px-2.5 py-1 text-sm font-semibold text-ink-700 hover:bg-surface-muted">
               ‹
@@ -249,7 +249,7 @@ export function CalendarPage() {
       </div>
 
       {canManage && showManageList && (
-        <div className="mt-6 overflow-hidden rounded border border-border bg-surface">
+        <div className="mt-6 overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
           <div className="border-b border-border px-4 py-3 text-[13.5px] font-bold text-ink-900">All Events &amp; Holidays</div>
           <DataTable
             rows={rawEvents || []}

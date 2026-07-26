@@ -86,7 +86,7 @@ export function StaffAttendanceRoster() {
   }
 
   return (
-    <div className="mb-6 overflow-hidden rounded border border-border bg-surface">
+    <div className="mb-6 overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
       <div className="flex flex-wrap items-end gap-3 border-b border-surface-muted p-4">
         <label className="block">
           <div className="mb-1 text-xs font-semibold text-ink-700">Date</div>

@@ -475,7 +475,7 @@ function FilterBar({ filters }) {
   }, [searchInput]);
 
   return (
-    <div className="mb-4 flex flex-wrap items-end gap-3">
+    <div className="mb-4 flex flex-wrap items-end gap-3 px-4 md:px-0">
       {search && (
         <label className="min-w-[200px] flex-1">
           <div className="mb-1 text-xs font-semibold text-ink-700">Search</div>

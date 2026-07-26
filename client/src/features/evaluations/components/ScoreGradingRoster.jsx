@@ -98,7 +98,7 @@ export function ScoreGradingRoster() {
       {savedAt && <div className="mb-3 text-xs font-semibold text-success">Saved</div>}
       {saveError && <div className="mb-3 text-xs font-semibold text-danger">{saveError}</div>}
 
-      <div className="overflow-hidden rounded border border-border bg-surface">
+      <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
         <div className="border-b border-border p-4">
           <input
             type="text"

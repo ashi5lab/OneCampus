@@ -64,7 +64,7 @@ export function MyAttendanceView() {
         <StatCard label="Exceptions" value={(meta?.total ?? records.length)} />
       </div>
 
-      <div className="overflow-hidden rounded border border-border bg-surface">
+      <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
         <DataTable
           columns={columns}
           rows={records}

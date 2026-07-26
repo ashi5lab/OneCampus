@@ -24,7 +24,7 @@ export function CertificatesTab() {
         ))}
       </div>
       <div className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-500">Recently Issued</div>
-      <div className="overflow-hidden rounded border border-border bg-surface">
+      <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
         <DataTable columns={columns} rows={data.recent} rowKey={(row) => row.id} emptyMessage="No certificates issued yet." />
       </div>
     </div>

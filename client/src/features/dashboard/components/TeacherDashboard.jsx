@@ -320,7 +320,7 @@ export function TeacherDashboard() {
         </div>
 
         {/* Today's Schedule */}
-        <Card padding="p-5">
+        <Card padding="p-5" className="-mx-4 md:mx-0">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-[15px] font-bold text-gray-900">Today's Schedule</h2>
             <Link to="/app/timetable" className="text-xs font-semibold text-indigo-600">View Timetable</Link>
@@ -361,7 +361,7 @@ export function TeacherDashboard() {
         </Card>
 
         {/* Recent Notices */}
-        <Card padding="p-5">
+        <Card padding="p-5" className="-mx-4 md:mx-0">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[15px] font-bold text-gray-900">Recent Notices</h2>
             <Link to="/app/notices" className="text-xs font-semibold text-indigo-600">View all</Link>
@@ -389,7 +389,7 @@ export function TeacherDashboard() {
         </Card>
 
         {/* Upcoming Events */}
-        <Card padding="p-5">
+        <Card padding="p-5" className="-mx-4 md:mx-0">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[15px] font-bold text-gray-900">Upcoming Events</h2>
             <Link to="/app/calendar" className="text-xs font-semibold text-indigo-600">View calendar</Link>

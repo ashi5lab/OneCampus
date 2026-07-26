@@ -26,13 +26,13 @@ export function LibraryTab() {
     <div className="space-y-6">
       <div>
         <div className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-500">Overdue Loans</div>
-        <div className="overflow-hidden rounded border border-border bg-surface">
+        <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
           <DataTable columns={overdueColumns} rows={data.overdueLoans} rowKey={(row) => row.id} emptyMessage="No overdue loans." />
         </div>
       </div>
       <div>
         <div className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-500">Catalog — Most Borrowed</div>
-        <div className="overflow-hidden rounded border border-border bg-surface">
+        <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
           <DataTable columns={bookColumns} rows={data.books} rowKey={(row) => row.id} emptyMessage="No books in the catalog." />
         </div>
       </div>

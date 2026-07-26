@@ -143,7 +143,7 @@ export function LibraryPage() {
           <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Total Titles" value={booksLoading ? '—' : books.length} />
           </div>
-          <div className="overflow-hidden rounded border border-border bg-surface">
+          <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
             {booksLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
             {booksError && <div className="p-8 text-center text-sm font-semibold text-danger">{booksError.message}</div>}
             {books && <DataTable columns={bookColumns} rows={books} rowKey={(row) => row.id} mobileCompact actions={bookActions} />}
@@ -152,7 +152,7 @@ export function LibraryPage() {
       )}
 
       {tab === 'loans' && (
-        <div className="overflow-hidden rounded border border-border bg-surface">
+        <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
           {loansLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
           {loansError && <div className="p-8 text-center text-sm font-semibold text-danger">{loansError.message}</div>}
           {loans && (

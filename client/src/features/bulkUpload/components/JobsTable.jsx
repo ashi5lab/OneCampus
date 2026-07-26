@@ -72,7 +72,7 @@ export function JobsTable({ entityType }) {
   ];
 
   return (
-    <div className="overflow-hidden rounded border border-border bg-surface">
+    <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
       <div className="border-b border-surface-muted px-5 py-3 text-sm font-bold text-ink-900">Upload history</div>
       {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
       {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}

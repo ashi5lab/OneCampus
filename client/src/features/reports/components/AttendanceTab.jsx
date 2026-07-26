@@ -34,7 +34,7 @@ export function AttendanceTab() {
         </label>
         {data && <span className="text-[11.5px] text-ink-500">Last 30 days ({data.from} to {data.to})</span>}
       </div>
-      <div className="overflow-hidden rounded border border-border bg-surface">
+      <div className="overflow-hidden bg-surface md:rounded border-0 md:border border-border -mx-4 md:mx-0">
         {isLoading && <div className="p-8 text-center text-sm text-ink-500">Loading…</div>}
         {error && <div className="p-8 text-center text-sm font-semibold text-danger">{error.message}</div>}
         {data && <DataTable columns={columns} rows={data.data} rowKey={(row) => row.learner_id} emptyMessage="No learners found." />}
