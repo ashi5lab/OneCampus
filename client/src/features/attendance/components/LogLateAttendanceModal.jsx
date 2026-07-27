@@ -55,7 +55,7 @@ export function LogLateAttendanceModal({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex items-end md:items-center justify-center bg-ink-900/40 p-0 md:p-4">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-ink-900/40 p-0 md:p-4">
       <div className="w-full md:max-w-[440px] rounded-t-2xl md:rounded border border-border bg-surface p-6">
         <div className="mb-1 text-base font-bold text-ink-900">Log Late Attendance</div>
         <div className="mb-5 text-[12px] text-ink-500">
