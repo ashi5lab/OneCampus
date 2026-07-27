@@ -1,7 +1,16 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { getExistingPushToken, listenForegroundMessages, showLocalNotification, fcmLog, fcmError } from '../lib/firebase';
+import { Bell } from 'lucide-react';
+import {
+  getExistingPushToken,
+  listenForegroundMessages,
+  showLocalNotification,
+  playNotificationChime,
+  fcmLog,
+  fcmError
+} from '../lib/firebase';
 import { useSaveFcmToken } from '../features/profile/hooks/useProfile';
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
@@ -21,6 +30,7 @@ const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 export function usePushNotificationSync() {
   const navigate = useNavigate();
   const saveFcmToken = useSaveFcmToken();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
@@ -51,21 +61,53 @@ export function usePushNotificationSync() {
       const url = payload.data?.url;
 
       fcmLog('[FOREGROUND]', 'Displaying in-app toast:', { title, body });
-      toast((t) => (
-        <div
-          className={url ? 'cursor-pointer' : ''}
-          onClick={() => {
-            if (url) {
-              fcmLog('[FOREGROUND]', 'App opened from notification (toast tap), navigating to', url);
-              toast.dismiss(t.id);
-              navigate(url);
-            }
-          }}
-        >
-          <div className="text-[13px] font-bold text-ink-900">{title}</div>
-          {body && <div className="mt-0.5 text-[12px] text-ink-500">{body}</div>}
-        </div>
-      ), { duration: 6000 });
+      playNotificationChime();
+
+      // A larger, colored card (not the app's plain default toast) so an
+      // incoming push is unmistakable at a glance — this is a rarer,
+      // higher-signal event than a routine "saved" confirmation toast.
+      toast.custom(
+        (t) => (
+          <div
+            onClick={() => {
+              if (url) {
+                fcmLog('[FOREGROUND]', 'App opened from notification (toast tap), navigating to', url);
+                toast.dismiss(t.id);
+                navigate(url);
+              }
+            }}
+            className={`flex items-start gap-3 rounded-2xl border border-white/20 bg-gradient-to-br from-violet-600 to-indigo-600 px-4 py-3.5 shadow-2xl ring-1 ring-black/5 ${
+              url ? 'cursor-pointer' : ''
+            }`}
+            style={{ minWidth: 320, maxWidth: 400 }}
+          >
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
+              <Bell className="h-5 w-5 text-white" strokeWidth={2} />
+            </div>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <div className="text-[14px] font-bold leading-snug text-white">{title}</div>
+              {body && <div className="mt-1 text-[12.5px] leading-snug text-white/90">{body}</div>}
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toast.dismiss(t.id);
+              }}
+              className="flex-shrink-0 text-white/70 hover:text-white"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        ),
+        { duration: 6000, position: 'top-right' }
+      );
+
+      // Bell badge (see NotificationBell.jsx) reads the same ['activities']
+      // query on a 10s poll — invalidate now so it updates immediately
+      // instead of waiting for the next poll tick.
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
 
       // Also show a real OS-level notification for the foreground case —
       // otherwise foreground is the only app state where "was it actually

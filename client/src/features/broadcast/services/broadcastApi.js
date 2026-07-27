@@ -19,5 +19,7 @@ export const broadcastApi = {
   },
   approveVoicemail: (id) => apiClient.put(`/broadcast/voicemails/${id}/approve`).then((res) => res.data),
   rejectVoicemail: (id, reason) => apiClient.put(`/broadcast/voicemails/${id}/reject`, { reason }).then((res) => res.data),
-  sendVoicemail: (id, payload) => apiClient.post(`/broadcast/voicemails/${id}/send`, payload).then((res) => res.data)
+  sendVoicemail: (id, payload) => apiClient.post(`/broadcast/voicemails/${id}/send`, payload).then((res) => res.data),
+
+  sendAppNotification: (payload) => apiClient.post('/broadcast/app-notification', payload).then((res) => res.data)
 };

@@ -61,6 +61,9 @@ import { AdminClassChannelsPage } from './features/classChannel/components/Admin
 import { ActivitiesPage } from './features/activities/components/ActivitiesPage';
 
 export default function App() {
+  // FCM token sync + foreground toast are handled by usePushNotificationSync()
+  // in Layout.jsx — mounted only inside the authenticated app shell, not here
+  // (App renders the public landing page too, where there's no session yet).
   return (
     <>
       <Toaster position="bottom-right" />

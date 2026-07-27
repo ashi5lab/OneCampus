@@ -54,6 +54,18 @@ async function listActivities(req, res) {
       )
     );
 
+    // Push/in-app notifications (onec_notifications — see modules/notifications).
+    // Folded into this same feed rather than kept as a separate destination,
+    // since the bell already points here — title is prefixed so it's clear
+    // at a glance this came from a push/broadcast, not a raw system event.
+    queries.push(
+      req.db.query(
+        `SELECT 'notification' AS type, id, CONCAT('Received notification: "', title, '"') AS title, body AS subtitle, created_at AS ts, NULL::text AS actor, url AS notif_url
+         FROM onec_notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20`,
+        [userId]
+      )
+    );
+
     if (cohortIds.length > 0) {
       // Not every class-chat message — only ones that actually @mention this
       // caller (this feed is a notification center, not a chat mirror; the

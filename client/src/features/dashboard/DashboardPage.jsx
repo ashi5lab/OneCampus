@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfig } from '../../contexts/ConfigContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { PushPermissionPrompt } from '../../components/PushPermissionPrompt';
 import { useNavLinks } from '../../hooks/useNavLinks';
 import { StatCard } from '../../components/StatCard';
 import { ModuleBadge } from '../../components/ModuleBadge';
@@ -28,6 +29,10 @@ export function DashboardPage() {
   const { user } = useAuth();
   const { data: me } = useMyProfile();
 
+  // Foreground push toast + OS notification is handled globally by
+  // usePushNotificationSync() in Layout.jsx (mounted once for the whole
+  // authenticated app, not just this page) — do not duplicate it here.
+
   if (TEACHER_ROLES.includes(user?.role)) return <TeacherDashboard />;
   if (REDESIGNED_ROLES.includes(user?.role)) return <HomeInsightsPage />;
 
@@ -45,6 +50,7 @@ export function DashboardPage() {
 
   return (
     <div>
+      <PushPermissionPrompt />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-[13.5px] text-ink-500">Good morning{me?.name ? `, ${me.name}` : user?.username ? `, ${user.username}` : ''}</div>

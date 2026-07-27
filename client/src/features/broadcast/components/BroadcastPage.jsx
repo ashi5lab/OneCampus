@@ -7,13 +7,15 @@ import { SmsTab } from './SmsTab';
 import { VoicemailTab } from './VoicemailTab';
 import { WhatsappTab } from './WhatsappTab';
 import { WhatsappAbsenteeTab } from './WhatsappAbsenteeTab';
+import { AppNotificationTab } from './AppNotificationTab';
 import { ChannelConfigModal } from './ChannelConfigModal';
 
 const TABS = [
   { value: 'sms', label: 'SMS' },
   { value: 'voicemail', label: 'Voicemail' },
   { value: 'whatsapp', label: 'WhatsApp' },
-  { value: 'whatsapp_absentee', label: 'WhatsApp (Absentee Alerts)' }
+  { value: 'whatsapp_absentee', label: 'WhatsApp (Absentee Alerts)' },
+  { value: 'app_notification', label: 'App Notification' }
 ];
 
 export function BroadcastPage() {
@@ -68,6 +70,7 @@ export function BroadcastPage() {
       {tab === 'voicemail' && <VoicemailTab />}
       {tab === 'whatsapp' && <WhatsappTab />}
       {tab === 'whatsapp_absentee' && <WhatsappAbsenteeTab config={canConfigure ? activeConfig : undefined} />}
+      {tab === 'app_notification' && <AppNotificationTab />}
 
       {configuring && (
         <ChannelConfigModal channel={tab} existing={activeConfig} onClose={() => setConfiguring(false)} />

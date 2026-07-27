@@ -56,3 +56,7 @@ export function useRejectVoicemail() {
 export function useSendVoicemail() {
   return useInvalidatingMutation(({ id, payload }) => broadcastApi.sendVoicemail(id, payload), 'voicemail');
 }
+
+export function useSendAppNotification() {
+  return useInvalidatingMutation(broadcastApi.sendAppNotification, 'app_notification');
+}

@@ -485,6 +485,49 @@ async function sendAbsenteeAlertsNow(req, res) {
   }
 }
 
+async function sendAppNotification(req, res) {
+  try {
+    const { title, body, recipient_ids } = req.body;
+
+    if (!title || !body || !Array.isArray(recipient_ids) || recipient_ids.length === 0) {
+      return res.status(400).json({ error: 'Missing or invalid: title, body, recipient_ids' });
+    }
+
+    // Import createNotification from notifications module
+    const { createNotification } = require('../notifications/controller');
+
+    // Send notification to each recipient
+    const tenant = req.user?.tenant || req.tenant?.domain;
+    let sentCount = 0;
+
+    for (const userId of recipient_ids) {
+      try {
+        await createNotification(req.db, tenant, userId, {
+          type: 'broadcast',
+          title,
+          body,
+          url: null,
+          data: { channel: 'broadcast' }
+        });
+        sentCount++;
+      } catch (error) {
+        console.error(`[Broadcast] Failed to send app notification to user ${userId}:`, error.message);
+      }
+    }
+
+    res.json({
+      data: {
+        ok: true,
+        sent: sentCount,
+        message: `Notification sent to ${sentCount} out of ${recipient_ids.length} recipient(s)`
+      }
+    });
+  } catch (error) {
+    console.error('[Broadcast] sendAppNotification error:', error.message);
+    res.status(500).json({ error: 'Failed to send app notification' });
+  }
+}
+
 module.exports = {
   getConfigs,
   upsertConfig,
@@ -497,5 +540,6 @@ module.exports = {
   approveVoicemail,
   rejectVoicemail,
   sendVoicemail,
-  sendAbsenteeAlertsNow
+  sendAbsenteeAlertsNow,
+  sendAppNotification
 };

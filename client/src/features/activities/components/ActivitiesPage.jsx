@@ -12,7 +12,8 @@ const TYPE_ICON_BG = {
   exam: { bg: '#FCE7E8', fg: '#B91C1C' },
   attendance: { bg: '#E0EEFB', fg: '#1D4ED8' },
   score: { bg: '#DFF5E7', fg: '#15803D' },
-  leave: { bg: '#E0EEFB', fg: '#1D4ED8' }
+  leave: { bg: '#E0EEFB', fg: '#1D4ED8' },
+  notification: { bg: '#EDE4FB', fg: '#6D28D9' }
 };
 
 const TYPE_ICON_PATH = {
@@ -22,7 +23,8 @@ const TYPE_ICON_PATH = {
   exam: 'M9 11l2 2 4-4 M12 12m-9 0a9 9 0 1018 0a9 9 0 10-18 0',
   attendance: 'M5 13l4 4L19 7',
   score: 'M4 19h16M6 19V9l4-4 4 4v10M6 13h8',
-  leave: 'M8 7V3M16 7V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z'
+  leave: 'M8 7V3M16 7V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z',
+  notification: 'M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 01-3.46 0'
 };
 
 function TypeIcon({ type }) {
@@ -80,6 +82,7 @@ function getActivityLink(item) {
     case 'attendance': return { to: '/app/attendance' };
     case 'score': return { to: '/app/profile' };
     case 'leave': return { to: '/app/leave' };
+    case 'notification': return { to: item.notif_url || '/app/activities' };
     default: return { to: '/app/activities' };
   }
 }
