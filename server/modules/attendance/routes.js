@@ -13,6 +13,7 @@ router.get('/', requirePermission('attendance.view'), controller.getAll);
 router.get('/logs', requirePermission('attendance.view'), controller.getLogs);
 router.get('/absentee-report', requirePermission('attendance.view'), controller.absenteeReport);
 router.post('/bulk', requirePermission('attendance.mark'), controller.markBulk);
+router.post('/mark-late', requirePermission('attendance.mark'), controller.markLate);
 router.post('/', requirePermission('attendance.mark'), controller.mark);
 
 module.exports = router;

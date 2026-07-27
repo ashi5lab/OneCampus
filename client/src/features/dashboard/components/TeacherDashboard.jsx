@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Users, CheckCircle2, ClipboardList, CalendarDays,
@@ -17,6 +17,7 @@ import { useCohortAttendanceLogs } from '../../attendance/hooks/useAttendance';
 import { useAssignments } from '../../assignments/hooks/useAssignments';
 import { useNotices } from '../../notices/hooks/useNotices';
 import { useAgenda } from '../../calendar/hooks/useCalendar';
+import { LogLateAttendanceModal } from '../../attendance/components/LogLateAttendanceModal';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ const STATUS_STYLES = {
 export function TeacherDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [showLogLate, setShowLogLate] = useState(false);
   const today = todayIso();
   const todayName = DAY_NAMES[new Date().getDay()];
 
@@ -186,6 +188,7 @@ export function TeacherDashboard() {
   ];
 
   return (
+    <>
     <div className="bg-[#f8f9fe] min-h-screen pb-24 font-body">
       <TeacherHeader
         showSearch={true}
@@ -233,6 +236,15 @@ export function TeacherDashboard() {
               subtitle="Record student behavior"
               chevron
             />
+            <FlatRow
+              onClick={() => setShowLogLate(true)}
+              icon={Clock}
+              iconBg="#fef3c7"
+              iconColor="#d97706"
+              title="Log Late Attendance"
+              subtitle="Mark a student late and log it"
+              chevron
+            />
           </FlatList>
         </div>
 
@@ -265,6 +277,21 @@ export function TeacherDashboard() {
               <div className="text-[11px] text-[#ea580c] mt-0.5 font-medium">Record student behavior</div>
             </div>
             <ChevronRight className="w-4 h-4 text-[#f97316] flex-shrink-0" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowLogLate(true)}
+            className="flex items-center gap-3 bg-[#fffbeb] rounded-2xl px-4 py-3.5 shadow-sm border border-[#fde68a] active:scale-[0.98] transition-transform text-left w-full"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#d97706] flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Clock className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-bold text-[#78350f] leading-tight">Log Late Attendance</div>
+              <div className="text-[11px] text-[#d97706] mt-0.5 font-medium">Mark a student late and log it</div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-[#d97706] flex-shrink-0" />
           </button>
         </div>
 
@@ -430,5 +457,7 @@ export function TeacherDashboard() {
 
       </div>
     </div>
+    {showLogLate && <LogLateAttendanceModal onClose={() => setShowLogLate(false)} />}
+    </>
   );
 }
