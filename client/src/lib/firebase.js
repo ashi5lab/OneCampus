@@ -2,6 +2,16 @@ import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 
+// Consistent [FCM] prefix across every file touching the notification
+// lifecycle (this module, usePushNotificationSync.jsx, ProfilePage.jsx,
+// firebase-messaging-sw.js) so DevTools console filtering ("[FCM]") shows
+// the whole flow in one place while manually testing via Firebase Console
+// → Send test message. See AGENT_LOG.md Entry 031 for the expected log
+// sequence per test stage.
+export function fcmLog(...args) { console.log('[FCM]', ...args); }
+export function fcmWarn(...args) { console.warn('[FCM]', ...args); }
+export function fcmError(...args) { console.error('[FCM]', ...args); }
+
 // Your web app's Firebase configuration. apiKey/appId/messagingSenderId
 // etc. are public project identifiers, not secrets — safe to hardcode
 // (see notification_plan.md's note on this).
@@ -15,8 +25,10 @@ const firebaseConfig = {
   measurementId: "G-2N8P9C2R9N"
 };
 
+fcmLog('Initializing Firebase app', { projectId: firebaseConfig.projectId });
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+fcmLog('Firebase app initialized');
 
 // Firebase Messaging isn't supported everywhere (older Safari, some in-app
 // browsers, non-secure contexts) — isSupported() must be awaited before
@@ -26,8 +38,14 @@ let messagingPromise = null;
 function getMessagingInstance() {
   if (!messagingPromise) {
     messagingPromise = isSupported()
-      .then((supported) => (supported ? getMessaging(app) : null))
-      .catch(() => null);
+      .then((supported) => {
+        fcmLog('Firebase Messaging support check:', supported ? 'supported' : 'NOT supported in this browser/context');
+        return supported ? getMessaging(app) : null;
+      })
+      .catch((error) => {
+        fcmError('isSupported() check threw', error);
+        return null;
+      });
   }
   return messagingPromise;
 }
@@ -43,11 +61,22 @@ function getMessagingInstance() {
 const MESSAGING_SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 let swRegistrationPromise = null;
 function getMessagingSwRegistration() {
-  if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+  if (!('serviceWorker' in navigator)) {
+    fcmWarn('navigator.serviceWorker unavailable — cannot register firebase-messaging-sw.js');
+    return Promise.resolve(null);
+  }
   if (!swRegistrationPromise) {
-    swRegistrationPromise = navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: MESSAGING_SW_SCOPE
-    });
+    fcmLog('Registering firebase-messaging-sw.js at scope', MESSAGING_SW_SCOPE);
+    swRegistrationPromise = navigator.serviceWorker
+      .register('/firebase-messaging-sw.js', { scope: MESSAGING_SW_SCOPE })
+      .then((registration) => {
+        fcmLog('firebase-messaging-sw.js registered', { scope: registration.scope });
+        return registration;
+      })
+      .catch((error) => {
+        fcmError('firebase-messaging-sw.js registration failed', error);
+        throw error;
+      });
   }
   return swRegistrationPromise;
 }
@@ -55,15 +84,29 @@ function getMessagingSwRegistration() {
 // Prompts for browser notification permission (if not already decided) and
 // returns a fresh FCM registration token, or null if unsupported/denied.
 export async function requestPushPermission(vapidKey) {
+  fcmLog('requestPushPermission() called');
   const messaging = await getMessagingInstance();
-  if (!messaging) return null;
+  if (!messaging) {
+    fcmWarn('requestPushPermission() aborted — Messaging unsupported');
+    return null;
+  }
   try {
+    fcmLog('Requesting notification permission from the browser...');
     const permission = await Notification.requestPermission();
+    fcmLog('Notification permission result:', permission);
     if (permission !== 'granted') return null;
+
     const serviceWorkerRegistration = await getMessagingSwRegistration();
-    return await getToken(messaging, { vapidKey, serviceWorkerRegistration });
+    fcmLog('Requesting FCM registration token...');
+    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration });
+    if (token) {
+      fcmLog('FCM token generated (paste into Firebase Console → Send test message):', token);
+    } else {
+      fcmWarn('getToken() returned no token');
+    }
+    return token;
   } catch (error) {
-    console.error('Error getting push notification permission or token:', error);
+    fcmError('Error getting push notification permission or token', error);
     return null;
   }
 }
@@ -72,14 +115,24 @@ export async function requestPushPermission(vapidKey) {
 // onec_fcm_tokens on app load when permission was already granted in an
 // earlier session (FCM tokens can rotate underneath the app).
 export async function getExistingPushToken(vapidKey) {
-  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return null;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+    fcmLog('getExistingPushToken() skipped — permission not previously granted');
+    return null;
+  }
   const messaging = await getMessagingInstance();
   if (!messaging) return null;
   try {
+    fcmLog('Refreshing FCM token silently...');
     const serviceWorkerRegistration = await getMessagingSwRegistration();
-    return await getToken(messaging, { vapidKey, serviceWorkerRegistration });
+    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration });
+    if (token) {
+      fcmLog('FCM token refreshed:', token);
+    } else {
+      fcmWarn('Silent token refresh returned no token');
+    }
+    return token;
   } catch (error) {
-    console.error('Error refreshing push notification token:', error);
+    fcmError('Error refreshing push notification token', error);
     return null;
   }
 }
@@ -90,8 +143,15 @@ export async function getExistingPushToken(vapidKey) {
 // must render something themselves. Returns the unsubscribe function.
 export async function listenForegroundMessages(callback) {
   const messaging = await getMessagingInstance();
-  if (!messaging) return () => {};
-  return onMessage(messaging, callback);
+  if (!messaging) {
+    fcmWarn('listenForegroundMessages() aborted — Messaging unsupported');
+    return () => {};
+  }
+  fcmLog('Foreground message listener attached');
+  return onMessage(messaging, (payload) => {
+    fcmLog('Foreground notification received:', payload);
+    callback(payload);
+  });
 }
 
 export { app, analytics };

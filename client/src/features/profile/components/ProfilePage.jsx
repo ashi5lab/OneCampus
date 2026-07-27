@@ -16,7 +16,7 @@ import {
   useSaveFcmToken,
   MY_PROFILE_KEY
 } from '../hooks/useProfile';
-import { requestPushPermission } from '../../../lib/firebase';
+import { requestPushPermission, fcmLog, fcmError } from '../../../lib/firebase';
 
 // Same role split as BottomTabBar/Sidebar's REDESIGNED_ROLES — only
 // learner/instructor/staff have a Home tab with configurable cards to
@@ -264,17 +264,20 @@ function NotificationPreferencesCard() {
   const showWhatsapp = prefs.whatsapp_opt_in !== null;
 
   async function handleEnablePush() {
+    fcmLog('User clicked "Enable Push Notifications"');
     setPushStatus('requesting');
     try {
       const token = await requestPushPermission(import.meta.env.VITE_FIREBASE_VAPID_KEY);
       if (token) {
         await saveFcmToken.mutateAsync({ token, device_info: navigator.userAgent });
+        fcmLog('Token saved to server, push enabled');
         setPushStatus('success');
       } else {
+        fcmLog('No token returned — permission denied or unsupported');
         setPushStatus('denied');
       }
     } catch (err) {
-      console.error(err);
+      fcmError('Enable push notifications flow failed', err);
       setPushStatus('error');
     }
   }
