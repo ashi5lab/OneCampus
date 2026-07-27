@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getExistingPushToken, listenForegroundMessages } from '../lib/firebase';
+import { getExistingPushToken, listenForegroundMessages, fcmLog, fcmError } from '../lib/firebase';
 import { useSaveFcmToken } from '../features/profile/hooks/useProfile';
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
@@ -24,8 +24,16 @@ export function usePushNotificationSync() {
 
   useEffect(() => {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    fcmLog('App load: permission already granted, silently syncing token...');
     getExistingPushToken(VAPID_KEY).then((token) => {
-      if (token) saveFcmToken.mutate({ token, device_info: navigator.userAgent });
+      if (!token) return;
+      saveFcmToken.mutate(
+        { token, device_info: navigator.userAgent },
+        {
+          onSuccess: () => fcmLog('Token synced to server (POST /profile/fcm-token)'),
+          onError: (error) => fcmError('Failed to sync token to server', error)
+        }
+      );
     });
     // Intentionally runs once per mount — not re-run on saveFcmToken
     // identity changes (a new mutation object every render would otherwise
@@ -42,8 +50,18 @@ export function usePushNotificationSync() {
       const body = payload.notification?.body;
       const url = payload.data?.url;
 
+      fcmLog('Displaying foreground toast:', { title, body });
       toast((t) => (
-        <div className={url ? 'cursor-pointer' : ''} onClick={() => { if (url) { toast.dismiss(t.id); navigate(url); } }}>
+        <div
+          className={url ? 'cursor-pointer' : ''}
+          onClick={() => {
+            if (url) {
+              fcmLog('App opened from foreground notification toast, navigating to', url);
+              toast.dismiss(t.id);
+              navigate(url);
+            }
+          }}
+        >
           <div className="text-[13px] font-bold text-ink-900">{title}</div>
           {body && <div className="mt-0.5 text-[12px] text-ink-500">{body}</div>}
         </div>

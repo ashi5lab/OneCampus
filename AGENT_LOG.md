@@ -2173,3 +2173,84 @@ None — reuses the existing `onec_fcm_tokens` table (migration 038) and `POST /
 
 ### Expected Outcome
 A user visits Profile → Notification Preferences → "Enable Push Notifications", grants the browser permission prompt, and a token is generated and saved to `onec_fcm_tokens`. From the Firebase Console, sending a test message to that token should appear as a toast if the app tab is open (foreground), or as a native OS notification if the tab/browser is closed (background, via the service worker) — clicking it focuses or opens the app.
+
+## Entry 031 — [FCM] structured logging for manual notification testing
+
+**User request:** Add detailed, structured logging throughout the FCM notification lifecycle (init, permission, token generation/refresh, foreground/background receive, notification click, errors) with a consistent `[FCM]` prefix, to verify the Phase 1 receiver implementation while testing via Firebase Console → Send test message. No sending logic — logging only.
+
+### Files Changed
+
+**`client/src/lib/firebase.js`**
+- Added `fcmLog()` / `fcmWarn()` / `fcmError()` — thin `console.*` wrappers with a `[FCM]` prefix, exported for reuse by every other file in the flow (`usePushNotificationSync.jsx`, `ProfilePage.jsx`). `firebase-messaging-sw.js` can't import this (separate SW execution context, loaded via `importScripts`) so it has its own copy with the same prefix convention.
+- Logs added at: app init, `isSupported()` result, SW registration (start/success/failure, with resulting scope), permission request + result, token generation (full token logged — deliberately, since the tester needs to copy it into Firebase Console's "Send test message" target field), silent token refresh, foreground message receipt, and every catch block.
+
+**`client/src/hooks/usePushNotificationSync.jsx`**
+- Logs the silent on-load token re-sync (start, server upsert success/failure) and the foreground toast display + "opened from toast" click.
+
+**`client/public/firebase-messaging-sw.js`**
+- Own `fcmLog`/`fcmError` (same `[FCM]` prefix). Logs SW script evaluation, `install`/`activate` events (with scope), background message receipt, `showNotification()` success/failure, and `notificationclick` (app opened from a background/terminated-state notification) including which window-focus path was taken.
+
+**`client/src/features/profile/components/ProfilePage.jsx`**
+- Logs the explicit "Enable Push Notifications" button flow (click, success, denial, error) in `handleEnablePush()`.
+
+### Expected `[FCM]` log sequence per test stage
+
+Filter DevTools console by `[FCM]` — both the page context and the `firebase-messaging-sw.js` SW context (DevTools > Application > Service Workers, or the SW's own console context) need to be checked separately; background-state logs only appear in the SW context.
+
+**1. App load (any page, already logged in)**
+```
+[FCM] Initializing Firebase app {projectId: "onecampus-edu"}
+[FCM] Firebase app initialized
+[FCM] Firebase Messaging support check: supported
+[FCM] App load: permission already granted, silently syncing token...   (only if permission was granted in an earlier session)
+[FCM] Registering firebase-messaging-sw.js at scope /firebase-cloud-messaging-push-scope
+[FCM] firebase-messaging-sw.js registered {scope: "..."}
+[FCM] Refreshing FCM token silently...
+[FCM] FCM token refreshed: <token>
+[FCM] Token synced to server (POST /profile/fcm-token)
+[FCM] Foreground message listener attached
+```
+(SW context, once per browser/profile, not every page load once installed) `[FCM] firebase-messaging-sw.js script evaluating` → `Firebase app initialized inside service worker` → `Service worker installing` → `Service worker activated, scope: ...`
+
+**2. User clicks "Enable Push Notifications" (Profile page, first time / permission not yet granted)**
+```
+[FCM] User clicked "Enable Push Notifications"
+[FCM] requestPushPermission() called
+[FCM] Requesting notification permission from the browser...
+[FCM] Notification permission result: granted
+[FCM] Registering firebase-messaging-sw.js at scope /firebase-cloud-messaging-push-scope   (first time only)
+[FCM] firebase-messaging-sw.js registered {scope: "..."}
+[FCM] Requesting FCM registration token...
+[FCM] FCM token generated (paste into Firebase Console → Send test message): <token>
+[FCM] Token saved to server, push enabled
+```
+If the browser denies the prompt: `Notification permission result: denied` → `No token returned — permission denied or unsupported` (no error thrown, `pushStatus` becomes `'denied'`).
+
+**3. Foreground notification (app tab open, Firebase Console → Send test message)**
+```
+[FCM] Foreground notification received: {notification: {...}, data: {...}, ...}
+[FCM] Displaying foreground toast: {title: "...", body: "..."}
+```
+A toast appears in-app. No native OS notification for this case — that's expected FCM behavior (the SW's background handler doesn't fire while the page is open).
+
+**4. Background notification (app tab closed, or browser minimized/backgrounded) — logs appear in the SW's own console context**
+```
+[FCM] Background notification received: {notification: {...}, data: {...}, ...}
+[FCM] Notification displayed: <title>
+```
+A native OS notification appears.
+
+**5. App opened by clicking the background notification**
+```
+[FCM] Notification clicked — app being opened/focused from a background notification {url: "..."}
+[FCM] Focusing existing app window   (if a tab was already open)
+[FCM] No existing app window — opening a new one   (if not)
+```
+
+**6. Any failure** — every step above has a matching `[FCM]` `console.error` (SW registration failure, `getToken()` rejection, `isSupported()` throwing, server upsert failure, `showNotification()` failure, window focus/open failure) instead of a silent catch.
+
+### Database Operations
+None.
+
+### Not done (unchanged from Entry 030 — still explicitly out of scope)
+Notification creation/sending from the app or server, `onec_notifications`, `NotificationBell` real data wiring, server-side push triggers.
