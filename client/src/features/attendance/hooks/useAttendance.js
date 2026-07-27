@@ -55,6 +55,22 @@ export function useCohortAttendanceLogs(date) {
   });
 }
 
+// Dashboard "Log Late Attendance" quick action — also invalidates
+// ['discipline'] since the server may raise a minor incident alongside the
+// attendance record (see LogLateAttendanceModal.jsx).
+export function useMarkLateAttendance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: attendanceApi.markLate,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['discipline'] });
+      queryClient.invalidateQueries({ queryKey: ['learners'] });
+      queryClient.invalidateQueries({ queryKey: ['instructors'] });
+    }
+  });
+}
+
 export function useMarkAttendanceBulk() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -23,6 +23,16 @@ const bulkSchema = z.object({
   }))
 });
 
+// Dashboard "Log Late Attendance" quick action — takes user_id (onec_users.id,
+// the value UserSearchSelect always returns) rather than learner_id, since the
+// caller doesn't know the student's class/cohort ahead of time.
+const markLateSchema = z.object({
+  user_id: z.number().int(),
+  date: z.string(), // YYYY-MM-DD
+  time: z.string(), // h:mm AM/PM, e.g. "9:42 AM"
+  log_discipline: z.boolean().optional().default(false)
+});
+
 async function getAll(req, res) {
   try {
     const { pagination, error } = parsePagination(req.query);
@@ -341,4 +351,72 @@ async function getLogs(req, res) {
   }
 }
 
-module.exports = { getAll, mark, markBulk, absenteeReport, getLogs };
+// Dashboard "Log Late Attendance" quick action. Resolves user_id to the
+// learner's own learner_id + cohort_id (the caller only knows who the
+// student is, not their class), upserts a 'late' exception the same way
+// mark() does, and optionally raises a minor discipline incident in the
+// same transaction — see LogLateAttendanceModal.jsx for the client side.
+async function markLate(req, res) {
+  try {
+    const parsed = markLateSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+
+    const { user_id, date, time, log_discipline } = parsed.data;
+    const marked_by = req.user.userId;
+
+    const learnerRow = await req.db.query('SELECT id, cohort_id FROM onec_learners WHERE user_id = $1', [user_id]);
+    if (learnerRow.rows.length === 0) return res.status(400).json({ error: 'Learner profile not found for this user' });
+    const { id: learner_id, cohort_id } = learnerRow.rows[0];
+
+    const remarks = `Logged late at ${time}`;
+
+    await req.db.query('BEGIN');
+    try {
+      const existing = await req.db.query(
+        `SELECT id FROM onec_attendance WHERE learner_id = $1 AND date = $2 AND allocation_id IS NULL`,
+        [learner_id, date]
+      );
+
+      let attendance;
+      if (existing.rows.length > 0) {
+        attendance = await req.db.query(
+          'UPDATE onec_attendance SET status = $1, remarks = $2, marked_by = $3, cohort_id = $4 WHERE id = $5 RETURNING *',
+          ['late', remarks, marked_by, cohort_id, existing.rows[0].id]
+        );
+      } else {
+        attendance = await req.db.query(
+          `INSERT INTO onec_attendance (learner_id, cohort_id, allocation_id, date, status, remarks, marked_by)
+           VALUES ($1, $2, NULL, $3, 'late', $4, $5) RETURNING *`,
+          [learner_id, cohort_id, date, remarks, marked_by]
+        );
+      }
+
+      let discipline = null;
+      if (log_discipline) {
+        const disciplineResult = await req.db.query(
+          `INSERT INTO onec_discipline_records (learner_id, incident_date, severity, description, action_taken, reported_by)
+           VALUES ($1, $2, 'minor', $3, $4, $5) RETURNING *`,
+          [
+            learner_id,
+            date,
+            `Late to school — arrived ${time} on ${date}`,
+            'Marked late in attendance; minor discipline incident raised automatically',
+            marked_by
+          ]
+        );
+        discipline = disciplineResult.rows[0];
+      }
+
+      await req.db.query('COMMIT');
+      res.status(200).json({ data: { attendance: attendance.rows[0], discipline } });
+    } catch (txErr) {
+      await req.db.query('ROLLBACK');
+      throw txErr;
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { getAll, mark, markBulk, markLate, absenteeReport, getLogs };

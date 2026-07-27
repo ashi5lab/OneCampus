@@ -27,5 +27,6 @@ export const attendanceApi = {
     return apiClient.get(`/attendance/logs?${params.toString()}`).then((res) => res.data);
   },
   mark: (payload) => apiClient.post('/attendance', payload).then((res) => res.data),
-  markBulk: (payload) => apiClient.post('/attendance/bulk', payload).then((res) => res.data)
+  markBulk: (payload) => apiClient.post('/attendance/bulk', payload).then((res) => res.data),
+  markLate: (payload) => apiClient.post('/attendance/mark-late', payload).then((res) => res.data)
 };

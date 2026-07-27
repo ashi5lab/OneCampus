@@ -2098,3 +2098,34 @@ The Alumni module (directory page + "Mark as Alumni" action) was a self-containe
 
 ### Expected Outcome
 No Alumni entry point anywhere in the app (nav, routing, learner profile, reports). Any learners still marked `status = 'alumni'` in the DB remain as-is (not yet migrated to `inactive`) until confirmed.
+
+## Entry 029 — Log Late Attendance dashboard quick action
+
+**User request:** Add a "Log Late Attendance" quick action button on the Home/Dashboard (alongside Mark Attendance Now / Log Discipline) that opens a modal with a student autocomplete, date (default today) and 12-hour time (default now, editable) fields. On submit, mark the student's attendance as late. Include an off-by-default checkbox to also auto-log a minor discipline incident with remarks/details describing the late arrival.
+
+### Files Changed
+
+**`server/modules/attendance/controller.js`**
+- Added `markLateSchema` (`user_id`, `date`, `time`, `log_discipline`).
+- Added `markLate(req, res)` — resolves `user_id` → `onec_learners.id`/`cohort_id`, upserts a `late` attendance exception (same upsert pattern as `mark()`), and, if `log_discipline` is true, inserts a `minor` severity `onec_discipline_records` row in the same transaction (`BEGIN`/`COMMIT`/`ROLLBACK`, mirroring `markBulk()`). Description/action_taken note the date and time of the late arrival.
+
+**`server/modules/attendance/routes.js`**
+- Added `POST /attendance/mark-late`, gated by the existing `attendance.mark` permission.
+
+**`client/src/features/attendance/services/attendanceApi.js`**
+- Added `markLate(payload)`.
+
+**`client/src/features/attendance/hooks/useAttendance.js`**
+- Added `useMarkLateAttendance()` — invalidates `['attendance']`, `['discipline']`, `['learners']`, `['instructors']` on success.
+
+**`client/src/features/attendance/components/LogLateAttendanceModal.jsx`** (new)
+- `UserSearchSelect` (roles=['learner']) student picker, date input (defaults today), 12-hour time picker (hour/minute/AM-PM selects, defaults to current time, fully editable), and an off-by-default "Also log a minor discipline incident for this" checkbox. Submits via `useMarkLateAttendance`.
+
+**`client/src/features/dashboard/components/TeacherDashboard.jsx`**
+- Added a third quick action, "Log Late Attendance" (Clock icon, amber), next to Mark Attendance Now / Log Discipline — `FlatRow` on mobile, matching button on desktop. Opens `LogLateAttendanceModal` in a dialog (no navigation).
+
+### Database Operations
+None — reuses `onec_attendance` and `onec_discipline_records`, no schema changes.
+
+### Expected Outcome
+From the teacher dashboard, tapping "Log Late Attendance" lets a teacher pick any student, a date/time (defaulting to now), and optionally raise a minor discipline incident in the same action — without navigating to the attendance roster or discipline form.
