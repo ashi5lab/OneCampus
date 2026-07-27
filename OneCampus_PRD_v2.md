@@ -553,3 +553,25 @@ Per a standing rule added in this session (`Rules.md` §5.9): `client/src/featur
 
 ### Deferred (see `Future_Features.md`)
 `LearnerProfilePage.jsx` (11 occurrences) and `InstructorProfilePage.jsx` (8 occurrences) still hand-roll the card recipe rather than using `<Card>` — already using correct theme tokens, so not visually broken, just not componentized yet. `MorePage.jsx`'s 3 clickable nav cards need `Card` extended with Link polymorphism (`as`/`to`) before they can adopt it.
+
+## Push Notifications — Phase 1 (Firebase Cloud Messaging, receiver only)
+
+Web push delivery via FCM, following `notification_plan.md`. This phase makes the app a **receiver only** — notifications are sent manually from the Firebase Console (Cloud Messaging → Send test message) targeting a device's registered token. Notification *creation* from within the app (attendance/discipline/notices triggers, `onec_notifications` in-app feed, `NotificationBell` wired to real data) is a separate, later phase per the plan.
+
+**Client (`client/src/lib/firebase.js`):**
+- `requestPushPermission(vapidKey)` — prompts for browser notification permission, returns a fresh FCM token (or `null` if unsupported/denied).
+- `getExistingPushToken(vapidKey)` — silent variant, only returns a token if permission was already granted; no prompt.
+- `listenForegroundMessages(callback)` — subscribes to FCM messages while the app tab is open; returns an unsubscribe function.
+- `getMessaging()` is gated behind `isSupported()` (Firebase Messaging isn't available in every browser/context — this used to throw synchronously on load).
+
+**Service worker scope fix:** `vite-plugin-pwa`'s workbox `sw.js` and `firebase-messaging-sw.js` are both served from `/` with no explicit scope, so both default to scope `/`. Registering the messaging SW implicitly (the old behavior) collides with the PWA SW — whichever registers second silently replaces the other's registration. Fixed by explicitly registering `firebase-messaging-sw.js` at its own scope (`/firebase-cloud-messaging-push-scope`, per Firebase's documented pattern for coexisting with another SW) and passing that registration into `getToken()`.
+
+**`client/src/hooks/usePushNotificationSync.jsx`** — mounted once in `Layout.jsx` (the authenticated app shell):
+- Silently re-syncs the FCM token on every app load if permission was already granted in an earlier session (tokens can rotate; the upsert on `POST /profile/fcm-token` makes this safe to call every load).
+- Shows a toast for foreground messages (the browser only auto-displays a native notification for background/closed-tab pushes, handled by `firebase-messaging-sw.js`'s `onBackgroundMessage`).
+
+**`firebase-messaging-sw.js`** — added a `notificationclick` handler: focuses an existing app tab (or opens one) instead of doing nothing, per its `data.url` (defaults to `/app`).
+
+**Token storage:** reuses the existing `onec_fcm_tokens` table and `POST /profile/fcm-token` upsert (`UNIQUE(user_id, token)`, `ON CONFLICT DO UPDATE`) — no schema or server changes needed for this phase.
+
+**VAPID key:** moved from a hardcoded string in `ProfilePage.jsx` to `VITE_FIREBASE_VAPID_KEY` (public key, safe to commit — see `client/.env.example`).

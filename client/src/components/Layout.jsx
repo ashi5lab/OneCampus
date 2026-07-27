@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 import { BottomTabBar } from './BottomTabBar';
 import { Topbar } from './Topbar';
 import { useSocket } from '../contexts/SocketContext';
+import { usePushNotificationSync } from '../hooks/usePushNotificationSync';
 
 // No mobile header bar anymore — each page's own PageHeader (eyebrow/title/
 // back icon) is the only title now, instead of duplicating it in a boxed
@@ -16,6 +17,7 @@ export function Layout() {
   const contentRef = useRef(null);
   const socket = useSocket();
   const queryClient = useQueryClient();
+  usePushNotificationSync();
 
   // Client-side route changes don't reset scroll position the way a full
   // page load does. On mobile the document itself scrolls, but on desktop

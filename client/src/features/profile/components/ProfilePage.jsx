@@ -266,8 +266,7 @@ function NotificationPreferencesCard() {
   async function handleEnablePush() {
     setPushStatus('requesting');
     try {
-      // NOTE: Replace 'TODO_VAPID_KEY' with the actual VAPID key when provided
-      const token = await requestPushPermission('BAULLVjzW1Q_VpJgGnfTmVnm_oDlcDE788ohWYa3bOwc8jy37oQJ0H1ZemT2BjJs-gpbr_eo0-d6FAXNNKskhls');
+      const token = await requestPushPermission(import.meta.env.VITE_FIREBASE_VAPID_KEY);
       if (token) {
         await saveFcmToken.mutateAsync({ token, device_info: navigator.userAgent });
         setPushStatus('success');
