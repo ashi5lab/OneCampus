@@ -59,11 +59,10 @@ export function AnalyticsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Staff Attendance Rate (30d)" value={data.staffAttendanceRate30d != null ? `${data.staffAttendanceRate30d}%` : '—'} />
         <StatCard label="PTM Slots Booked" value={data.ptmTotalSlots > 0 ? `${data.ptmBookedSlots} / ${data.ptmTotalSlots} (${data.ptmBookingRate}%)` : '—'} />
         <StatCard label="Outstanding Library Fines" value={data.outstandingLibraryFines} />
-        <StatCard label="Alumni" value={data.alumniCount} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

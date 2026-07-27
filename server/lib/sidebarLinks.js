@@ -9,7 +9,7 @@ const DASHBOARD_APP_KEYS = [
   'attendance', 'exams', 'certificates', 'kindergarten-activity', 'notices',
   'library', 'assignments', 'messages', 'broadcast', 'leave', 'calendar',
   'timetable', 'reports', 'access-control', 'bulk-upload', 'staff-attendance',
-  'discipline', 'ptm', 'alumni', 'visitors'
+  'discipline', 'ptm', 'visitors'
 ];
 
 // Every tenant starts with this set pinned to the Dashboard's "Your

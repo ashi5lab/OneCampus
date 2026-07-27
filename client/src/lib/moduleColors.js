@@ -44,7 +44,6 @@ const EXPLICIT = {
   'staff-attendance': 6,
   discipline: 3,
   ptm: 7,
-  alumni: 5,
   visitors: 7
 };
 

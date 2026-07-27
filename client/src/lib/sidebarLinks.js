@@ -46,7 +46,6 @@ export const NAV_LINK_DEFS = [
   { key: 'staff-attendance', to: '/app/staff-attendance', label: () => 'Staff Attendance', description: () => 'Teacher attendance tracking', gate: (can) => can('staff_attendance.view_own') },
   { key: 'discipline', to: '/app/discipline', label: () => 'Discipline', description: () => 'Behavior & incident records', gate: (can) => can('discipline.view') },
   { key: 'ptm', to: '/app/ptm', label: () => 'PTM', description: () => 'Parent-teacher meetings', gate: (can) => can('ptm.view') },
-  { key: 'alumni', to: '/app/alumni', label: () => 'Alumni', description: () => 'Alumni directory', gate: (can) => can('learners.view') },
   { key: 'visitors', to: '/app/visitors', label: () => 'Visitor Log', description: () => 'Front-desk visitor log', gate: (can) => can('visitors.view') }
 ];
 
