@@ -2129,3 +2129,47 @@ None — reuses `onec_attendance` and `onec_discipline_records`, no schema chang
 
 ### Expected Outcome
 From the teacher dashboard, tapping "Log Late Attendance" lets a teacher pick any student, a date/time (defaulting to now), and optionally raise a minor discipline incident in the same action — without navigating to the attendance roster or discipline form.
+
+## Entry 030 — FCM push notifications: receiver-only milestone (Phase 1)
+
+**User request:** Implement Firebase Cloud Messaging so the web app can receive notifications sent manually from the Firebase Console (Send Test Message → target a token), per `notification_plan.md`. Explicitly NOT implementing notification creation from the app, the notification management UI, campaign APIs, or user-to-user notifications — this phase is receiver-only.
+
+### Conflict flagged before implementing
+`notification_plan.md` Step 1.5 states `firebase-messaging-sw.js` needs no changes and coexists with `vite-plugin-pwa`'s generated `sw.js` "with no conflict." This is inaccurate: both service workers are served from `/` with no explicit scope, so both default to scope `/`. The old `requestPushPermission()` called `getToken()` without a `serviceWorkerRegistration`, letting Firebase implicitly register `firebase-messaging-sw.js` at that same default scope — colliding with the PWA's workbox SW. Two different SW scripts can't both hold one scope; whichever registers second silently replaces the other. Fixed per Firebase's own documented pattern for coexisting with another SW: register the messaging SW at a distinct scope and pass that registration into `getToken()` explicitly.
+
+### Files Changed
+
+**`client/src/lib/firebase.js`** (rewritten)
+- `getMessaging()` now gated behind `isSupported()` (was called eagerly at module load, which throws synchronously in unsupported browsers/contexts — Safari <16.4, some in-app browsers, non-secure origins).
+- `requestPushPermission(vapidKey)` — now explicitly registers `firebase-messaging-sw.js` at scope `/firebase-cloud-messaging-push-scope` (memoized) and passes that registration into `getToken()`.
+- New `getExistingPushToken(vapidKey)` — silent variant (no permission prompt), returns a token only if permission is already `'granted'`.
+- New `listenForegroundMessages(callback)` — wraps `onMessage()`; foreground pushes don't produce a native notification on their own, callers must render something.
+
+**`client/public/firebase-messaging-sw.js`**
+- Background notifications now carry `data.url` through to `showNotification`.
+- Added a `notificationclick` handler — previously clicking a background notification did nothing; now focuses an existing app tab (navigating it to the notification's url) or opens a new one.
+
+**`client/src/hooks/usePushNotificationSync.jsx`** (new)
+- Mounted once in `Layout.jsx` (authenticated app shell), mirroring the existing socket-listener effect there.
+- On mount: if `Notification.permission === 'granted'` already (from an earlier session), silently calls `getExistingPushToken()` and upserts it via `useSaveFcmToken()` — keeps `onec_fcm_tokens` in sync with token rotation without requiring the user to revisit Profile. The existing `UNIQUE(user_id, token)` + `ON CONFLICT DO UPDATE` upsert (migration 038, `POST /profile/fcm-token`) makes this idempotent/safe to call every load.
+- Subscribes to `listenForegroundMessages()` and shows a toast (title + body, clickable if `data.url` is present) for messages received while the app tab is open.
+
+**`client/.env.example`**
+- Added `VITE_FIREBASE_VAPID_KEY` (public key — safe to commit, see plan's note on Firebase client config).
+
+**`client/src/features/profile/components/ProfilePage.jsx`**
+- `handleEnablePush()` now reads the VAPID key from `import.meta.env.VITE_FIREBASE_VAPID_KEY` instead of a hardcoded string with a `TODO_VAPID_KEY` comment.
+
+**`OneCampus_PRD_v2.md`**
+- New "Push Notifications — Phase 1" section documenting the above.
+
+### Database Operations
+None — reuses the existing `onec_fcm_tokens` table (migration 038) and `POST /profile/fcm-token` endpoint unchanged.
+
+### Not done (explicitly out of scope per user instructions)
+- Notification creation from the app (`createNotification()`, event triggers) — Phase 3 of the plan.
+- `onec_notifications` table / in-app notification center / `NotificationBell` wired to real data — Phase 2 of the plan.
+- `firebase-admin` on the server / `sendPush()` utility / service account — not needed for this milestone since the Firebase Console sends test messages directly by token; will be needed once the app sends its own pushes (Phase 3).
+
+### Expected Outcome
+A user visits Profile → Notification Preferences → "Enable Push Notifications", grants the browser permission prompt, and a token is generated and saved to `onec_fcm_tokens`. From the Firebase Console, sending a test message to that token should appear as a toast if the app tab is open (foreground), or as a native OS notification if the tab/browser is closed (background, via the service worker) — clicking it focuses or opens the app.
