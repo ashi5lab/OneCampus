@@ -55,7 +55,6 @@ import { StaffAttendancePage } from './features/staffAttendance/components/Staff
 import { DisciplinePage } from './features/discipline/components/DisciplinePage';
 import { DisciplineFormPage } from './features/discipline/components/DisciplineFormPage';
 import { PtmPage } from './features/ptm/components/PtmPage';
-import { AlumniPage } from './features/alumni/components/AlumniPage';
 import { VisitorLogPage } from './features/visitors/components/VisitorLogPage';
 import { ClassPage } from './features/classChannel/components/ClassPage';
 import { AdminClassChannelsPage } from './features/classChannel/components/AdminClassChannelsPage';
@@ -340,14 +339,6 @@ export default function App() {
           element={
             <RequirePermission permission="ptm.view">
               <PtmPage />
-            </RequirePermission>
-          }
-        />
-        <Route
-          path="alumni"
-          element={
-            <RequirePermission permission="learners.view">
-              <AlumniPage />
             </RequirePermission>
           }
         />

@@ -541,7 +541,6 @@ async function analytics(req, res) {
       disciplineBySeverity30d,
       ptmSlots,
       visitorTrend,
-      alumniCount,
       overdueLoansForFines
     ] = await Promise.all([
       req.db.query(`
@@ -632,8 +631,6 @@ async function analytics(req, res) {
         WHERE check_in_time >= CURRENT_DATE - INTERVAL '13 days'
         GROUP BY check_in_time::date ORDER BY date
       `),
-      // Alumni directory (client/src/features/alumni) — onec_learners.status = 'alumni'.
-      req.db.query(`SELECT COUNT(*)::int AS count FROM onec_learners WHERE status = 'alumni'`),
       // Library fines (server/lib/libraryFines) are computed on read, not
       // stored — pull every still-outstanding overdue loan and run the same
       // computeFine() the Library report/waive-fine UI uses, then sum.
@@ -682,7 +679,6 @@ async function analytics(req, res) {
         ptmTotalSlots,
         ptmBookedSlots,
         visitorTrend: visitorTrend.rows,
-        alumniCount: alumniCount.rows[0].count,
         outstandingLibraryFines
       }
     });

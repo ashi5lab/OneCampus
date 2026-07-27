@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Phone, MessageCircle, Calendar, User, Users, CheckCircle, TrendingUp, Trophy, Smile, Grid, BookOpen, MoreHorizontal, ChevronRight, FileText, Download } from 'lucide-react';
+import { Phone, MessageCircle, Calendar, User, Users, CheckCircle, TrendingUp, Smile, Grid, BookOpen, MoreHorizontal, ChevronRight, FileText, Download } from 'lucide-react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { PageHeader, useAutoBack } from '../../../components/PageHeader';
@@ -16,12 +16,11 @@ import toast from 'react-hot-toast';
 import { evaluationsApi } from '../../evaluations/services/evaluationsApi';
 import { ReportCardModal } from '../../evaluations/components/ReportCardModal';
 import { idCardsApi } from '../../idCards/services/idCardsApi';
-import { MarkAlumniModal } from '../../alumni/components/MarkAlumniModal';
 import { LearnerGuardianLinksModal } from '../../guardians/components/LearnerGuardianLinksModal';
 import { DataTable } from '../../../components/DataTable';
 import { Badge } from '../../../components/Badge';
 
-const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive', alumni: 'pending' };
+const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive' };
 const ATTENDANCE_STATUS_ORDER = ['present', 'absent', 'late', 'excused'];
 
 const TABS = [
@@ -137,7 +136,6 @@ export function LearnerProfilePage() {
   const deleteLearner = useDeleteLearner();
   const [tab, setTab] = useState('overview');
   const [viewingEvaluationId, setViewingEvaluationId] = useState(null);
-  const [showMarkAlumni, setShowMarkAlumni] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showGuardianLinks, setShowGuardianLinks] = useState(false);
 
@@ -646,15 +644,6 @@ export function LearnerProfilePage() {
                     </div>
                     <Download className="w-5 h-5 text-ink-400" />
                   </button>
-                  {canManage && learner.status !== 'alumni' && (
-                    <button onClick={() => setShowMarkAlumni(true)} className="w-full bg-surface rounded-xl shadow-sm border border-border p-4 flex items-center justify-between hover:bg-surface-muted transition-colors text-left">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center"><Trophy className="w-5 h-5" /></div>
-                        <div><p className="font-bold text-ink-900">Mark as Alumni</p><p className="text-xs text-ink-500">Graduation or leaving the institution</p></div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-ink-400" />
-                    </button>
-                  )}
                   {canManage && (
                     <button onClick={handleDelete} className="w-full bg-red-50 rounded-xl border border-red-100 p-4 flex items-center justify-between hover:bg-red-100 transition-colors text-left">
                       <div className="flex items-center gap-3 text-red-700">
@@ -768,7 +757,6 @@ export function LearnerProfilePage() {
       {viewingEvaluationId && (
         <ReportCardModal evaluationId={viewingEvaluationId} learnerId={learnerId} onClose={() => setViewingEvaluationId(null)} />
       )}
-      {showMarkAlumni && <MarkAlumniModal learner={learner} onClose={() => setShowMarkAlumni(false)} />}
       {showGuardianLinks && <LearnerGuardianLinksModal learner={learner} onClose={() => setShowGuardianLinks(false)} />}
     </div>
   );

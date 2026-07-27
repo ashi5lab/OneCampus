@@ -11,7 +11,7 @@ import { SectionHeader } from '../../../components/SectionHeader';
 const CATEGORIES = [
   {
     name: 'People',
-    keys: ['learners', 'instructors', 'guardians', 'alumni']
+    keys: ['learners', 'instructors', 'guardians']
   },
   {
     name: 'Academics',

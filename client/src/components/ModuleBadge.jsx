@@ -26,7 +26,6 @@ import {
   ClipboardList,
   AlertTriangle,
   FolderSync,
-  Contact,
   Fingerprint
 } from 'lucide-react';
 
@@ -57,7 +56,6 @@ const MODULE_ICONS = {
   'staff-attendance': ClipboardList,
   discipline: AlertTriangle,
   ptm: FolderSync,
-  alumni: Contact,
   visitors: Fingerprint,
 };
 

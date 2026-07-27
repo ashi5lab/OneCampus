@@ -2072,3 +2072,29 @@ None — UI styling and layout refactoring.
 - The Dashboard, Students page (Learners list), Teachers page, Attendance picker, Attendance student roster, and More Apps screen now display completely flat, edge-to-edge, hairline-divided rows on mobile width, while fully retaining their premium card layout on desktop view.
 - Search and filtering controls align with standard page margins (16px transparent side margin) instead of touching the screen edges.
 - Roster tables scroll comfortably past the floating submit button and bottom tab bar on mobile screens.
+
+## Entry 028 — Remove Alumni module entirely
+
+**User request:** "Continue from where you left off. take latest pull. remove Alumni module entirely" — with a pre-written plan noting there is no dedicated `onec_alumni` DB table; alumni is purely `onec_learners.status = 'alumni'`, and the DB cleanup step (migrating those records to `inactive`) required explicit confirmation before running.
+
+### Root Cause / Context
+The Alumni module (directory page + "Mark as Alumni" action) was a self-contained feature with no dedicated backing table — confirmed via `server/scripts/tenant_schema.sql` (`onec_learners.status VARCHAR(20) DEFAULT 'active'`, no enum, no `onec_alumni` table anywhere in `server/`). Removal was code-only aside from one optional data migration.
+
+### Files Changed
+- **`client/src/App.jsx`** — removed `AlumniPage` import and its `/app/alumni` route.
+- **`client/src/features/alumni/`** — directory deleted (`AlumniPage.jsx`, `MarkAlumniModal.jsx`).
+- **`client/src/lib/sidebarLinks.js`** — removed the `alumni` nav link entry.
+- **`client/src/lib/moduleColors.js`** — removed `alumni` color-index mapping.
+- **`client/src/components/ModuleBadge.jsx`** — removed `alumni`/`Contact` icon mapping and unused `Contact` import.
+- **`client/src/features/more/components/MorePage.jsx`** — removed `alumni` from the Management category keys.
+- **`client/src/features/learners/components/LearnerProfilePage.jsx`** — removed "Mark as Alumni" button, `MarkAlumniModal` usage/import, related state, unused `Trophy` import, and `alumni` from `STATUS_VARIANT`.
+- **`client/src/features/learners/components/LearnersPage.jsx`** — removed `alumni` status filter option and from `STATUS_VARIANT`.
+- **`client/src/features/reports/components/AnalyticsTab.jsx`** — removed the Alumni `StatCard`, rebalanced stat grid to 3 columns.
+- **`server/modules/reports/controller.js`** — removed `alumniCount` query, destructure, and response field.
+- **`server/lib/sidebarLinks.js`** — removed `alumni` from `DASHBOARD_APP_KEYS`.
+
+### Database Operations
+**Not run.** Plan calls for `UPDATE onec_learners SET status='inactive' WHERE status='alumni'` across all tenant schemas. This is a hard-to-reverse change on live data — withheld pending explicit plain-text user confirmation (a prior confirmation prompt was interrupted, not answered). Tracked as a follow-up.
+
+### Expected Outcome
+No Alumni entry point anywhere in the app (nav, routing, learner profile, reports). Any learners still marked `status = 'alumni'` in the DB remain as-is (not yet migrated to `inactive`) until confirmed.

@@ -14,7 +14,7 @@ import { useLearnersPage, useCreateLearner, useUpdateLearner, useDeleteLearner, 
 import { LearnerForm } from './LearnerForm';
 import toast from 'react-hot-toast';
 
-const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive', alumni: 'pending' };
+const STATUS_VARIANT = { active: 'active', pending: 'pending', inactive: 'inactive' };
 const GENDER_LABEL = { male: 'Male', female: 'Female', other: 'Other' };
 
 export function LearnersPage() {
@@ -248,8 +248,7 @@ export function LearnersPage() {
                   options: [
                     { value: 'active', label: 'Active' },
                     { value: 'pending', label: 'Pending' },
-                    { value: 'inactive', label: 'Inactive' },
-                    { value: 'alumni', label: 'Alumni' }
+                    { value: 'inactive', label: 'Inactive' }
                   ]
                 }
               ],
