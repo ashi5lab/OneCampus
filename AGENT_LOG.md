@@ -2389,3 +2389,34 @@ None.
 ### Expected Outcome
 
 When an app notification is sent from the Broadcast panel, logged-in recipients will see the notification toast card appear in real time over Socket.io (with sound chime & query invalidation), while background/FCM push delivery continues to work with automatic deduplication.
+
+## Entry 036 — Fix Push Notifications Not Received on Android PWA When App Is Swiped Away/Closed
+
+**User Request:**
+
+> "take latest pull.. see why notification is not receiving in pwa android app when app is closed (swiped up and closed all apps). check the service worker. check root level issue"
+
+### Root Cause & Findings
+
+Traced the actual `firebase-js-sdk` source (`helpers/register.ts`, `listeners/sw-listeners.ts`) rather than assuming behavior:
+
+1. **Premature `event.waitUntil()` resolution in `firebase-messaging-sw.js` (the real "root level" bug).** The SW's `push` event listener (installed internally by the SDK) does `event.waitUntil(onPush(event, messaging))`, and `onPush` does `await messaging.onBackgroundMessageHandler(payload)` — i.e. it awaits whatever this app's `onBackgroundMessage` callback returns. That callback had no `return` statement, so it resolved to `undefined` the instant its synchronous body finished, *before* the `clients.matchAll().then()` logging and `showNotification()`'s own promise had actually settled. With a live browser process (a tab open, or Chrome merely backgrounded) this is invisible — the process stays alive anyway and the async work finishes a moment later regardless. But when Android has swiped the app away, push delivery runs through a short-lived, on-demand wake of the browser process; once `waitUntil`'s promise resolves, Android is free to kill that process immediately — cutting `showNotification()` off before it finishes drawing the notification, so it silently never appears. This exactly matches "works when the app/browser is around in some form, disappears once fully closed."
+2. **No `Urgency` header on the server's web push send (`server/lib/sendPush.js`).** Without an explicit priority, Android's Doze/App Standby power management can defer "normal" priority web push — exactly the state a swiped-away PWA's underlying Chrome process sits in — holding delivery back indefinitely instead of waking the device to run the service worker at all.
+
+### Changes Made
+
+1. **`client/public/firebase-messaging-sw.js`** — `onBackgroundMessage`'s callback now `return`s the full `clients.matchAll().then(...)` → `showNotification().then(...)` chain (with a trailing `.catch`), so `event.waitUntil()` genuinely keeps the SW alive until the notification has actually been drawn, not just until the synchronous part of the handler returns.
+2. **`server/lib/sendPush.js`** — added `webpush.headers: { Urgency: 'high' }` to the `sendEachForMulticast()` call, requesting immediate best-effort delivery instead of being subject to Android's power-saving deferral.
+
+### Files Changed
+
+- `client/public/firebase-messaging-sw.js`
+- `server/lib/sendPush.js`
+
+### Database Operations
+
+None.
+
+### Expected Outcome
+
+Push notifications sent while the Android PWA has been swiped away from Recent Apps (browser/WebAPK process fully closed) should now reliably display as a native OS notification instead of silently failing to appear.

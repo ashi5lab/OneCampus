@@ -48,31 +48,38 @@ messaging.onBackgroundMessage((payload) => {
   const title = payload.notification?.title;
   const body = payload.notification?.body;
 
-  // Firebase's own background/foreground split is "is a page open at all,"
-  // not "backgrounded vs. fully terminated" — there's no direct browser API
-  // for that distinction. Best-effort proxy: count open app windows via
-  // clients.matchAll() at delivery time. Zero windows strongly suggests the
-  // app/browser was fully closed (terminated); one or more suggests a tab
-  // exists but was unfocused/backgrounded (this handler firing at all means
-  // no tab had focus — a focused tab's page would have received it via the
-  // foreground onMessage listener in lib/firebase.js instead).
-  clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+  // Root-cause fix: this callback runs inside firebase-js-sdk's onPush(),
+  // which the SW's own 'push' listener wraps in event.waitUntil(onPush(...))
+  // (see helpers/register.ts) — and onPush does
+  // `await messaging.onBackgroundMessageHandler(payload)`, i.e. it awaits
+  // whatever THIS callback returns. Earlier this callback had no `return`,
+  // so it implicitly resolved to undefined the instant its synchronous body
+  // finished — before clients.matchAll().then() and showNotification()'s
+  // own promises had actually settled. With a live browser process (tab
+  // open, or Chrome merely backgrounded) that discrepancy is invisible: the
+  // process stays alive anyway and the async work quietly finishes a moment
+  // later. But when Android has swiped the app away, the push event is
+  // often served by a short-lived, on-demand wake of the browser process —
+  // once waitUntil's promise resolves, Android is free to kill that process
+  // immediately, which can cut showNotification() off before it finishes
+  // drawing the notification, so it silently never appears. Returning the
+  // full chain keeps the SW alive until the notification is actually shown.
+  return clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
     const state = windowClients.length > 0 ? 'background (app open, unfocused)' : 'terminated (no app window open)';
     fcmLog('[BACKGROUND]', `Notification received from Firebase Cloud Messaging — app state: ${state}`, { title, body, data: payload.data });
-  });
 
-  try {
     const notificationOptions = {
       body,
       icon: '/icon-192x192.svg',
       data: { url: payload.data?.url || payload.fcmOptions?.link || '/app' }
     };
 
-    self.registration.showNotification(title, notificationOptions);
-    fcmLog('[BACKGROUND]', 'Notification displayed:', title);
-  } catch (error) {
+    return self.registration.showNotification(title, notificationOptions).then(
+      () => fcmLog('[BACKGROUND]', 'Notification displayed:', title)
+    );
+  }).catch((error) => {
     fcmError('[BACKGROUND]', 'Failed to display background notification', error);
-  }
+  });
 });
 
 // Clicking a notification does nothing by default — focus an already-open

@@ -32,6 +32,12 @@ async function sendPush(db, userId, { title, body, data = {} }) {
         Object.entries(data).map(([k, v]) => [k, String(v)])
       ),
       webpush: {
+        // Without an explicit Urgency, Android defers "normal" priority web
+        // push under Doze/App Standby — exactly the state a swiped-away
+        // PWA's Chrome process sits in — so delivery can be held back
+        // indefinitely instead of waking the device to run the SW. 'high'
+        // requests immediate best-effort delivery, bypassing that deferral.
+        headers: { Urgency: 'high' },
         fcmOptions: { link: data.url || '/app' },
       },
     });
