@@ -140,18 +140,62 @@ export async function getExistingPushToken(vapidKey) {
 // Foreground messages (app tab open, regardless of focus) don't produce a
 // native notification on their own — only a closed-tab/background push
 // routes through firebase-messaging-sw.js's showNotification call. Callers
-// must render something themselves. Returns the unsubscribe function.
+// must render something themselves (see showLocalNotification below).
+// Returns the unsubscribe function.
 export async function listenForegroundMessages(callback) {
   const messaging = await getMessagingInstance();
   if (!messaging) {
     fcmWarn('listenForegroundMessages() aborted — Messaging unsupported');
     return () => {};
   }
-  fcmLog('Foreground message listener attached');
+  fcmLog('[FOREGROUND]', 'Foreground message listener attached');
   return onMessage(messaging, (payload) => {
-    fcmLog('Foreground notification received:', payload);
+    fcmLog('[FOREGROUND]', 'Notification received from Firebase Cloud Messaging', {
+      title: payload.notification?.title,
+      body: payload.notification?.body,
+      data: payload.data
+    });
     callback(payload);
   });
+}
+
+// Firebase only auto-displays a native notification for background/
+// terminated-state pushes (via firebase-messaging-sw.js's
+// onBackgroundMessage). For foreground pushes the app has to show one
+// itself to get the same visible, OS-level confirmation of delivery —
+// otherwise "did it actually arrive" is only verifiable via console logs
+// or the in-app toast, not by a real notification the way every other
+// app state produces one.
+//
+// Prefers the page-context Notification API; some browsers (notably
+// Android Chrome) don't support constructing Notification directly from a
+// document — falls back to the already-registered messaging service
+// worker's registration.showNotification(), whose click is then handled
+// by firebase-messaging-sw.js's shared notificationclick listener, same as
+// a background notification's click.
+export async function showLocalNotification(title, options = {}) {
+  if (typeof Notification === 'function') {
+    try {
+      const notification = new Notification(title, options);
+      notification.onclick = () => {
+        fcmLog('[FOREGROUND]', 'Notification tap event — app opened from a foreground notification');
+        window.focus();
+        notification.close();
+      };
+      fcmLog('[FOREGROUND]', 'Local notification displayed (page Notification API)');
+      return;
+    } catch (error) {
+      fcmWarn('[FOREGROUND]', 'Page-context Notification() failed, falling back to service worker', error);
+    }
+  }
+
+  const registration = await getMessagingSwRegistration();
+  if (!registration) {
+    fcmWarn('[FOREGROUND]', 'No service worker registration available — cannot display local notification');
+    return;
+  }
+  await registration.showNotification(title, options);
+  fcmLog('[FOREGROUND]', 'Local notification displayed (service worker registration — tap handled by firebase-messaging-sw.js)');
 }
 
 export { app, analytics };

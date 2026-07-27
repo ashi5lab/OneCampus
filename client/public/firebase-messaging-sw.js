@@ -45,27 +45,44 @@ self.addEventListener('activate', () => {
 });
 
 messaging.onBackgroundMessage((payload) => {
-  fcmLog('Background notification received:', payload);
+  const title = payload.notification?.title;
+  const body = payload.notification?.body;
+
+  // Firebase's own background/foreground split is "is a page open at all,"
+  // not "backgrounded vs. fully terminated" — there's no direct browser API
+  // for that distinction. Best-effort proxy: count open app windows via
+  // clients.matchAll() at delivery time. Zero windows strongly suggests the
+  // app/browser was fully closed (terminated); one or more suggests a tab
+  // exists but was unfocused/backgrounded (this handler firing at all means
+  // no tab had focus — a focused tab's page would have received it via the
+  // foreground onMessage listener in lib/firebase.js instead).
+  clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+    const state = windowClients.length > 0 ? 'background (app open, unfocused)' : 'terminated (no app window open)';
+    fcmLog('[BACKGROUND]', `Notification received from Firebase Cloud Messaging — app state: ${state}`, { title, body, data: payload.data });
+  });
 
   try {
-    const notificationTitle = payload.notification.title;
     const notificationOptions = {
-      body: payload.notification.body,
+      body,
       icon: '/icon-192x192.svg',
       data: { url: payload.data?.url || payload.fcmOptions?.link || '/app' }
     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
-    fcmLog('Notification displayed:', notificationTitle);
+    self.registration.showNotification(title, notificationOptions);
+    fcmLog('[BACKGROUND]', 'Notification displayed:', title);
   } catch (error) {
-    fcmError('Failed to display background notification', error);
+    fcmError('[BACKGROUND]', 'Failed to display background notification', error);
   }
 });
 
-// Clicking a background notification does nothing by default — focus an
-// already-open app tab if one exists, otherwise open a new one.
+// Clicking a notification does nothing by default — focus an already-open
+// app tab if one exists, otherwise open a new one. Fires for both
+// background/terminated notifications (shown above) and the foreground
+// fallback notification shown via registration.showNotification() in
+// lib/firebase.js's showLocalNotification() — the click event doesn't
+// distinguish which code path displayed the notification.
 self.addEventListener('notificationclick', (event) => {
-  fcmLog('Notification clicked — app being opened/focused from a background notification', {
+  fcmLog('[NOTIFICATION_CLICK]', 'Notification tapped — app being opened/focused', {
     url: event.notification.data?.url
   });
   event.notification.close();
@@ -75,13 +92,13 @@ self.addEventListener('notificationclick', (event) => {
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          fcmLog('Focusing existing app window');
+          fcmLog('[NOTIFICATION_CLICK]', 'App opened from notification — focusing existing window');
           client.navigate(url);
           return client.focus();
         }
       }
-      fcmLog('No existing app window — opening a new one');
+      fcmLog('[NOTIFICATION_CLICK]', 'App opened from notification — no existing window, opening a new one');
       return clients.openWindow(url);
-    }).catch((error) => fcmError('Failed to focus/open app window on notification click', error))
+    }).catch((error) => fcmError('[NOTIFICATION_CLICK]', 'Failed to focus/open app window on notification click', error))
   );
 });
