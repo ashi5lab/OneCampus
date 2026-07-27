@@ -1,6 +1,14 @@
-// Give the service worker access to Firebase Messaging.
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+// Give the service worker access to Firebase Messaging. Loaded from a
+// same-origin vendored copy (see scripts/copy-firebase-compat.js, run via
+// postinstall) rather than Google's CDN — a `script-src 'self'` Content-
+// Security-Policy on the client's static host blocks importScripts() from
+// gstatic.com entirely, which fails SW registration outright
+// (messaging/failed-service-worker-registration) and breaks push before it
+// can even start. The vendored files always match the installed `firebase`
+// package version (client/package.json), so there's no separate CDN
+// version string to keep in sync by hand.
+importScripts('/vendor/firebase-app-compat.js');
+importScripts('/vendor/firebase-messaging-compat.js');
 
 // Same [FCM] prefix used client-side (see lib/firebase.js) — filter
 // DevTools' "sw.js" console context by "[FCM]" to see this worker's half
