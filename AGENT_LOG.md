@@ -2288,3 +2288,50 @@ None.
 
 ### Expected Outcome
 No CSP violation on SW evaluation; `firebase-messaging-sw.js` registers successfully in production; `getToken()` succeeds again. Re-run the `[FCM]` log sequence from Entry 031 to confirm — `firebase-messaging-sw.js registered {scope: "..."}` should now appear instead of the registration error.
+
+## Entry 033 — State-tagged [FCM] logs + real local notification for foreground
+
+**User request:** Extend the Entry 031 logging so it clearly distinguishes which app state (foreground / background / terminated) each notification arrived in, logs title/body/data explicitly, logs notification-tap and app-opened-from-notification events, and logs a local notification display for the foreground case — to fully verify Firebase Console test messages/campaigns are received and handled correctly in every app state, via both the logs and a visible notification.
+
+### Changes
+
+**`client/src/lib/firebase.js`**
+- `listenForegroundMessages()` now tags its log `[FOREGROUND]` and logs `title`/`body`/`data` as explicit fields instead of only the raw payload.
+- New `showLocalNotification(title, options)` — foreground messages previously only produced an in-app toast, which doesn't confirm delivery the same visible way a real OS notification does (the only state without one). Prefers the page-context `Notification` constructor; falls back to the already-registered messaging service worker's `registration.showNotification()` on platforms where page-level `Notification` isn't supported (e.g. Android Chrome). Tap events are logged on both paths — the SW-registration fallback's click is caught by the existing shared `notificationclick` listener in `firebase-messaging-sw.js` (it doesn't distinguish which code path displayed the notification).
+
+**`client/src/hooks/usePushNotificationSync.jsx`**
+- Foreground handler now calls `showLocalNotification()` alongside the existing toast, and tags all its logs `[FOREGROUND]` / token-sync logs `[TOKEN]`.
+
+**`client/public/firebase-messaging-sw.js`**
+- `onBackgroundMessage` now tags logs `[BACKGROUND]`, logs `title`/`body`/`data` explicitly, and adds a **best-effort** background-vs-terminated distinction: `clients.matchAll()` counts open app windows at delivery time — zero windows suggests the app/browser was fully closed ("terminated"), one or more suggests a tab exists but wasn't focused ("background, app open, unfocused"). This is a proxy, not a guaranteed distinction — there's no direct browser API for "was the app terminated," and this is documented in the code comment.
+- `notificationclick` now tags logs `[NOTIFICATION_CLICK]` and fires identically for background/terminated notifications and the new foreground SW-registration fallback notification.
+
+### Expected `[FCM]` log sequence, updated
+
+**Foreground (tab open, Firebase Console → Send test message)**
+```
+[FCM] [FOREGROUND] Notification received from Firebase Cloud Messaging {title: "...", body: "...", data: {...}}
+[FCM] [FOREGROUND] Displaying in-app toast: {title: "...", body: "..."}
+[FCM] [FOREGROUND] Local notification displayed (page Notification API)      — or "(service worker registration — tap handled by firebase-messaging-sw.js)" on platforms without page-level Notification
+```
+Tapping the toast: `[FCM] [FOREGROUND] App opened from notification (toast tap), navigating to <url>`
+Tapping the native notification (page API path): `[FCM] [FOREGROUND] Notification tap event — app opened from a foreground notification`
+Tapping the native notification (SW fallback path) — logged in the **SW's own console context**: `[FCM] [NOTIFICATION_CLICK] Notification tapped — app being opened/focused` → `App opened from notification — focusing existing window` / `...opening a new one`
+
+**Background / terminated (SW console context)**
+```
+[FCM] [BACKGROUND] Notification received from Firebase Cloud Messaging — app state: background (app open, unfocused)   — or "terminated (no app window open)"
+{title: "...", body: "...", data: {...}}
+[FCM] [BACKGROUND] Notification displayed: <title>
+```
+Tapping it: `[FCM] [NOTIFICATION_CLICK] Notification tapped — app being opened/focused` → focus/open log line.
+
+**Any failure** — matching `[FCM]` `console.error` at every step above (e.g. `[FCM] [FOREGROUND] Failed to display local notification`, `[FCM] [BACKGROUND] Failed to display background notification`, `[FCM] [NOTIFICATION_CLICK] Failed to focus/open app window on notification click`).
+
+Init/permission/token logs (app load, Enable Push Notifications button) are unchanged from Entry 031.
+
+### Note on the screenshot that prompted this
+The console errors shown (CSP blocking `firebase-messaging-sw.js`'s CDN import, `messaging/failed-service-worker-registration`) were captured before Entry 032's fix (PR #129) had deployed — that PR is now merged into `main`. Once redeployed, SW registration should succeed and all of the above should be observable.
+
+### Database Operations
+None.

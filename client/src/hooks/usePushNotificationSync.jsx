@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getExistingPushToken, listenForegroundMessages, fcmLog, fcmError } from '../lib/firebase';
+import { getExistingPushToken, listenForegroundMessages, showLocalNotification, fcmLog, fcmError } from '../lib/firebase';
 import { useSaveFcmToken } from '../features/profile/hooks/useProfile';
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
@@ -24,14 +24,14 @@ export function usePushNotificationSync() {
 
   useEffect(() => {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    fcmLog('App load: permission already granted, silently syncing token...');
+    fcmLog('[TOKEN]', 'App load: permission already granted, silently syncing token...');
     getExistingPushToken(VAPID_KEY).then((token) => {
       if (!token) return;
       saveFcmToken.mutate(
         { token, device_info: navigator.userAgent },
         {
-          onSuccess: () => fcmLog('Token synced to server (POST /profile/fcm-token)'),
-          onError: (error) => fcmError('Failed to sync token to server', error)
+          onSuccess: () => fcmLog('[TOKEN]', 'Token synced to server (POST /profile/fcm-token)'),
+          onError: (error) => fcmError('[TOKEN]', 'Failed to sync token to server', error)
         }
       );
     });
@@ -50,13 +50,13 @@ export function usePushNotificationSync() {
       const body = payload.notification?.body;
       const url = payload.data?.url;
 
-      fcmLog('Displaying foreground toast:', { title, body });
+      fcmLog('[FOREGROUND]', 'Displaying in-app toast:', { title, body });
       toast((t) => (
         <div
           className={url ? 'cursor-pointer' : ''}
           onClick={() => {
             if (url) {
-              fcmLog('App opened from foreground notification toast, navigating to', url);
+              fcmLog('[FOREGROUND]', 'App opened from notification (toast tap), navigating to', url);
               toast.dismiss(t.id);
               navigate(url);
             }
@@ -66,6 +66,17 @@ export function usePushNotificationSync() {
           {body && <div className="mt-0.5 text-[12px] text-ink-500">{body}</div>}
         </div>
       ), { duration: 6000 });
+
+      // Also show a real OS-level notification for the foreground case —
+      // otherwise foreground is the only app state where "was it actually
+      // delivered" can't be visually confirmed the same way background/
+      // terminated notifications are (a toast is app-internal UI, not a
+      // notification the OS/browser itself displays).
+      showLocalNotification(title, {
+        body,
+        icon: '/icon-192x192.svg',
+        data: { url }
+      }).catch((error) => fcmError('[FOREGROUND]', 'Failed to display local notification', error));
     }).then((unsub) => {
       if (cancelled) unsub();
       else unsubscribe = unsub;
