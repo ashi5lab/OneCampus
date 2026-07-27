@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "postinstall": "node scripts/copy-firebase-compat.cjs"
   },
   "dependencies": {
     "@fontsource/geist-mono": "^5.2.8",

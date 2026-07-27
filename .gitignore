@@ -6,3 +6,8 @@ dist/
 build/
 *.log
 .DS_Store
+# Vendored firebase-messaging-sw.js compat SDK — regenerated on every
+# `npm install` via client's postinstall script (see
+# client/scripts/copy-firebase-compat.js); always kept in lockstep with
+# client/package.json's firebase version, so it doesn't need to be tracked.
+client/public/vendor/

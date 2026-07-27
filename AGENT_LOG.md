@@ -2254,3 +2254,37 @@ None.
 
 ### Not done (unchanged from Entry 030 — still explicitly out of scope)
 Notification creation/sending from the app or server, `onec_notifications`, `NotificationBell` real data wiring, server-side push triggers.
+
+## Entry 032 — Fix CSP block on firebase-messaging-sw.js (production registration failure)
+
+**User report:** Production console errors while testing FCM:
+```
+firebase-messaging-sw.js:2 Loading the script 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js'
+violates the following Content Security Policy directive: "script-src 'self'" ...
+Uncaught NetworkError: Failed to execute 'importScripts' ...
+FirebaseError: Messaging: We are unable to register the default service worker ...
+(messaging/failed-service-worker-registration)
+```
+
+### Root Cause
+`firebase-messaging-sw.js` loaded the Firebase compat SDK via `importScripts()` pointed at Google's CDN (`https://www.gstatic.com/firebasejs/10.12.0/...`). The client's production host serves a `script-src 'self'` Content-Security-Policy (not set anywhere in this repo — `server/server.js`'s Helmet CSP is the separate API server, a different origin from `onecampusedu.online`; the client's CSP header comes from its own static hosting/CDN, outside this codebase), which blocks the SW from loading any cross-origin script at all. Without the compat SDK loaded, the SW script throws on evaluation, so the browser can't register it, so `getToken()` fails outright — push was completely broken in production despite working in local dev (no CSP there).
+
+Also found in the process: the CDN URL was hardcoded to Firebase SDK **v10.12.0**, while `client/package.json` pins `firebase ^12.16.0` — a silent version mismatch between the SW's Firebase build and the rest of the app's.
+
+### Fix
+Vendor the compat SDK same-origin instead of depending on an external CDN (or on being able to loosen a CSP header that isn't part of this repo):
+- **`client/scripts/copy-firebase-compat.cjs`** (new) — copies `firebase-app-compat.js` and `firebase-messaging-compat.js` straight out of the already-installed `firebase` npm package into `client/public/vendor/`. Runs via a new `postinstall` script (`client/package.json`), so the vendored files are always regenerated to match whatever `firebase` version is currently installed — no separate CDN version string to remember to bump by hand.
+- **`client/public/firebase-messaging-sw.js`** — `importScripts()` now points at `/vendor/firebase-app-compat.js` / `/vendor/firebase-messaging-compat.js` (same-origin, always allowed under `script-src 'self'`) instead of gstatic.com.
+- **`.gitignore`** — `client/public/vendor/` excluded; it's generated output, not source, and Vite copies `public/` verbatim into `dist/` at build time (confirmed: `dist/vendor/*.js` present after `npx vite build`).
+
+### Files Changed
+- `client/scripts/copy-firebase-compat.cjs` (new)
+- `client/package.json` — added `postinstall` script
+- `client/public/firebase-messaging-sw.js` — CDN → same-origin vendored imports
+- `.gitignore` — ignore `client/public/vendor/`
+
+### Database Operations
+None.
+
+### Expected Outcome
+No CSP violation on SW evaluation; `firebase-messaging-sw.js` registers successfully in production; `getToken()` succeeds again. Re-run the `[FCM]` log sequence from Entry 031 to confirm — `firebase-messaging-sw.js registered {scope: "..."}` should now appear instead of the registration error.
