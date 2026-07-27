@@ -2351,3 +2351,41 @@ None.
 
 ### Expected Outcome
 The multi-stage docker build will succeed because the required script file is present in the container during the `npm ci` execution.
+
+## Entry 035 — Restore Real-Time Toast Notification for Push Notifications Sent via Broadcast
+
+**Date:** 2026-07-27
+**Time:** ~20:57 IST
+**Session ID:** `07180105-13a7-4f7e-b554-ff689e010598`
+
+### User Request
+
+> "what happened to the toast notification that show when push notification is send from broadcast ? I cannot see that now - earlier it was working. see the logs and fix this issue"
+
+### Root Cause & Findings
+
+1. **Missing Socket.io Toast Handler:** `usePushNotificationSync.jsx` relied solely on Firebase Cloud Messaging (`listenForegroundMessages`) to pop the in-app toast card. When FCM tokens were ungranted/missing, FCM credentials were unavailable, or testing locally, no FCM foreground event fired, leaving the logged-in user with no visible toast.
+2. **Unused Real-Time WebSocket Delivery:** On server broadcast dispatch (`sendAppNotification`), `createNotification` emitted a `notification:new` event over Socket.io, but the frontend only used `notification:new` to invalidate the activity badge count, never triggering the toast card.
+3. **Tenant Property Inconsistency:** In `server/modules/broadcast/controller.js`, `const tenant = req.user?.tenant || req.tenant?.domain;` used `req.tenant?.domain` instead of `req.tenantConfig?.domain`.
+
+### Changes Made
+
+1. **`client/src/hooks/usePushNotificationSync.jsx`**:
+   - Added a Socket.io listener for `notification:new` that immediately displays the in-app toast card, plays the chime, invalidates activity & notification queries, and triggers native local notifications.
+   - Added a 5-second `recentToastKeys` Set deduplicator (`title:body:url`) so if both Socket.io and FCM deliver the same notification in foreground, only a single toast is shown.
+2. **`server/modules/broadcast/controller.js`**:
+   - Corrected tenant fallback to `req.tenantConfig?.domain`.
+
+### Files Changed
+
+- [controller.js](file:///c:/Users/Ashique/OneDrive/Documents/OneCampus/server/modules/broadcast/controller.js)
+- [usePushNotificationSync.jsx](file:///c:/Users/Ashique/OneDrive/Documents/OneCampus/client/src/hooks/usePushNotificationSync.jsx)
+- [AGENT_LOG.md](file:///c:/Users/Ashique/OneDrive/Documents/OneCampus/AGENT_LOG.md)
+
+### Database Operations
+
+None.
+
+### Expected Outcome
+
+When an app notification is sent from the Broadcast panel, logged-in recipients will see the notification toast card appear in real time over Socket.io (with sound chime & query invalidation), while background/FCM push delivery continues to work with automatic deduplication.

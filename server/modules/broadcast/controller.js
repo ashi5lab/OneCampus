@@ -497,7 +497,7 @@ async function sendAppNotification(req, res) {
     const { createNotification } = require('../notifications/controller');
 
     // Send notification to each recipient
-    const tenant = req.user?.tenant || req.tenant?.domain;
+    const tenant = req.user?.tenant || req.tenantConfig?.domain;
     let sentCount = 0;
 
     for (const userId of recipient_ids) {
