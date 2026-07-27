@@ -2,6 +2,7 @@
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/client
 COPY client/package*.json ./
+COPY client/scripts/ ./scripts/
 RUN npm ci
 COPY client/ ./
 # Use relative path for API requests so it works on any domain

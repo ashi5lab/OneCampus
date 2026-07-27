@@ -256,7 +256,14 @@ function NotificationPreferencesCard() {
   const { data: prefs, isLoading, error } = useNotificationPreferences();
   const updatePrefs = useUpdateNotificationPreferences();
   const saveFcmToken = useSaveFcmToken();
-  const [pushStatus, setPushStatus] = useState('');
+  const [pushStatus, setPushStatus] = useState(() => {
+    // On mount, check if permission was previously granted so the button
+    // starts in the correct state even after page reload/navigation.
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      return 'success';
+    }
+    return '';
+  });
 
   if (isLoading || error) return null;
 

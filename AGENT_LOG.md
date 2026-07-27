@@ -2335,3 +2335,19 @@ The console errors shown (CSP blocking `firebase-messaging-sw.js`'s CDN import, 
 
 ### Database Operations
 None.
+
+## Entry 034 — Fix Dockerfile build failure caused by missing client postinstall scripts
+
+**User Request:** Railway build error: `Error: Cannot find module '/app/client/scripts/copy-firebase-compat.cjs'` during `npm ci` stage.
+
+### Root Cause
+During Stage 1 of the multi-stage Docker build, `RUN npm ci` is executed immediately after copying only `package*.json`. However, the `package.json` contains a `postinstall` hook that runs `node scripts/copy-firebase-compat.cjs`. Since the `scripts/` directory is not copied until after `npm ci` completes, the postinstall script execution fails with `MODULE_NOT_FOUND`.
+
+### Files Changed
+- **`Dockerfile`**: Added `COPY client/scripts/ ./scripts/` before the `RUN npm ci` step.
+
+### Database Operations
+None.
+
+### Expected Outcome
+The multi-stage docker build will succeed because the required script file is present in the container during the `npm ci` execution.
