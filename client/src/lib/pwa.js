@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 // The browser fires beforeinstallprompt once, early — often while the
 // user is still on the marketing landing page, well before they've ever
 // opened the login form. usePwaInstall's listener used to live inside
@@ -70,5 +72,9 @@ export function isMobile() {
 
 export function isStandalone() {
   if (typeof window === 'undefined') return false;
+  // Also treat native Capacitor apps (Android/iOS) as standalone so they
+  // never get the browser idle-timeout auto-logout — only explicit logout,
+  // admin revoke, or a password change should ever end a native session.
+  if (Capacitor.isNativePlatform()) return true;
   return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }

@@ -2493,3 +2493,27 @@ Push notifications sent while the Android PWA has been swiped away from Recent A
 
 ### Expected Outcome
 - Session cookies will be reliably stored and attached to subsequent API requests on both Android and iOS devices, allowing the login session to persist across app restarts indefinitely.
+
+## Entry 041
+
+**Date**: 2026-07-28
+**Request**: Root cause analysis and fix for Android login persistence and push notifications not working.
+
+### Root Causes Identified
+
+1. **Login Persistence**: client/src/lib/pwa.js isStandalone() returned false on native Android (it only checked the web display-mode: standalone media query). AuthContext.jsx uses isStandalone() to decide whether to skip the 20-minute idle-timeout auto-logout. Since isNativePlatform() was never checked, the idle timeout fired and logged users out of the native app.
+
+2. **Push Notifications**: server/lib/sendPush.js only had a webpush: Firebase config block. The webpush: config applies only to Web Push (PWA/browser) tokens. Native Android Capacitor tokens require an ndroid: config block with priority: 'high' to wake the device from Doze mode. Without it, notifications were silently dropped by Android.
+
+3. **Listener Leak in nativePush.js**: PushNotifications.addListener('registration', ...) was called without removing old listeners, causing stale handlers to stack up across calls to egister().
+
+### Changes Made
+
+- client/src/lib/pwa.js: Added import { Capacitor } from '@capacitor/core' and updated isStandalone() to return 	rue when Capacitor.isNativePlatform() is true.
+- server/lib/sendPush.js: Added ndroid: { priority: 'high', notification: { sound: 'default' } } config block to sendEachForMulticast.
+- client/src/lib/nativePush.js: Rewrote with proper listener lifecycle management — listeners are tracked and removed before re-adding to prevent stacking.
+
+### Expected Outcome
+- Login sessions persist on Android — no more idle timeout auto-logout.
+- Native Android push notifications delivered with high priority and correct audio.
+- FCM token registered reliably without listener leaks.

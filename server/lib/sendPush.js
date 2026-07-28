@@ -31,14 +31,26 @@ async function sendPush(db, userId, { title, body, data = {} }) {
       data: Object.fromEntries(
         Object.entries(data).map(([k, v]) => [k, String(v)])
       ),
+      // webpush: config applies to Web Push (PWA/browser) tokens.
+      // Without an explicit Urgency, Android defers "normal" priority web
+      // push under Doze/App Standby — exactly the state a swiped-away
+      // PWA's Chrome process sits in — so delivery can be held back
+      // indefinitely instead of waking the device to run the SW. 'high'
+      // requests immediate best-effort delivery, bypassing that deferral.
       webpush: {
-        // Without an explicit Urgency, Android defers "normal" priority web
-        // push under Doze/App Standby — exactly the state a swiped-away
-        // PWA's Chrome process sits in — so delivery can be held back
-        // indefinitely instead of waking the device to run the SW. 'high'
-        // requests immediate best-effort delivery, bypassing that deferral.
         headers: { Urgency: 'high' },
         fcmOptions: { link: data.url || '/app' },
+      },
+      // android: config applies to native Android (Capacitor) tokens.
+      // HIGH priority wakes the device even in Doze mode. Without this,
+      // Firebase defaults to NORMAL priority for data-only messages, which
+      // Android may batch/defer indefinitely when the app is backgrounded.
+      android: {
+        priority: 'high',
+        notification: {
+          sound: 'default',
+          clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+        },
       },
     });
 

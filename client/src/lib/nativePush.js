@@ -3,62 +3,74 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { fcmLog, fcmWarn, fcmError } from './firebase';
 
 let cachedToken = null;
+// Track listeners so we can remove them before adding new ones (prevents
+// duplicate handlers piling up across hot-reloads and repeated register() calls).
+let registrationListener = null;
+let registrationErrorListener = null;
 let foregroundListener = null;
 
-// Native: request push permission and get token
+// Helper: cleanly replace the registration listeners and call register().
+// Returns a Promise that resolves with the token or rejects on error.
+function registerAndGetToken() {
+  return new Promise((resolve, reject) => {
+    // Remove any stale listeners before adding new ones.
+    if (registrationListener) { registrationListener.remove(); registrationListener = null; }
+    if (registrationErrorListener) { registrationErrorListener.remove(); registrationErrorListener = null; }
+
+    PushNotifications.addListener('registration', (token) => {
+      fcmLog('[NATIVE]', 'Push registration success, token:', token.value.substring(0, 20) + '...');
+      cachedToken = token.value;
+      resolve(token.value);
+    }).then((l) => { registrationListener = l; });
+
+    PushNotifications.addListener('registrationError', (error) => {
+      fcmError('[NATIVE]', 'Push registration error:', error);
+      reject(error);
+    }).then((l) => { registrationErrorListener = l; });
+
+    PushNotifications.register();
+  });
+}
+
+// Native: request push permission and get token.
+// Called on app launch to ask for permission and register for push if needed.
 export async function nativeRequestPushPermission() {
   if (!Capacitor.isNativePlatform()) return null;
-  
+
   fcmLog('[NATIVE]', 'Requesting push permission...');
   try {
     let permStatus = await PushNotifications.checkPermissions();
-    
+
     if (permStatus.receive === 'prompt') {
       permStatus = await PushNotifications.requestPermissions();
     }
-    
+
     if (permStatus.receive !== 'granted') {
       fcmWarn('[NATIVE]', 'Push permission denied');
       return null;
     }
-    
-    return new Promise((resolve, reject) => {
-      PushNotifications.addListener('registration', (token) => {
-        fcmLog('[NATIVE]', 'Push registration success, token:', token.value);
-        cachedToken = token.value;
-        resolve(token.value);
-      });
-      
-      PushNotifications.addListener('registrationError', (error) => {
-        fcmError('[NATIVE]', 'Push registration error:', error);
-        reject(error);
-      });
-      
-      PushNotifications.register();
-    });
+
+    return await registerAndGetToken();
   } catch (error) {
     fcmError('[NATIVE]', 'Error requesting native push permission:', error);
     return null;
   }
 }
 
-// Native: get existing token without prompting
+// Native: get existing token without prompting.
+// Used on subsequent app launches when permission was already granted.
 export async function nativeGetExistingPushToken() {
   if (!Capacitor.isNativePlatform()) return null;
-  
+
   try {
     const permStatus = await PushNotifications.checkPermissions();
     if (permStatus.receive === 'granted') {
-      if (cachedToken) return cachedToken;
-      
-      // If we don't have the token in memory, we need to register again to get it
-      return new Promise((resolve) => {
-        PushNotifications.addListener('registration', (token) => {
-          cachedToken = token.value;
-          resolve(token.value);
-        });
-        PushNotifications.register();
-      });
+      if (cachedToken) {
+        fcmLog('[NATIVE]', 'Returning cached token');
+        return cachedToken;
+      }
+      // Re-register to get the token — this is safe to call multiple times.
+      return await registerAndGetToken();
     }
   } catch (error) {
     fcmError('[NATIVE]', 'Error getting existing native push token:', error);
@@ -69,17 +81,18 @@ export async function nativeGetExistingPushToken() {
 // Native: listen to foreground messages
 export async function nativeListenForegroundMessages(callback) {
   if (!Capacitor.isNativePlatform()) return () => {};
-  
+
   if (foregroundListener) {
     foregroundListener.remove();
+    foregroundListener = null;
   }
-  
+
   fcmLog('[NATIVE]', 'Foreground message listener attached');
-  
+
   try {
-    foregroundListener = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-      fcmLog('[NATIVE]', 'Foreground notification received:', notification);
-      
+    const listener = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+      fcmLog('[NATIVE]', 'Foreground notification received:', notification.title);
+
       // Standardize the payload format to match the web SDK so the callback doesn't need to care
       const payload = {
         notification: {
@@ -88,10 +101,12 @@ export async function nativeListenForegroundMessages(callback) {
         },
         data: notification.data
       };
-      
+
       callback(payload);
     });
-    
+
+    foregroundListener = listener;
+
     // Return unsubscribe function
     return () => {
       if (foregroundListener) {
@@ -105,12 +120,8 @@ export async function nativeListenForegroundMessages(callback) {
   }
 }
 
-// Native: Local notification
+// Native: Local notification — handled automatically by Capacitor
+// via presentationOptions in capacitor.config.json.
 export async function nativeShowLocalNotification(title, options = {}) {
-  // Capacitor PushNotifications automatically shows the notification if presentationOptions has 'alert'
-  // But if we want to manually trigger one, we would use the LocalNotifications plugin.
-  // Since we set presentationOptions: ['badge', 'sound', 'alert'] in capacitor.config.json,
-  // native foreground pushes will display automatically. We don't need to manually trigger local notifications 
-  // for foreground pushes like we do on the web.
   fcmLog('[NATIVE]', 'nativeShowLocalNotification skipped - handled automatically by native presentationOptions');
 }
