@@ -15,6 +15,7 @@ import {
   fcmLog,
   fcmError
 } from '../lib/firebase';
+import { nativeListenNotificationTap } from '../lib/nativePush';
 import { useSaveFcmToken } from '../features/profile/hooks/useProfile';
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
@@ -166,4 +167,21 @@ export function usePushNotificationSync() {
       unsubscribe();
     };
   }, [navigate, queryClient]);
+
+  // Native tap-to-open — no-op on web (browser tap is handled by
+  // firebase-messaging-sw.js's own notificationclick listener instead).
+  useEffect(() => {
+    let unsubscribe = () => {};
+    let cancelled = false;
+
+    nativeListenNotificationTap((url) => navigate(url)).then((unsub) => {
+      if (cancelled) unsub();
+      else unsubscribe = unsub;
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [navigate]);
 }
