@@ -11,7 +11,7 @@ function setAuthCookies(res, rawRefreshToken) {
   res.cookie(REFRESH_COOKIE_NAME, rawRefreshToken, {
     httpOnly: true,
     secure: isProd,
-    sameSite: 'lax',
+    sameSite: 'none',
     path: REFRESH_TOKEN_PATH,
     maxAge
   });
@@ -22,7 +22,7 @@ function setAuthCookies(res, rawRefreshToken) {
   res.cookie(CSRF_COOKIE_NAME, csrfToken, {
     httpOnly: false, // the frontend must be able to read this to echo it back as a header
     secure: isProd,
-    sameSite: 'lax',
+    sameSite: 'none',
     path: '/',
     maxAge
   });

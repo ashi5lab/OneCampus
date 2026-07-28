@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { LoginPage } from '../../auth/components/LoginPage';
 import { FiUsers, FiCheckCircle, FiCreditCard, FiBookOpen, FiMessageSquare, FiGlobe, FiShield, FiSmartphone, FiAward, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { apiClient } from '../../../lib/apiClient';
+import { Capacitor } from '@capacitor/core';
 
 export function LandingPage() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -9,9 +10,9 @@ export function LandingPage() {
   const [contactStatus, setContactStatus] = useState({ loading: false, success: false, error: null });
   const scrollContainerRef = useRef(null);
 
-  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  const isAppMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || Capacitor.isNativePlatform();
 
-  if (isPWA) {
+  if (isAppMode) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 p-4 sm:p-6 overflow-y-auto">
         <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl my-auto">

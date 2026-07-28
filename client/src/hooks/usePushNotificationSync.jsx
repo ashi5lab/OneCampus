@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Bell } from 'lucide-react';
 import { useSocket } from '../contexts/SocketContext';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 import {
   getExistingPushToken,
   listenForegroundMessages,
@@ -90,9 +92,20 @@ export function usePushNotificationSync() {
   const socket = useSocket();
 
   useEffect(() => {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    fcmLog('[TOKEN]', 'App load: permission already granted, silently syncing token...');
-    getExistingPushToken(VAPID_KEY).then((token) => {
+    const syncToken = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive !== 'granted') return;
+        } catch (e) {
+          return;
+        }
+      } else {
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+      }
+
+      fcmLog('[TOKEN]', 'App load: permission already granted, silently syncing token...');
+      const token = await getExistingPushToken(VAPID_KEY);
       if (!token) return;
       saveFcmToken.mutate(
         { token, device_info: navigator.userAgent },
@@ -101,7 +114,9 @@ export function usePushNotificationSync() {
           onError: (error) => fcmError('[TOKEN]', 'Failed to sync token to server', error)
         }
       );
-    });
+    };
+
+    syncToken();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { requestPushPermission, fcmLog } from '../lib/firebase';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 const PROMPT_KEY = 'onecampus.fcm_prompt_shown';
 const DEFER_KEY = 'onecampus.fcm_prompt_defer_until';
@@ -10,23 +12,36 @@ export function PushPermissionPrompt() {
   const [isRequesting, setIsRequesting] = useState(false);
 
   useEffect(() => {
-    // Check if we should show the prompt
-    if (typeof Notification === 'undefined' || Notification.permission === 'granted') {
-      return; // No browser support or already granted
-    }
-
-    const hasShownBefore = localStorage.getItem(PROMPT_KEY);
-    const deferUntil = localStorage.getItem(DEFER_KEY);
-
-    if (hasShownBefore && deferUntil) {
-      const deferDate = new Date(deferUntil);
-      if (new Date() < deferDate) {
-        return; // Still in defer period
+    const checkStatus = async () => {
+      // Check if we should show the prompt
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive === 'granted') return; // already granted
+        } catch (e) {
+          // If plugin fails, still allow user to click 'Enable' which might trigger it.
+        }
+      } else {
+        if (typeof Notification === 'undefined' || Notification.permission === 'granted') {
+          return; // No browser support or already granted
+        }
       }
-    }
 
-    // Show the prompt
-    setShow(true);
+      const hasShownBefore = localStorage.getItem(PROMPT_KEY);
+      const deferUntil = localStorage.getItem(DEFER_KEY);
+
+      if (hasShownBefore && deferUntil) {
+        const deferDate = new Date(deferUntil);
+        if (new Date() < deferDate) {
+          return; // Still in defer period
+        }
+      }
+
+      // Show the prompt
+      setShow(true);
+    };
+
+    checkStatus();
   }, []);
 
   if (!show) return null;

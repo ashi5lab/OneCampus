@@ -2448,3 +2448,20 @@ Push notifications sent while the Android PWA has been swiped away from Recent A
 - **Android**: GitHub Actions will produce an `app-debug.apk` that can be sideloaded onto a device for testing native functionality (login, attendance, push notifications).
 - **iOS**: Actions will verify that the project builds cleanly, ready for a real signed build later.
 - Web push functionality remains unaffected.
+
+## Entry 038
+
+**Date**: 2026-07-28
+**Request**: Fix Android app login persistence, default route, and push notifications.
+
+### Changes Made
+
+1. **Login Persistence**: Updated "server/lib/authCookies.js" to set "sameSite: 'none'" for "refreshToken" and "csrfToken" so that cross-origin Capacitor requests (from "https://localhost") correctly transmit the cookies.
+2. **Default Route**: Updated "client/src/features/landing/components/LandingPage.jsx" to check "Capacitor.isNativePlatform()". If true, the app immediately renders the "LoginPage" instead of the promotional website landing page.
+3. **Push Notifications**:
+   - Fixed "client/src/hooks/usePushNotificationSync.jsx" to correctly await "PushNotifications.checkPermissions()" on Android devices instead of erroneously relying on the web "Notification" API, which caused the token sync to abort.
+   - Fixed "client/src/components/PushPermissionPrompt.jsx" to correctly check native push permissions so the opt-in prompt displays on Android.
+
+### Expected Outcome
+
+- **Android App**: Session will correctly persist across app restarts. The app will launch directly to the login screen. Push notifications will successfully sync their device tokens to the backend on startup, allowing notifications to be received.
