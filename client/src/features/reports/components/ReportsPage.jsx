@@ -1,28 +1,59 @@
 import { useState } from 'react';
 import { PageHeader } from '../../../components/PageHeader';
+import { TodayTab } from './TodayTab';
+import { DateRangeTab } from './DateRangeTab';
+import { AcademicsTab } from './AcademicsTab';
+import { AttendanceTrendsTab } from './AttendanceTrendsTab';
+
+// "More" tab contents (the old tabs)
 import { OverviewTab } from './OverviewTab';
 import { AnalyticsTab } from './AnalyticsTab';
-import { AttendanceTab } from './AttendanceTab';
-import { AcademicPerformanceTab } from './AcademicPerformanceTab';
-import { AssignmentsTab } from './AssignmentsTab';
-import { OnlineExamsTab } from './OnlineExamsTab';
 import { LibraryTab } from './LibraryTab';
 import { CertificatesTab } from './CertificatesTab';
 
+function MoreTab() {
+  const [subTab, setSubTab] = useState('overview');
+  
+  const SUB_TABS = [
+    { id: 'overview', label: 'General Overview', Component: OverviewTab },
+    { id: 'analytics', label: 'Advanced Analytics', Component: AnalyticsTab },
+    { id: 'library', label: 'Library', Component: LibraryTab },
+    { id: 'certificates', label: 'Certificates', Component: CertificatesTab }
+  ];
+  
+  const ActiveSubTab = SUB_TABS.find(t => t.id === subTab)?.Component || OverviewTab;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2">
+        {SUB_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setSubTab(t.id)}
+            className={`rounded px-3 py-1.5 text-xs font-semibold ${
+              subTab === t.id ? 'bg-ink-900 text-white' : 'bg-surface text-ink-700 hover:bg-surface-muted'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <ActiveSubTab />
+    </div>
+  );
+}
+
 const TABS = [
-  { value: 'overview', label: 'Overview', Component: OverviewTab },
-  { value: 'analytics', label: 'Analytics', Component: AnalyticsTab },
-  { value: 'attendance', label: 'Attendance', Component: AttendanceTab },
-  { value: 'academic', label: 'Academic Performance', Component: AcademicPerformanceTab },
-  { value: 'assignments', label: 'Assignments', Component: AssignmentsTab },
-  { value: 'online-exams', label: 'Online Exams', Component: OnlineExamsTab },
-  { value: 'library', label: 'Library', Component: LibraryTab },
-  { value: 'certificates', label: 'Certificates', Component: CertificatesTab }
+  { value: 'today', label: 'Today', Component: TodayTab },
+  { value: 'date-range', label: 'Date Range', Component: DateRangeTab },
+  { value: 'academics', label: 'Academics', Component: AcademicsTab },
+  { value: 'attendance', label: 'Attendance', Component: AttendanceTrendsTab },
+  { value: 'more', label: 'More', Component: MoreTab }
 ];
 
 export function ReportsPage() {
-  const [tab, setTab] = useState('overview');
-  const ActiveTab = TABS.find((t) => t.value === tab)?.Component || OverviewTab;
+  const [tab, setTab] = useState('today');
+  const ActiveTab = TABS.find((t) => t.value === tab)?.Component || TodayTab;
 
   return (
     <div>

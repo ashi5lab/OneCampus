@@ -688,6 +688,222 @@ async function analytics(req, res) {
   }
 }
 
+// Today's snapshot: late, absent, and discipline records for today only.
+// Returns rich detail: learner names, cohort names, marked-by names, times.
+async function todaySnapshot(req, res) {
+  try {
+    const [lateRows, absentRows, disciplineRows, summaryRow] = await Promise.all([
+      req.db.query(`
+        SELECT
+          l.first_name || ' ' || l.last_name AS student_name,
+          l.id AS learner_id,
+          c.name AS cohort_name,
+          NULL AS time,
+          COALESCE(i.first_name || ' ' || i.last_name, st.first_name || ' ' || st.last_name, mu.username) AS marked_by,
+          NULL AS late_minutes
+        FROM onec_attendance a
+        JOIN onec_learners l ON a.learner_id = l.id
+        JOIN onec_cohorts c ON l.cohort_id = c.id
+        JOIN onec_users mu ON a.marked_by = mu.id
+        LEFT JOIN onec_instructors i ON i.user_id = mu.id
+        LEFT JOIN onec_staff st ON st.user_id = mu.id
+        WHERE a.date = CURRENT_DATE AND a.status = 'late'
+        ORDER BY l.first_name ASC
+      `),
+      req.db.query(`
+        SELECT
+          l.first_name || ' ' || l.last_name AS student_name,
+          l.id AS learner_id,
+          c.name AS cohort_name,
+          NULL AS time,
+          COALESCE(i.first_name || ' ' || i.last_name, st.first_name || ' ' || st.last_name, mu.username) AS marked_by
+        FROM onec_attendance a
+        JOIN onec_learners l ON a.learner_id = l.id
+        JOIN onec_cohorts c ON l.cohort_id = c.id
+        JOIN onec_users mu ON a.marked_by = mu.id
+        LEFT JOIN onec_instructors i ON i.user_id = mu.id
+        LEFT JOIN onec_staff st ON st.user_id = mu.id
+        WHERE a.date = CURRENT_DATE AND a.status = 'absent'
+        ORDER BY l.first_name ASC
+      `),
+      req.db.query(`
+        SELECT
+          l.first_name || ' ' || l.last_name AS student_name,
+          l.id AS learner_id,
+          c.name AS cohort_name,
+          d.severity,
+          d.description,
+          d.incident_date,
+          d.created_at::time(0) AS time,
+          COALESCE(i.first_name || ' ' || i.last_name, st.first_name || ' ' || st.last_name, mu.username) AS marked_by
+        FROM onec_discipline_records d
+        JOIN onec_learners l ON d.learner_id = l.id
+        JOIN onec_cohorts c ON l.cohort_id = c.id
+        JOIN onec_users mu ON d.reported_by = mu.id
+        LEFT JOIN onec_instructors i ON i.user_id = mu.id
+        LEFT JOIN onec_staff st ON st.user_id = mu.id
+        WHERE d.incident_date = CURRENT_DATE
+        ORDER BY d.created_at DESC
+      `),
+      req.db.query(`
+        WITH marked_today AS (
+          SELECT cohort_id FROM onec_cohort_attendance_logs WHERE date = CURRENT_DATE
+        ),
+        total_students AS (
+          SELECT COUNT(*) AS total
+          FROM onec_learners
+          WHERE status = 'active' AND cohort_id IN (SELECT cohort_id FROM marked_today)
+        ),
+        exceptions AS (
+          SELECT status, COUNT(*)::int AS count FROM onec_attendance
+          WHERE date = CURRENT_DATE GROUP BY status
+        )
+        SELECT
+          (SELECT total FROM total_students) AS total_possible,
+          COALESCE((SELECT count FROM exceptions WHERE status='absent'), 0) AS absent,
+          COALESCE((SELECT count FROM exceptions WHERE status='late'), 0) AS late,
+          COALESCE((SELECT count FROM exceptions WHERE status='excused'), 0) AS excused,
+          (SELECT COUNT(*)::int FROM onec_discipline_records WHERE incident_date = CURRENT_DATE) AS discipline_total,
+          (SELECT COUNT(*)::int FROM onec_discipline_records WHERE incident_date = CURRENT_DATE AND severity='major') AS discipline_major,
+          (SELECT COUNT(*)::int FROM onec_discipline_records WHERE incident_date = CURRENT_DATE AND severity='minor') AS discipline_minor
+      `)
+    ]);
+
+    const s = summaryRow.rows[0] || {};
+    const totalPossible = Number(s.total_possible || 0);
+    const absent = Number(s.absent || 0);
+    const late = Number(s.late || 0);
+    const excused = Number(s.excused || 0);
+    const present = Math.max(0, totalPossible - absent - late - excused);
+
+    res.json({
+      data: {
+        summary: { present, absent, late, excused, discipline_total: Number(s.discipline_total || 0), discipline_major: Number(s.discipline_major || 0), discipline_minor: Number(s.discipline_minor || 0) },
+        late: lateRows.rows,
+        absent: absentRows.rows,
+        discipline: disciplineRows.rows
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// Class-wise report: per-cohort aggregated stats. Accepts optional date range.
+async function classWiseReport(req, res) {
+  try {
+    const { from, to } = req.query;
+    const fromDate = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const toDate = to || new Date().toISOString().slice(0, 10);
+
+    const result = await req.db.query(`
+      WITH cohort_days AS (
+        SELECT cohort_id, COUNT(*)::int AS days_marked
+        FROM onec_cohort_attendance_logs
+        WHERE date BETWEEN $1 AND $2
+        GROUP BY cohort_id
+      ),
+      cohort_exceptions AS (
+        SELECT l.cohort_id, a.status, COUNT(*)::int AS cnt
+        FROM onec_attendance a
+        JOIN onec_learners l ON a.learner_id = l.id
+        WHERE a.date BETWEEN $1 AND $2
+        GROUP BY l.cohort_id, a.status
+      ),
+      cohort_discipline AS (
+        SELECT l.cohort_id, COUNT(*)::int AS total,
+               COUNT(*) FILTER (WHERE d.severity='major')::int AS major,
+               COUNT(*) FILTER (WHERE d.severity='minor')::int AS minor
+        FROM onec_discipline_records d
+        JOIN onec_learners l ON d.learner_id = l.id
+        WHERE d.incident_date BETWEEN $1 AND $2
+        GROUP BY l.cohort_id
+      ),
+      cohort_scores AS (
+        SELECT l.cohort_id,
+               ROUND(AVG(s.score_obtained / NULLIF(es.max_score, 0) * 100)::numeric, 1) AS avg_score
+        FROM onec_learner_scores s
+        JOIN onec_evaluation_schedules es ON s.eval_schedule_id = es.id
+        JOIN onec_learners l ON s.learner_id = l.id
+        WHERE es.eval_date BETWEEN $1 AND $2
+        GROUP BY l.cohort_id
+      )
+      SELECT
+        c.id AS cohort_id, c.name AS cohort_name,
+        (SELECT COUNT(*) FROM onec_learners WHERE cohort_id = c.id AND status='active')::int AS student_count,
+        COALESCE(cd.days_marked, 0) AS days_marked,
+        COALESCE((SELECT cnt FROM cohort_exceptions ce WHERE ce.cohort_id = c.id AND ce.status='absent'), 0) AS absent_count,
+        COALESCE((SELECT cnt FROM cohort_exceptions ce WHERE ce.cohort_id = c.id AND ce.status='late'), 0) AS late_count,
+        COALESCE(disp.total, 0) AS discipline_total,
+        COALESCE(disp.major, 0) AS discipline_major,
+        COALESCE(disp.minor, 0) AS discipline_minor,
+        cs.avg_score
+      FROM onec_cohorts c
+      LEFT JOIN cohort_days cd ON cd.cohort_id = c.id
+      LEFT JOIN cohort_discipline disp ON disp.cohort_id = c.id
+      LEFT JOIN cohort_scores cs ON cs.cohort_id = c.id
+      ORDER BY c.name
+    `, [fromDate, toDate]);
+
+    const data = result.rows.map((row) => {
+      const totalPossible = (row.days_marked || 0) * (row.student_count || 0);
+      const presentCount = totalPossible - Number(row.absent_count) - Number(row.late_count);
+      const attendanceRate = totalPossible > 0 ? Math.round((presentCount / totalPossible) * 1000) / 10 : null;
+      return { ...row, attendance_rate: attendanceRate };
+    });
+
+    res.json({ data, from: fromDate, to: toDate });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// Student search: search by name, returns per-student stats card data.
+async function studentSearch(req, res) {
+  try {
+    const { q = '', cohort_id, limit = 20 } = req.query;
+    const params = [`%${q}%`, Number(limit)];
+    let cohortFilter = '';
+    if (cohort_id) {
+      params.push(cohort_id);
+      cohortFilter = ` AND l.cohort_id = $${params.length}`;
+    }
+
+    const result = await req.db.query(`
+      SELECT
+        l.id AS learner_id,
+        l.first_name || ' ' || l.last_name AS student_name,
+        l.registry_no,
+        c.id AS cohort_id,
+        c.name AS cohort_name,
+        (SELECT COUNT(*) FROM onec_cohort_attendance_logs WHERE cohort_id = l.cohort_id AND date >= CURRENT_DATE - INTERVAL '30 days')::int AS days_marked,
+        (SELECT COUNT(*) FROM onec_attendance WHERE learner_id = l.id AND status IN ('absent','late','excused') AND date >= CURRENT_DATE - INTERVAL '30 days')::int AS exceptions_30d,
+        (SELECT ROUND(AVG(s.score_obtained / NULLIF(es.max_score,0) * 100)::numeric,1) FROM onec_learner_scores s JOIN onec_evaluation_schedules es ON s.eval_schedule_id=es.id WHERE s.learner_id=l.id) AS avg_score,
+        (SELECT COUNT(*)::int FROM onec_discipline_records WHERE learner_id = l.id AND incident_date >= CURRENT_DATE - INTERVAL '30 days') AS discipline_30d
+      FROM onec_learners l
+      JOIN onec_cohorts c ON l.cohort_id = c.id
+      WHERE l.status = 'active'
+        AND (l.first_name || ' ' || l.last_name ILIKE $1 OR l.registry_no ILIKE $1)
+        ${cohortFilter}
+      ORDER BY l.first_name, l.last_name
+      LIMIT $2
+    `, params);
+
+    const data = result.rows.map((row) => ({
+      ...row,
+      present_30d: Math.max(0, row.days_marked - row.exceptions_30d),
+      attendance_rate: row.days_marked > 0 ? Math.round(((row.days_marked - row.exceptions_30d) / row.days_marked) * 1000) / 10 : null
+    }));
+
+    res.json({ data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   overview,
   analytics,
@@ -697,5 +913,8 @@ module.exports = {
   assignmentsReport,
   onlineExamsReport,
   libraryReport,
-  certificatesReport
+  certificatesReport,
+  todaySnapshot,
+  classWiseReport,
+  studentSearch
 };

@@ -2625,3 +2625,22 @@ The tabs container in BroadcastPage.jsx used lex gap-2 with no lex-wrap. With 
 
 ### Expected Outcome
 All broadcast channel tabs including "App Notification" are visible and tappable on mobile screens.
+
+## Entry 044
+
+**Date**: 2026-07-28
+**Request**: Create a report page with multiple tabs: Today (live snapshot of late, absent, discipline), Date Range (filtered reports), Academics (overview, class-wise, student search, good/poor scores, assignments, exams), Attendance Trends, and More.
+
+### Changes Made
+- server/modules/reports/controller.js: Added 	odaySnapshot, classWiseReport, and studentSearch handlers.
+- server/modules/reports/routes.js: Registered routes for the new handlers.
+- client/src/features/reports/services/reportsApi.js: Added API bindings for the new routes.
+- client/src/features/reports/hooks/useReports.js: Added React Query hooks for the new endpoints.
+- client/src/features/reports/components/TodayTab.jsx: Created live Today snapshot with summary cards and collapsible tables for Late, Absent, and Discipline.
+- client/src/features/reports/components/DateRangeTab.jsx: Created date range filter view with summary stats and class-wise data table.
+- client/src/features/reports/components/AcademicsTab.jsx: Restructured academic reports into sub-tabs, reusing AcademicPerformanceTab and adding a new StudentSearchTab.
+- client/src/features/reports/components/AttendanceTrendsTab.jsx: Restructured attendance trends into sub-tabs.
+- client/src/features/reports/components/ReportsPage.jsx: Replaced the 8 old tabs with the 5 new top-level tabs (Today, Date Range, Academics, Attendance, More), moving legacy tabs into the More tab.
+
+### Expected Outcome
+The Reports page perfectly matches the requested flow, offering real-time actionable data in the Today tab and easily drillable historical/academic metrics in the other tabs without breaking any old functionality.

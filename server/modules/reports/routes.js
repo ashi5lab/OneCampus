@@ -15,6 +15,9 @@ router.get('/dashboard', controller.dashboard);
 
 router.use(requirePermission('reports.view'));
 
+router.get('/today', controller.todaySnapshot);
+router.get('/class-wise', controller.classWiseReport);
+router.get('/student-search', controller.studentSearch);
 router.get('/overview', controller.overview);
 router.get('/analytics', controller.analytics);
 router.get('/attendance', controller.attendance);

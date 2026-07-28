@@ -13,6 +13,22 @@ export function useOverviewReport() {
   return useQuery({ queryKey: ['reports', 'overview'], queryFn: reportsApi.overview });
 }
 
+export function useTodayReport() {
+  return useQuery({ queryKey: ['reports', 'today'], queryFn: reportsApi.today, refetchInterval: 60000 });
+}
+
+export function useClassWiseReport(params) {
+  return useQuery({ queryKey: ['reports', 'class-wise', params], queryFn: () => reportsApi.classWise(params) });
+}
+
+export function useStudentSearch(params) {
+  return useQuery({
+    queryKey: ['reports', 'student-search', params],
+    queryFn: () => reportsApi.studentSearch(params),
+    enabled: (params?.q?.length >= 2) || false
+  });
+}
+
 export function useAttendanceReport(params) {
   return useQuery({ queryKey: ['reports', 'attendance', params], queryFn: () => reportsApi.attendance(params) });
 }
