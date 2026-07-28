@@ -40,7 +40,14 @@ app.use(
 // A specific origin (not '*') is required — the refresh-token flow sends an
 // httpOnly cookie cross-origin (client :5173, server :3001 in dev), and
 // browsers reject Access-Control-Allow-Origin: * on credentialed requests.
-app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+// We allow the configured web CLIENT_ORIGIN plus Capacitor's native origins.
+const allowedOrigins = [
+  ...(CLIENT_ORIGIN ? CLIENT_ORIGIN.split(',').map(o => o.trim()) : []),
+  'https://localhost',
+  'capacitor://localhost',
+  'http://localhost'
+];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 // Meta (WhatsApp Cloud API) webhooks — mounted BEFORE express.json() on
 // purpose: X-Hub-Signature-256 validation needs the raw request bytes, so
