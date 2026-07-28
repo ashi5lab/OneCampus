@@ -7,6 +7,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import {
+  requestPushPermission,
   getExistingPushToken,
   listenForegroundMessages,
   showLocalNotification,
@@ -93,20 +94,31 @@ export function usePushNotificationSync() {
 
   useEffect(() => {
     const syncToken = async () => {
+      let token = null;
+
       if (Capacitor.isNativePlatform()) {
         try {
-          const permStatus = await PushNotifications.checkPermissions();
-          if (permStatus.receive !== 'granted') return;
+          let permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive === 'prompt') {
+            fcmLog('[TOKEN]', 'Native push permission not granted yet. Requesting on launch...');
+            permStatus = await PushNotifications.requestPermissions();
+          }
+          if (permStatus.receive !== 'granted') {
+            fcmLog('[TOKEN]', 'Native push permission denied.');
+            return;
+          }
+          token = await requestPushPermission(VAPID_KEY);
         } catch (e) {
+          fcmError('[TOKEN]', 'Native push permission check failed', e);
           return;
         }
       } else {
         if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+        token = await getExistingPushToken(VAPID_KEY);
       }
 
-      fcmLog('[TOKEN]', 'App load: permission already granted, silently syncing token...');
-      const token = await getExistingPushToken(VAPID_KEY);
       if (!token) return;
+      fcmLog('[TOKEN]', 'App load: permission granted, syncing token...');
       saveFcmToken.mutate(
         { token, device_info: navigator.userAgent },
         {

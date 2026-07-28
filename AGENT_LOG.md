@@ -2465,3 +2465,31 @@ Push notifications sent while the Android PWA has been swiped away from Recent A
 ### Expected Outcome
 
 - **Android App**: Session will correctly persist across app restarts. The app will launch directly to the login screen. Push notifications will successfully sync their device tokens to the backend on startup, allowing notifications to be received.
+
+## Entry 039
+
+**Date**: 2026-07-28
+**Request**: Fix Firebase notifications on Android and ask for permission on launch.
+
+### Changes Made
+
+- **Native Push Permissions**: Updated "client/src/hooks/usePushNotificationSync.jsx" to actively request push notification permissions (PushNotifications.requestPermissions()) during app launch on Android/iOS.
+- **Token Registration**: Replaced silent check with equestPushPermission(VAPID_KEY) so that after permission is granted, the Capacitor PushNotifications.register() flow properly executes, fetches the device FCM token, and syncs it to the server.
+
+### Expected Outcome
+
+- When the Android app is opened, it will explicitly pop up the OS-level permission prompt to allow notifications.
+- Once granted, the FCM token will be successfully registered and sent to the backend, enabling both foreground and background notifications to be received on the device.
+
+## Entry 040
+
+**Date**: 2026-07-28
+**Request**: Fix Android login persistence (third-party cookie blocking).
+
+### Changes Made
+
+- Updated "client/capacitor.config.json" to enable the CapacitorHttp and CapacitorCookies plugins.
+- Android WebViews inherently block cross-origin (third-party) cookies, even when SameSite=None; Secure is used. Enabling these Capacitor plugins patches etch() to route network requests through the native Android networking stack, which completely bypasses WebView restrictions and handles session cookies natively and correctly.
+
+### Expected Outcome
+- Session cookies will be reliably stored and attached to subsequent API requests on both Android and iOS devices, allowing the login session to persist across app restarts indefinitely.
