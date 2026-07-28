@@ -2611,3 +2611,17 @@ When the user opens the Android app with an active session:
 2. Once the session is restored, they are navigated directly to the dashboard.
 3. Login screen is never shown.
 >>>>>>> Stashed changes
+
+## Entry 043
+
+**Date**: 2026-07-28
+**Request**: Fix Broadcast page UI — App Notification tab not visible on mobile.
+
+### Root Cause
+The tabs container in BroadcastPage.jsx used lex gap-2 with no lex-wrap. With 5 tabs (SMS, Voicemail, WhatsApp, WhatsApp (Absentee Alerts), App Notification), the last tabs overflowed horizontally off-screen on mobile widths and were invisible/unreachable.
+
+### Changes Made
+- client/src/features/broadcast/components/BroadcastPage.jsx: Changed tab container from lex gap-2 to lex flex-wrap gap-2. Tabs now wrap to the next row when they don't fit, keeping all tabs accessible on any screen size.
+
+### Expected Outcome
+All broadcast channel tabs including "App Notification" are visible and tappable on mobile screens.
