@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "323095309987",
+    "project_id": "onecampus-edu",
+    "storage_bucket": "onecampus-edu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:323095309987:android:8f7ab3cfcac2bd07a19916",
+        "android_client_info": {
+          "package_name": "online.onecampusedu.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIp-_W75-NeqC8cj-9vWP6vhmgPc-my1I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

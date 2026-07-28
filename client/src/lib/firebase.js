@@ -1,6 +1,13 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
+import { Capacitor } from '@capacitor/core';
+import {
+  nativeRequestPushPermission,
+  nativeGetExistingPushToken,
+  nativeListenForegroundMessages,
+  nativeShowLocalNotification
+} from './nativePush';
 
 // Consistent [FCM] prefix across every file touching the notification
 // lifecycle (this module, usePushNotificationSync.jsx, ProfilePage.jsx,
@@ -84,6 +91,9 @@ function getMessagingSwRegistration() {
 // Prompts for browser notification permission (if not already decided) and
 // returns a fresh FCM registration token, or null if unsupported/denied.
 export async function requestPushPermission(vapidKey) {
+  if (Capacitor.isNativePlatform()) {
+    return nativeRequestPushPermission();
+  }
   fcmLog('requestPushPermission() called');
   const messaging = await getMessagingInstance();
   if (!messaging) {
@@ -115,6 +125,9 @@ export async function requestPushPermission(vapidKey) {
 // onec_fcm_tokens on app load when permission was already granted in an
 // earlier session (FCM tokens can rotate underneath the app).
 export async function getExistingPushToken(vapidKey) {
+  if (Capacitor.isNativePlatform()) {
+    return nativeGetExistingPushToken();
+  }
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
     fcmLog('getExistingPushToken() skipped — permission not previously granted');
     return null;
@@ -143,6 +156,9 @@ export async function getExistingPushToken(vapidKey) {
 // must render something themselves (see showLocalNotification below).
 // Returns the unsubscribe function.
 export async function listenForegroundMessages(callback) {
+  if (Capacitor.isNativePlatform()) {
+    return nativeListenForegroundMessages(callback);
+  }
   const messaging = await getMessagingInstance();
   if (!messaging) {
     fcmWarn('listenForegroundMessages() aborted — Messaging unsupported');
@@ -174,6 +190,9 @@ export async function listenForegroundMessages(callback) {
 // by firebase-messaging-sw.js's shared notificationclick listener, same as
 // a background notification's click.
 export async function showLocalNotification(title, options = {}) {
+  if (Capacitor.isNativePlatform()) {
+    return nativeShowLocalNotification(title, options);
+  }
   if (typeof Notification === 'function') {
     try {
       const notification = new Notification(title, options);

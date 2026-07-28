@@ -2420,3 +2420,31 @@ None.
 ### Expected Outcome
 
 Push notifications sent while the Android PWA has been swiped away from Recent Apps (browser/WebAPK process fully closed) should now reliably display as a native OS notification instead of silently failing to appear.
+
+---
+
+## Entry 037 — Capacitor Mobile App Setup (Android First)
+
+**Date:** 2026-07-28
+**Session ID:** `2e4758a4-f7ee-4dbe-99d4-627fcda1fc6d`
+
+### User Request
+
+> "Implement Capacitor Mobile App (Android First, iOS Next) with CI/CD"
+
+### Actions Taken
+
+1. **Capacitor Initialization**: Installed `@capacitor/core`, `@capacitor/cli`, `@capacitor/android`, `@capacitor/ios`, `@capacitor/push-notifications`. Initialized Capacitor for `online.onecampusedu.app` and added Android and iOS platforms.
+2. **Environment**: Created `.env.production` pointing to `https://onecampusedu.online/api/v1`.
+3. **Assets**: Generated app icons and splash screens from the provided logo and splash images using `@capacitor/assets`.
+4. **Firebase Configuration**: Integrated `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) into their respective platform folders for native Push Notification support.
+5. **Native Push Branching**: Created `client/src/lib/nativePush.js` to handle native push registration and callbacks, and updated `client/src/lib/firebase.js` to branch logic based on `Capacitor.isNativePlatform()`.
+6. **CI/CD Workflows**:
+   - `.github/workflows/android-build.yml`: Builds web assets, syncs Capacitor, and assembles a debug APK.
+   - `.github/workflows/ios-build.yml`: Verifies iOS build compilation (simulator-only) as Apple Developer account is not fully ready.
+
+### Expected Outcome
+
+- **Android**: GitHub Actions will produce an `app-debug.apk` that can be sideloaded onto a device for testing native functionality (login, attendance, push notifications).
+- **iOS**: Actions will verify that the project builds cleanly, ready for a real signed build later.
+- Web push functionality remains unaffected.

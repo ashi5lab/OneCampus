@@ -1,0 +1,28 @@
+name: iOS Build Check
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['client/**']
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install deps & build web assets
+        working-directory: client
+        run: |
+          npm ci
+          npm run build
+      - name: Sync Capacitor
+        working-directory: client
+        run: npx cap sync ios
+      - name: Build (no code signing, simulator only)
+        working-directory: client/ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App \
+            -sdk iphonesimulator -configuration Debug build
