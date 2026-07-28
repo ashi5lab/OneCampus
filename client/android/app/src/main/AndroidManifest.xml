@@ -32,4 +32,17 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Required on Android 13+ (API 33, this app targets 35) for any
+         notification to ever be shown, including FCM push. Capacitor's
+         push-notifications plugin requests this permission at runtime via
+         @capacitor/push-notifications' PUSH_NOTIFICATIONS permission alias,
+         but per Capacitor's plugin permission model the app itself must
+         still declare the underlying OS permission here — the plugin does
+         not inject it into the app's manifest automatically. Without this
+         line, Android silently auto-denies every request for it (no
+         dialog is ever shown to the user, on any install), so push
+         notifications can never display regardless of a valid FCM token
+         or a granted app-level "notifications" toggle. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

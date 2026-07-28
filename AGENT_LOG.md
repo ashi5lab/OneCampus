@@ -2556,3 +2556,31 @@ Entries 037-041 already iterated on the native push pipeline (Capacitor setup, l
 ### Expected Outcome
 
 If token length was truncating the insert, native tokens will now save correctly and notifications should start arriving. If the remaining cause is an OS-level notification permission denial from an earlier build, the user needs to check Android Settings (or reinstall) — the next send attempt's server logs will also now show the exact per-token failure reason if it's still not working.
+
+## Entry 043 — Root Cause Found: Missing POST_NOTIFICATIONS Permission Declaration (Android Native Push)
+
+**Date:** 2026-07-28
+
+### User Request
+
+Continuation of Entry 042 — after widening `onec_fcm_tokens.token` to `TEXT` and running the migration, native Android push was still not received (web unaffected). User attempted a full uninstall + fresh install, still nothing. Ruled out an Android "Work Profile" theory (device only shows one instance of the app, not two).
+
+### Root Cause
+
+`client/android/app/src/main/AndroidManifest.xml` never declared `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />`.
+
+Verified directly against `@capacitor/push-notifications`' own Android source (`PushNotificationsPlugin.java`): on API 33+ (Tiramisu, this app targets SDK 35 — variables.gradle), `requestPermissions()` calls `requestPermissionForAlias(PUSH_NOTIFICATIONS, ...)`, which resolves to a native `ActivityCompat.requestPermissions()` call for `android.permission.POST_NOTIFICATIONS`. Per Capacitor's plugin permission model, the plugin's `@Permission` annotation only registers the permission with Capacitor's own JS-facing permission bridge — it does **not** get merged into the app's own manifest. The *app* is required to declare the underlying OS permission itself.
+
+Without that manifest declaration, Android silently auto-denies any runtime request for an undeclared permission — no system dialog is ever shown to the user, on any install, no matter how many times the app is reinstalled or how the JS-side permission-request code is fixed. This explains every symptom seen across Entries 038-042: the user never actually saw an OS notification-permission prompt, `checkPermissions()`/`requestPermissions()` always resolved to `denied` immediately, and even a token that somehow made it to the server would never result in a visible notification, since the OS itself refuses to post any notification for an app without this grant on Android 13+.
+
+### Changes Made
+
+- **`client/android/app/src/main/AndroidManifest.xml`** — added `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />`.
+
+### Database Operations
+
+None (already covered by Entry 042's migration 044, confirmed run against `tenant_qschool_onecampus_local`).
+
+### Expected Outcome
+
+On the next rebuild + fresh install, launching the app should now show the actual OS "Allow OneCampus to send you notifications?" system dialog (previously silently skipped/auto-denied) — accepting it should let `PushNotifications.requestPermissions()` resolve to `granted`, register a real FCM token, sync it to the server, and receive/display native notifications going forward.
