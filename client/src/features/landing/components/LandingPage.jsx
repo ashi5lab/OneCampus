@@ -1,16 +1,51 @@
 import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LoginPage } from '../../auth/components/LoginPage';
 import { FiUsers, FiCheckCircle, FiCreditCard, FiBookOpen, FiMessageSquare, FiGlobe, FiShield, FiSmartphone, FiAward, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { apiClient } from '../../../lib/apiClient';
 import { Capacitor } from '@capacitor/core';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export function LandingPage() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
   const [contactStatus, setContactStatus] = useState({ loading: false, success: false, error: null });
   const scrollContainerRef = useRef(null);
+  const navigate = useNavigate();
+  const { initializing, isAuthenticated } = useAuth();
 
   const isAppMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || Capacitor.isNativePlatform();
+
+  // While the silent refresh-token call is in-flight, show a splash so
+  // native app users don't see a flash of the login screen before being
+  // redirected to the dashboard on an already-authenticated session.
+  if (isAppMode && initializing) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minHeight: '100dvh', background: '#0f172a',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: 56, height: 56,
+            border: '4px solid rgba(99,102,241,0.2)',
+            borderTopColor: '#6366f1',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto 16px',
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <p style={{ color: '#94a3b8', fontSize: 14, fontFamily: 'system-ui, sans-serif' }}>Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If already authenticated and in app mode, redirect directly to the dashboard.
+  if (isAppMode && isAuthenticated) {
+    navigate('/app', { replace: true });
+    return null;
+  }
 
   if (isAppMode) {
     return (

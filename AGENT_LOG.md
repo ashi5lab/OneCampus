@@ -2556,6 +2556,7 @@ Entries 037-041 already iterated on the native push pipeline (Capacitor setup, l
 ### Expected Outcome
 
 If token length was truncating the insert, native tokens will now save correctly and notifications should start arriving. If the remaining cause is an OS-level notification permission denial from an earlier build, the user needs to check Android Settings (or reinstall) — the next send attempt's server logs will also now show the exact per-token failure reason if it's still not working.
+<<<<<<< Updated upstream
 
 ## Entry 043 — Root Cause Found: Missing POST_NOTIFICATIONS Permission Declaration (Android Native Push)
 
@@ -2584,3 +2585,29 @@ None (already covered by Entry 042's migration 044, confirmed run against `tenan
 ### Expected Outcome
 
 On the next rebuild + fresh install, launching the app should now show the actual OS "Allow OneCampus to send you notifications?" system dialog (previously silently skipped/auto-denied) — accepting it should let `PushNotifications.requestPermissions()` resolve to `granted`, register a real FCM token, sync it to the server, and receive/display native notifications going forward.
+=======
+
+## Entry 042
+
+**Date**: 2026-07-28
+**Request**: Fix brief flash of login screen when opening Android app with active session.
+
+### Root Cause
+
+When the app opens at /, LandingPage is rendered. The AuthContext initializing state is 	rue while the silent refresh-token call is in-flight. During this time, LandingPage immediately rendered LoginPage for native mode, causing a visible flash before isAuthenticated became true and the redirect to /app occurred.
+
+### Changes Made
+
+- client/src/components/ProtectedRoute.jsx: Replaced eturn null with a full-screen dark splash loader (spinning ring) while initializing is true.
+- client/src/features/landing/components/LandingPage.jsx:
+  - Added useAuth() and useNavigate().
+  - While initializing && isAppMode, shows the same dark splash instead of LoginPage.
+  - After initializing resolves, if isAuthenticated && isAppMode, redirects directly to /app without ever rendering the login form.
+
+### Expected Outcome
+
+When the user opens the Android app with an active session:
+1. A brief dark loading splash is shown (matching the app's dark theme).
+2. Once the session is restored, they are navigated directly to the dashboard.
+3. Login screen is never shown.
+>>>>>>> Stashed changes
