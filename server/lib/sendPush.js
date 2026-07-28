@@ -45,11 +45,16 @@ async function sendPush(db, userId, { title, body, data = {} }) {
       // HIGH priority wakes the device even in Doze mode. Without this,
       // Firebase defaults to NORMAL priority for data-only messages, which
       // Android may batch/defer indefinitely when the app is backgrounded.
+      // No clickAction here — 'FLUTTER_NOTIFICATION_CLICK' (left over from
+      // a Flutter-oriented example) doesn't match any intent-filter this
+      // Capacitor app declares, so it wouldn't do anything; the
+      // @capacitor/push-notifications plugin's own manifest already
+      // handles tapping a notification and routes it to the JS
+      // pushNotificationActionPerformed listener (see nativePush.js).
       android: {
         priority: 'high',
         notification: {
           sound: 'default',
-          clickAction: 'FLUTTER_NOTIFICATION_CLICK',
         },
       },
     });
@@ -57,6 +62,10 @@ async function sendPush(db, userId, { title, body, data = {} }) {
     console.log(`[FCM] Sent ${response.successCount} successes, ${response.failureCount} failures`);
 
     // Remove tokens that are no longer valid (user uninstalled, revoked permission, etc.)
+    // and log every other failure's code/message in full — this is the
+    // only place that reveals *why* a specific token (e.g. a native
+    // Android token that a web token for the same user sent alongside
+    // successfully) silently didn't get a notification.
     const expired = [];
     response.responses.forEach((r, i) => {
       if (!r.success) {
@@ -67,6 +76,8 @@ async function sendPush(db, userId, { title, body, data = {} }) {
         ) {
           expired.push(tokens[i]);
           console.log(`[FCM] Removing expired token: ${tokens[i].substring(0, 20)}...`);
+        } else {
+          console.error(`[FCM] Send failed for token ${tokens[i].substring(0, 20)}...:`, code, r.error?.message);
         }
       }
     });

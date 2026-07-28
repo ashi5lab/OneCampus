@@ -2517,3 +2517,42 @@ Push notifications sent while the Android PWA has been swiped away from Recent A
 - Login sessions persist on Android � no more idle timeout auto-logout.
 - Native Android push notifications delivered with high priority and correct audio.
 - FCM token registered reliably without listener leaks.
+
+## Entry 042 — Investigate Native Android (Capacitor) Push Notifications Not Received
+
+**Date:** 2026-07-28
+
+### User Request
+
+> "we have implemented capacitor with firebase push notification - but notification is not showing - tried multiple times but still notification doesnt work in mobile android (web its working - I am loigged in web and mobile android with same user)"
+
+### Context
+
+Entries 037-041 already iterated on the native push pipeline (Capacitor setup, login persistence, permission request flow, android priority config, listener leak fix) but the user reports it's still not working after multiple rebuilds. Confirmed the latest `android-build.yml` CI run (commit ccd5663) succeeded and correctly ran `:app:processDebugGoogleServices`, so the shipped APK does have Firebase configured — this isn't a build/CI problem.
+
+### Findings
+
+1. **`onec_fcm_tokens.token` is `VARCHAR(255)`** (migration 038). FCM's own documentation explicitly does not guarantee a maximum registration-token length and warns against assuming one. If a native Android token (format/length isn't guaranteed identical to a web-push VAPID token) exceeds 255 characters, the `INSERT` in `saveFcmToken` fails outright with a Postgres "value too long" error, `saveFcmToken` 500s, and the native token silently never persists — while the same user's (shorter, safely-under-255) web token saves fine. This exactly matches "web works, native doesn't, tried repeatedly" without needing any of the app-side registration flow to be broken. Widened the column to `TEXT` (migration 044) as a zero-cost defensive fix — no downside for existing shorter tokens.
+2. **`server/lib/sendPush.js`'s `android.notification.clickAction` was `'FLUTTER_NOTIFICATION_CLICK'`** — a Flutter-plugin convention, meaningless for this Capacitor app (no such intent-filter exists). Harmless to notification *display*, but would leave a tap doing nothing. Removed it.
+3. **No `pushNotificationActionPerformed` listener existed anywhere in the client** — tapping a delivered native notification had no navigation wired up at all (the web equivalent, `firebase-messaging-sw.js`'s `notificationclick`, has existed since Entry 030). Added `nativeListenNotificationTap()` in `nativePush.js` and wired it into `usePushNotificationSync.jsx`.
+4. **Server only logged the two known "expired token" error codes** on send failure; every other failure reason (e.g. a genuine per-token android delivery error) was swallowed into just the aggregate success/failure counts, with no way to diagnose *why* a specific token failed. Added full per-token error code/message logging for every non-expired failure.
+
+### Not confirmed (needs the user to check, since this session has no device or production DB/log access)
+
+- Whether the native token is actually present in `onec_fcm_tokens` for this user at all (would require querying prod DB).
+- Whether Android's system notification permission for the app is actually granted (Settings → Apps → OneCampus → Notifications) — if the user hit "Deny" on an earlier, buggier build's permission prompt (Entries 038-039 fixed bugs in exactly that flow), Android does not re-prompt on subsequent launches; only a manual Settings toggle or a full uninstall+reinstall resets it. Repeated `adb install -r` updates (as opposed to uninstall+reinstall) do **not** reset a prior permission denial.
+
+### Changes Made
+
+- **`server/migrations/044_widen_fcm_token_column.sql`** (new) — `onec_fcm_tokens.token` `VARCHAR(255)` → `TEXT`.
+- **`server/lib/sendPush.js`** — removed the incorrect Flutter `clickAction`; log full error code/message for every non-expired per-token send failure.
+- **`client/src/lib/nativePush.js`** — added `nativeListenNotificationTap()`.
+- **`client/src/hooks/usePushNotificationSync.jsx`** — wired native notification-tap events to `navigate()`.
+
+### Database Operations
+
+`server/migrations/044_widen_fcm_token_column.sql` needs to be run against production (`node server/scripts/run_migration.js 044_widen_fcm_token_column.sql`) — not run automatically by this session.
+
+### Expected Outcome
+
+If token length was truncating the insert, native tokens will now save correctly and notifications should start arriving. If the remaining cause is an OS-level notification permission denial from an earlier build, the user needs to check Android Settings (or reinstall) — the next send attempt's server logs will also now show the exact per-token failure reason if it's still not working.

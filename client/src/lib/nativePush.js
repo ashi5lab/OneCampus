@@ -8,6 +8,7 @@ let cachedToken = null;
 let registrationListener = null;
 let registrationErrorListener = null;
 let foregroundListener = null;
+let actionListener = null;
 
 // Helper: cleanly replace the registration listeners and call register().
 // Returns a Promise that resolves with the token or rejects on error.
@@ -124,4 +125,38 @@ export async function nativeListenForegroundMessages(callback) {
 // via presentationOptions in capacitor.config.json.
 export async function nativeShowLocalNotification(title, options = {}) {
   fcmLog('[NATIVE]', 'nativeShowLocalNotification skipped - handled automatically by native presentationOptions');
+}
+
+// Native: listen for the user tapping a background/terminated-state
+// notification — the Android/web equivalent of firebase-messaging-sw.js's
+// notificationclick listener. Without this, tapping a native push
+// notification just opens the app with no navigation (there was no
+// listener for this event at all previously). Returns an unsubscribe fn.
+export async function nativeListenNotificationTap(callback) {
+  if (!Capacitor.isNativePlatform()) return () => {};
+
+  if (actionListener) {
+    actionListener.remove();
+    actionListener = null;
+  }
+
+  try {
+    const listener = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+      const data = action.notification?.data || {};
+      fcmLog('[NATIVE]', 'Notification tapped — app opened/focused', { url: data.url });
+      callback(data.url || '/app');
+    });
+
+    actionListener = listener;
+
+    return () => {
+      if (actionListener) {
+        actionListener.remove();
+        actionListener = null;
+      }
+    };
+  } catch (error) {
+    fcmError('[NATIVE]', 'Error attaching notification tap listener:', error);
+    return () => {};
+  }
 }
