@@ -39,6 +39,13 @@ import { ExamFormPage } from './features/exams/components/ExamFormPage';
 import { ExamDetailPage } from './features/exams/components/ExamDetailPage';
 import { ExamSuccessPage } from './features/exams/components/ExamSuccessPage';
 import { ReportsPage } from './features/reports/components/ReportsPage';
+import { DateRangeReportPage } from './features/reports/components/DateRangeReportPage';
+import { AcademicsReportPage } from './features/reports/components/AcademicsReportPage';
+import { AttendanceReportPage } from './features/reports/components/AttendanceReportPage';
+import { InsightsPage } from './features/reports/components/InsightsPage';
+import { LibraryReportPage } from './features/reports/components/LibraryReportPage';
+import { CertificatesReportPage } from './features/reports/components/CertificatesReportPage';
+import { TodayListPage } from './features/reports/components/TodayListPage';
 import { ProfilePage } from './features/profile/components/ProfilePage';
 import { ManageDashboardAppsPage } from './features/sidebarSettings/components/ManageDashboardAppsPage';
 import { MorePage } from './features/more/components/MorePage';
@@ -260,6 +267,62 @@ export default function App() {
           element={
             <RequirePermission permission="reports.view">
               <ReportsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="reports/today/:type"
+          element={
+            <RequirePermission permission="reports.view">
+              <TodayListPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="reports/date-range"
+          element={
+            <RequirePermission permission="reports.view">
+              <DateRangeReportPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="reports/academics"
+          element={
+            <RequirePermission permission="reports.view">
+              <AcademicsReportPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="reports/attendance"
+          element={
+            <RequirePermission permission="reports.view">
+              <AttendanceReportPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="reports/more"
+          element={
+            <RequirePermission permission="reports.view">
+              <InsightsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="reports/more/library"
+          element={
+            <RequirePermission permission="reports.view">
+              <LibraryReportPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="reports/more/certificates"
+          element={
+            <RequirePermission permission="reports.view">
+              <CertificatesReportPage />
             </RequirePermission>
           }
         />

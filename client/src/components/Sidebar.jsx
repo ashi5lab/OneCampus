@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, LayoutGrid, Activity, Inbox, Calendar, Grip, Settings, ChevronDown, CheckSquare, ShieldAlert } from 'lucide-react';
+import { Home, LayoutGrid, Activity, Inbox, Calendar, Grip, Settings, ChevronDown, CheckSquare, ShieldAlert, Users, FileText, FileSpreadsheet, BarChart3, Radio } from 'lucide-react';
 import { useConfig } from '../contexts/ConfigContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useMyProfile } from '../features/profile/hooks/useProfile';
@@ -26,7 +26,7 @@ function NavBadge({ count }) {
 
 export function Sidebar() {
   const navigate = useNavigate();
-  const { config, hasModule } = useConfig();
+  const { config, hasModule, t } = useConfig();
   const { user, logout, can } = useAuth();
   const messagingEnabled = hasModule('messaging') && can('messages.view');
   const { data: unreadCount } = useUnreadCount({ enabled: messagingEnabled });
@@ -68,6 +68,13 @@ export function Sidebar() {
           Discipline
         </NavLink>
 
+        {can('learners.view') && (
+          <NavLink to="/app/learners" className={navItemClass}>
+            <Users className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
+            {t('learners')}
+          </NavLink>
+        )}
+
         {user?.role !== 'guardian' && (user?.role === 'admin' || user?.role === 'instructor' || user?.role === 'learner' || can('class.view')) && (
           <NavLink to={user?.role === 'admin' ? '/app/class-channels' : '/app/class'} className={navItemClass}>
             <LayoutGrid className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
@@ -75,13 +82,26 @@ export function Sidebar() {
           </NavLink>
         )}
 
-        <NavLink to="/app/activities" className={navItemClass}>
-          <Activity className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
-          <span className="flex flex-1 items-center justify-between">
-            Activities
-            <NavBadge count={activity?.recentCount} />
-          </span>
-        </NavLink>
+        {can('assignments.view') && (
+          <NavLink to="/app/assignments" className={navItemClass}>
+            <FileText className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
+            Assignments
+          </NavLink>
+        )}
+
+        {(can('exams.view') || (hasModule('exams') && can('evaluations.view'))) && (
+          <NavLink to="/app/exams" className={navItemClass}>
+            <FileSpreadsheet className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
+            Exams
+          </NavLink>
+        )}
+
+        {can('reports.view') && (
+          <NavLink to="/app/reports" className={navItemClass}>
+            <BarChart3 className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
+            Reports
+          </NavLink>
+        )}
 
         {messagingEnabled && (
           <NavLink to="/app/messages" className={navItemClass}>
@@ -93,12 +113,27 @@ export function Sidebar() {
           </NavLink>
         )}
 
+        {can('broadcast.view') && (
+          <NavLink to="/app/broadcast" className={navItemClass}>
+            <Radio className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
+            Broadcast
+          </NavLink>
+        )}
+
         {can('calendar.view') && (
           <NavLink to="/app/calendar" className={navItemClass}>
             <Calendar className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
             Calendar
           </NavLink>
         )}
+
+        <NavLink to="/app/activities" className={navItemClass}>
+          <Activity className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />
+          <span className="flex flex-1 items-center justify-between">
+            Activities
+            <NavBadge count={activity?.recentCount} />
+          </span>
+        </NavLink>
 
         <NavLink to="/app/more" className={navItemClass}>
           <Grip className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.8} />

@@ -111,7 +111,9 @@ async function attendance(req, res) {
     const result = await req.db.query(
       `SELECT l.id AS learner_id, l.first_name, l.last_name, l.registry_no, c.name AS cohort_name,
               COALESCE((SELECT COUNT(*) FROM onec_cohort_attendance_logs cl WHERE cl.cohort_id = l.cohort_id AND cl.date BETWEEN $1 AND $2), 0)::int AS total_marked,
-              COALESCE((SELECT COUNT(*) FROM onec_attendance a WHERE a.learner_id = l.id AND a.date BETWEEN $1 AND $2), 0)::int AS exception_count
+              COALESCE((SELECT COUNT(*) FROM onec_attendance a WHERE a.learner_id = l.id AND a.date BETWEEN $1 AND $2 AND a.status = 'absent'), 0)::int AS absent_count,
+              COALESCE((SELECT COUNT(*) FROM onec_attendance a WHERE a.learner_id = l.id AND a.date BETWEEN $1 AND $2 AND a.status = 'late'), 0)::int AS late_count,
+              COALESCE((SELECT COUNT(*) FROM onec_attendance a WHERE a.learner_id = l.id AND a.date BETWEEN $1 AND $2 AND a.status = 'excused'), 0)::int AS excused_count
        FROM onec_learners l
        JOIN onec_cohorts c ON l.cohort_id = c.id
        WHERE l.status = 'active'${cohortFilter}
@@ -119,11 +121,17 @@ async function attendance(req, res) {
       params
     );
 
-    const data = result.rows.map((row) => ({
-      ...row,
-      present_count: row.total_marked - row.exception_count,
-      attendance_rate: row.total_marked > 0 ? Math.round(((row.total_marked - row.exception_count) / row.total_marked) * 1000) / 10 : null
-    }));
+    // Same rate convention as classWiseReport() below: only absent/late
+    // count against the rate (excused is tracked but doesn't reduce it),
+    // so the two reports' percentages agree for the same date range.
+    const data = result.rows.map((row) => {
+      const presentCount = row.total_marked - row.absent_count - row.late_count - row.excused_count;
+      return {
+        ...row,
+        present_count: presentCount,
+        attendance_rate: row.total_marked > 0 ? Math.round(((row.total_marked - row.absent_count - row.late_count) / row.total_marked) * 1000) / 10 : null
+      };
+    });
 
     res.json({ data, from: fromDate, to: toDate });
   } catch (err) {
