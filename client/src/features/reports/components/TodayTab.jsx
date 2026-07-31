@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Users, AlertCircle, Clock, ShieldAlert, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTodayReport } from '../hooks/useReports';
 import { Badge } from '../../../components/Badge';
+
+const PREVIEW_LIMIT = 10;
 
 function fmt(time) {
   if (!time) return '—';
@@ -23,7 +26,7 @@ function SummaryCard({ icon: Icon, label, value, sub, color }) {
   );
 }
 
-function Section({ title, count, badge, children, defaultOpen = false }) {
+function Section({ title, count, badge, children, defaultOpen = false, viewAllTo }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
@@ -38,7 +41,20 @@ function Section({ title, count, badge, children, defaultOpen = false }) {
         </div>
         {open ? <ChevronUp className="h-4 w-4 text-ink-400" /> : <ChevronDown className="h-4 w-4 text-ink-400" />}
       </button>
-      {open && <div className="border-t border-border">{children}</div>}
+      {open && (
+        <div className="border-t border-border">
+          {children}
+          {viewAllTo && count > PREVIEW_LIMIT && (
+            <Link
+              to={viewAllTo}
+              onClick={(e) => e.stopPropagation()}
+              className="block border-t border-border px-4 py-3 text-center text-[12.5px] font-semibold text-accent hover:bg-surface-muted"
+            >
+              View all {count} →
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -106,6 +122,7 @@ export function TodayTab() {
         count={late.length}
         defaultOpen={true}
         badge={late.length > 0 ? <Badge variant="warning">Late</Badge> : null}
+        viewAllTo="/app/reports/today/late"
       >
         {late.length === 0 ? (
           <EmptyState message="No late arrivals today" />
@@ -118,7 +135,7 @@ export function TodayTab() {
               <span className="col-span-3 text-[11px] font-semibold uppercase tracking-wide text-ink-400">Marked By</span>
               <span className="col-span-2 text-right text-[11px] font-semibold uppercase tracking-wide text-ink-400">Time</span>
             </div>
-            {late.map((row, i) => (
+            {late.slice(0, PREVIEW_LIMIT).map((row, i) => (
               <div key={i} className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-4 py-3 sm:grid-cols-12">
                 <div className="col-span-1 sm:col-span-4">
                   <div className="text-[13px] font-semibold text-ink-900">{row.student_name}</div>
@@ -144,6 +161,7 @@ export function TodayTab() {
         count={absent.length}
         badge={absent.length > 0 ? <Badge variant="danger">Absent</Badge> : null}
         defaultOpen={absent.length > 0 && late.length === 0}
+        viewAllTo="/app/reports/today/absent"
       >
         {absent.length === 0 ? (
           <EmptyState message="No absences recorded today" />
@@ -155,7 +173,7 @@ export function TodayTab() {
               <span className="col-span-2 text-[11px] font-semibold uppercase tracking-wide text-ink-400">Marked By</span>
               <span className="col-span-2 text-right text-[11px] font-semibold uppercase tracking-wide text-ink-400">Time</span>
             </div>
-            {absent.map((row, i) => (
+            {absent.slice(0, PREVIEW_LIMIT).map((row, i) => (
               <div key={i} className="grid grid-cols-2 gap-x-2 px-4 py-3 sm:grid-cols-12">
                 <div className="col-span-1 sm:col-span-4 text-[13px] font-semibold text-ink-900">{row.student_name}</div>
                 <div className="col-span-1 sm:col-span-4 text-[13px] text-ink-700">{row.cohort_name}</div>
@@ -179,6 +197,7 @@ export function TodayTab() {
               : null
         }
         defaultOpen={discipline.length > 0 && late.length === 0 && absent.length === 0}
+        viewAllTo="/app/reports/today/discipline"
       >
         {discipline.length === 0 ? (
           <EmptyState message="No discipline incidents today" />
@@ -191,7 +210,7 @@ export function TodayTab() {
               <span className="col-span-4 text-[11px] font-semibold uppercase tracking-wide text-ink-400">Details</span>
               <span className="col-span-2 text-right text-[11px] font-semibold uppercase tracking-wide text-ink-400">Time</span>
             </div>
-            {discipline.map((row, i) => (
+            {discipline.slice(0, PREVIEW_LIMIT).map((row, i) => (
               <div key={i} className="grid grid-cols-2 gap-x-2 gap-y-1 px-4 py-3 sm:grid-cols-12 sm:gap-y-0 sm:items-center">
                 <div className="col-span-1 sm:col-span-3 text-[13px] font-semibold text-ink-900">{row.student_name}</div>
                 <div className="col-span-1 sm:col-span-2 text-[13px] text-ink-700">{row.cohort_name}</div>
