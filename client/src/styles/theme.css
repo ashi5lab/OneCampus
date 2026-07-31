@@ -45,6 +45,19 @@
   --info-light: #DBEAFE;
   --info-ink: #FFFFFF;
 
+  /* Chart categorical identity hues — for labeling distinct report
+     sections/modules (Attendance, Academics, Library, ...), never for
+     status/severity (present/absent, minor/major — those stay on the
+     semantic tokens above). Fixed assignment order per module, validated
+     colorblind-safe as a set against this theme's --surface via
+     dataviz skill's validate_palette.js (see AGENT_LOG.md). */
+  --chart-blue: #2a78d6;
+  --chart-orange: #eb6834;
+  --chart-aqua: #1baf7a;
+  --chart-yellow: #eda100;
+  --chart-magenta: #e87ba4;
+  --chart-violet: #4a3aa7;
+
   /* Sidebar */
   --sidebar-bg: #FFFFFF;
   --sidebar-bg-hover: #F5F5FA;
@@ -127,6 +140,13 @@
 
     --info: #3B82F6;
     --info-light: #1E3A5F;
+
+    --chart-blue: #3987e5;
+    --chart-orange: #d95926;
+    --chart-aqua: #199e70;
+    --chart-yellow: #c98500;
+    --chart-magenta: #d55181;
+    --chart-violet: #9085e9;
 
     --sidebar-bg: #1A1E27;
     --sidebar-bg-hover: #242A35;
@@ -214,6 +234,13 @@
 
   --info: #3B82F6;
   --info-light: #1E3A5F;
+
+  --chart-blue: #3987e5;
+  --chart-orange: #d95926;
+  --chart-aqua: #199e70;
+  --chart-yellow: #c98500;
+  --chart-magenta: #d55181;
+  --chart-violet: #9085e9;
 
   --sidebar-bg: #1A1E27;
   --sidebar-bg-hover: #242A35;
