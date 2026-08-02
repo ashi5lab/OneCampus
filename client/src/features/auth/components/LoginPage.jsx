@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
-import { InstallAppPrompt } from '../../../components/InstallAppPrompt';
+import { InstallAppPopup } from '../../../components/InstallAppPopup';
 import { superAdminApi } from '../../superAdmin/services/superAdminApi';
 import { setSuperAdminToken } from '../../../lib/superAdminApiClient';
 
@@ -133,12 +133,10 @@ export function LoginPage() {
               {submitting ? 'Signing in...' : 'Sign In'}
             </button>
           </div>
-
-          <div className="mt-6 flex justify-center">
-            <InstallAppPrompt />
-          </div>
         </form>
       </div>
+
+      <InstallAppPopup />
     </div>
   );
 }
