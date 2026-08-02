@@ -79,7 +79,7 @@ function showNotificationToast({ title, body, url, source, navigate, queryClient
 
   showLocalNotification(title, {
     body,
-    icon: '/icon-192x192.svg',
+    icon: '/icon-192x192.png',
     data: { url }
   }).catch((error) => fcmError(`[${source}]`, 'Failed to display local notification', error));
 }
