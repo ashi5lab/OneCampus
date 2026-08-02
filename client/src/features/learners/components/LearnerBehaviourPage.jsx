@@ -8,35 +8,35 @@ import { useLearnerProfile } from '../hooks/useLearners';
 import { useDisciplineRecords } from '../../discipline/hooks/useDiscipline';
 
 const SEVERITY_META = {
-  positive: { 
-    pts: 5, 
+  positive: {
+    pts: 5,
     ptsStr: '+5 pts',
-    label: 'Positive', 
-    icon: Trophy, 
-    color: 'text-emerald-500', 
-    bg: 'bg-emerald-50', 
-    dot: 'bg-emerald-500',
-    badge: 'text-emerald-700 bg-emerald-100'
+    label: 'Positive',
+    icon: Trophy,
+    color: 'text-success',
+    bg: 'bg-success-light',
+    dot: 'bg-success',
+    badge: 'text-success bg-success-light'
   },
-  minor: { 
-    pts: -2, 
+  minor: {
+    pts: -2,
     ptsStr: '-2 pts',
-    label: 'Warning', 
-    icon: AlertCircle, 
-    color: 'text-orange-500', 
-    bg: 'bg-orange-50', 
-    dot: 'bg-orange-400',
-    badge: 'text-orange-700 bg-orange-100'
+    label: 'Warning',
+    icon: AlertCircle,
+    color: 'text-warning',
+    bg: 'bg-warning-light',
+    dot: 'bg-warning',
+    badge: 'text-warning bg-warning-light'
   },
-  major: { 
-    pts: -10, 
+  major: {
+    pts: -10,
     ptsStr: '-10 pts',
-    label: 'Negative', 
-    icon: AlertTriangle, 
-    color: 'text-red-500', 
-    bg: 'bg-red-50', 
-    dot: 'bg-red-500',
-    badge: 'text-red-700 bg-red-100'
+    label: 'Negative',
+    icon: AlertTriangle,
+    color: 'text-danger',
+    bg: 'bg-danger-light',
+    dot: 'bg-danger',
+    badge: 'text-danger bg-danger-light'
   }
 };
 
@@ -103,37 +103,37 @@ export function LearnerBehaviourPage({ learnerId: propLearnerId, asTab = false }
       {/* Stats Grid */}
       <Card padding="p-0" className="grid grid-cols-4 gap-0 overflow-hidden divide-x divide-border">
         <div className="p-4 text-center flex flex-col items-center justify-center">
-          <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2">
+          <div className="w-8 h-8 rounded-full bg-success-light text-success flex items-center justify-center mb-2">
             <Trophy className="w-4 h-4" />
           </div>
-          <div className="text-xl font-extrabold text-emerald-600 leading-none mb-1">{stats.positive}</div>
+          <div className="text-xl font-extrabold text-success leading-none mb-1">{stats.positive}</div>
           <div className="text-[10px] font-bold text-ink-900 mb-0.5">Positive</div>
           <div className="text-[9px] text-ink-400 font-medium">This Term</div>
         </div>
 
         <div className="p-4 text-center flex flex-col items-center justify-center">
-          <div className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-2">
+          <div className="w-8 h-8 rounded-full bg-danger-light text-danger flex items-center justify-center mb-2">
             <MinusCircle className="w-4 h-4" />
           </div>
-          <div className="text-xl font-extrabold text-red-600 leading-none mb-1">{stats.negative}</div>
+          <div className="text-xl font-extrabold text-danger leading-none mb-1">{stats.negative}</div>
           <div className="text-[10px] font-bold text-ink-900 mb-0.5">Negative</div>
           <div className="text-[9px] text-ink-400 font-medium">This Term</div>
         </div>
 
         <div className="p-4 text-center flex flex-col items-center justify-center">
-          <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center mb-2">
+          <div className="w-8 h-8 rounded-full bg-warning-light text-warning flex items-center justify-center mb-2">
             <AlertCircle className="w-4 h-4" />
           </div>
-          <div className="text-xl font-extrabold text-orange-500 leading-none mb-1">{stats.warnings}</div>
+          <div className="text-xl font-extrabold text-warning leading-none mb-1">{stats.warnings}</div>
           <div className="text-[10px] font-bold text-ink-900 mb-0.5">Warnings</div>
           <div className="text-[9px] text-ink-400 font-medium">This Term</div>
         </div>
 
-        <div className="p-4 text-center flex flex-col items-center justify-center relative bg-[#f8f7ff]">
-          <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
+        <div className="p-4 text-center flex flex-col items-center justify-center relative bg-accent-light">
+          <div className="w-8 h-8 rounded-full bg-accent-light text-accent flex items-center justify-center mb-2">
             <Shield className="w-4 h-4" />
           </div>
-          <div className="text-xl font-extrabold text-indigo-700 leading-none mb-1">{stats.score}%</div>
+          <div className="text-xl font-extrabold text-accent-dark leading-none mb-1">{stats.score}%</div>
           <div className="text-[10px] font-bold text-ink-900 mb-0.5">Behaviour Score</div>
           <div className="text-[9px] text-ink-400 font-medium flex items-center justify-center gap-1">
             This Term <AlertCircle className="w-2.5 h-2.5 opacity-60" />
@@ -148,12 +148,12 @@ export function LearnerBehaviourPage({ learnerId: propLearnerId, asTab = false }
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`pb-3 text-sm font-bold transition-colors relative ${
-              activeTab === tab.id ? 'text-[#4b43c4]' : 'text-ink-500 hover:text-ink-900'
+              activeTab === tab.id ? 'text-accent' : 'text-ink-500 hover:text-ink-900'
             }`}
           >
             {tab.label}
             {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#4b43c4] rounded-t-full" />
+              <div className="absolute bottom-0 left-0 w-full h-[3px] bg-accent rounded-t-full" />
             )}
           </button>
         ))}
@@ -240,13 +240,13 @@ export function LearnerBehaviourPage({ learnerId: propLearnerId, asTab = false }
       </div>
 
       {/* Info Card */}
-      <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100 flex items-center gap-3 mt-4">
-        <div className="w-10 h-10 rounded-full bg-white text-indigo-500 flex items-center justify-center shrink-0 shadow-sm border border-indigo-50">
+      <div className="bg-accent-light/50 rounded-2xl p-4 border border-accent-light flex items-center gap-3 mt-4">
+        <div className="w-10 h-10 rounded-full bg-surface text-accent flex items-center justify-center shrink-0 shadow-sm border border-accent-light">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2v1"/><path d="M12 7a5 5 0 0 0-5 5c0 2 1.5 3 2 5h6c.5-2 2-3 2-5a5 5 0 0 0-5-5Z"/></svg>
         </div>
         <div className="flex-1">
-          <div className="text-[13px] font-bold text-indigo-900">About Behaviour Score</div>
-          <div className="text-[11px] font-medium text-indigo-700/80 mt-0.5">Score is calculated based on positive and negative behaviour records.</div>
+          <div className="text-[13px] font-bold text-accent-dark">About Behaviour Score</div>
+          <div className="text-[11px] font-medium text-accent-dark/80 mt-0.5">Score is calculated based on positive and negative behaviour records.</div>
         </div>
       </div>
 

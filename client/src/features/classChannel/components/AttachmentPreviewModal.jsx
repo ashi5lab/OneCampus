@@ -46,7 +46,7 @@ function PdfViewer({ url, onFail }) {
         error={<div className="py-10 text-center text-[12px] text-ink-500">Couldn't load this PDF.</div>}
       >
         {Array.from({ length: numPages }, (_, i) => (
-          <div key={i} className="mb-3 overflow-hidden rounded-lg border border-border bg-white shadow-sm">
+          <div key={i} className="mb-3 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
             <Page pageNumber={i + 1} width={width ? Math.min(width, 680) : undefined} renderTextLayer renderAnnotationLayer />
           </div>
         ))}

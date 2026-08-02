@@ -48,32 +48,32 @@ function ClassRow({ c, log }) {
     <FlatRow to={`/app/attendance/${c.id}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-50 text-indigo-700 rounded-xl flex items-center justify-center text-[15px] font-bold flex-shrink-0">
+          <div className="w-10 h-10 bg-accent-light text-accent-dark rounded-xl flex items-center justify-center text-[15px] font-bold flex-shrink-0">
             {(c.name || '?')[0].toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[14.5px] font-bold text-gray-900 truncate">{c.name}</div>
-            <div className="text-[12px] font-medium text-gray-500">
+            <div className="text-[14.5px] font-bold text-ink-900 truncate">{c.name}</div>
+            <div className="text-[12px] font-medium text-ink-500">
               {c.learner_count != null ? `${c.learner_count} students` : 'Students'}
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <ChevronRight className="w-4 h-4 text-ink-300 flex-shrink-0" />
         </div>
 
         <div className="flex gap-2 mt-2.5 pl-[52px]">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-500">
             <Clock className="w-3.5 h-3.5" />
             Status
             {isMarked ? (
-              <span className="text-[10.5px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Marked</span>
+              <span className="text-[10.5px] font-bold text-success bg-success-light px-2 py-0.5 rounded-full">Marked</span>
             ) : (
-              <span className="text-[10.5px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">Pending</span>
+              <span className="text-[10.5px] font-bold text-warning bg-warning-light px-2 py-0.5 rounded-full">Pending</span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-500">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Present
-            <span className="text-[10.5px] font-bold text-gray-900">
+            <span className="text-[10.5px] font-bold text-ink-900">
               {isMarked && presentCount != null && totalLearners != null ? `${presentCount}/${totalLearners}` : '--/--'}
             </span>
           </div>
@@ -133,7 +133,7 @@ function AttendancePicker() {
   const isSearching = searchQuery.trim().length > 0;
 
   return (
-    <div className="bg-[#f8f9fe] min-h-screen pb-24 font-body">
+    <div className="bg-bg min-h-screen pb-24 font-body">
       <TeacherHeader
         title="Mark Attendance"
         subtitle="Select a class to continue"
@@ -144,31 +144,31 @@ function AttendancePicker() {
         <div ref={searchRef} className="relative">
           <button
             onClick={() => setSearchOpen((v) => !v)}
-            className="w-full bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-gray-100 flex items-center gap-3 text-left"
+            className="w-full bg-surface rounded-2xl px-4 py-3.5 shadow-sm border border-border-subtle flex items-center gap-3 text-left"
           >
-            <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
-            <span className={`flex-1 text-[14px] ${searchQuery ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+            <Search className="w-5 h-5 text-ink-300 flex-shrink-0" />
+            <span className={`flex-1 text-[14px] ${searchQuery ? 'text-ink-900 font-medium' : 'text-ink-300'}`}>
               {searchQuery || 'Search students'}
             </span>
-            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <ChevronDown className="w-4 h-4 text-ink-300 flex-shrink-0" />
           </button>
 
           {searchOpen && (
-            <div className="absolute top-full left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 mt-1 z-50 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
-                <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div className="absolute top-full left-0 right-0 bg-surface rounded-2xl shadow-xl border border-border-subtle mt-1 z-50 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-border-subtle">
+                <Search className="w-4 h-4 text-ink-300 flex-shrink-0" />
                 <input
                   autoFocus
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by name or admission number..."
-                  className="flex-1 text-[14px] outline-none text-gray-900 placeholder:text-gray-400"
+                  className="flex-1 text-[14px] outline-none text-ink-900 placeholder:text-ink-300"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                    className="text-ink-300 hover:text-ink-700 text-lg leading-none"
                   >
                     ✕
                   </button>
@@ -176,11 +176,11 @@ function AttendancePicker() {
               </div>
               <div className="max-h-72 overflow-y-auto">
                 {searchQuery.trim() === '' ? (
-                  <div className="px-4 py-4 text-[13px] text-gray-400 text-center">
+                  <div className="px-4 py-4 text-[13px] text-ink-300 text-center">
                     Type to search students...
                   </div>
                 ) : filteredLearners.length === 0 ? (
-                  <div className="px-4 py-4 text-[13px] text-gray-500 text-center">No students found</div>
+                  <div className="px-4 py-4 text-[13px] text-ink-500 text-center">No students found</div>
                 ) : (
                   filteredLearners.map((l) => {
                     const className = l.cohort_id ? cohortMap[String(l.cohort_id)] : null;
@@ -192,24 +192,24 @@ function AttendancePicker() {
                           setSearchQuery('');
                           if (l.cohort_id) navigate(`/app/attendance/${l.cohort_id}?learner=${l.id}`);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 transition border-b border-gray-50 last:border-0 text-left"
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent-light transition border-b border-border-subtle last:border-0 text-left"
                       >
                         <Avatar name={`${l.first_name} ${l.last_name}`} src={l.photo_url} size={40} />
                         <div className="flex-1 min-w-0">
-                          <div className="text-[14px] font-semibold text-gray-900 truncate">
+                          <div className="text-[14px] font-semibold text-ink-900 truncate">
                             {l.first_name} {l.last_name}
                           </div>
-                          <div className="flex items-center gap-2 text-[12px] text-gray-500 mt-0.5">
+                          <div className="flex items-center gap-2 text-[12px] text-ink-500 mt-0.5">
                             <span>{l.registry_no || 'N/A'}</span>
                             {className && (
                               <>
-                                <span className="w-1 h-1 bg-gray-300 rounded-full inline-block" />
+                                <span className="w-1 h-1 bg-ink-300 rounded-full inline-block" />
                                 <span>{className}</span>
                               </>
                             )}
                           </div>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-ink-300 flex-shrink-0" />
                       </button>
                     );
                   })
@@ -221,14 +221,14 @@ function AttendancePicker() {
 
         {/* Class list — shown when not actively searching */}
         {!isSearching && cohortsLoading && (
-          <div className="text-center py-8 text-gray-400 text-sm">Loading classes...</div>
+          <div className="text-center py-8 text-ink-300 text-sm">Loading classes...</div>
         )}
         {!isSearching && !cohortsLoading && list.length === 0 && (
-          <div className="text-center py-8 text-gray-400 text-sm">No classes found.</div>
+          <div className="text-center py-8 text-ink-300 text-sm">No classes found.</div>
         )}
         {!isSearching && !cohortsLoading && list.length > 0 && (
           <div className="-mx-4">
-            <FlatList className="bg-white">
+            <FlatList className="bg-surface">
               {list.map((c) => (
                 <ClassRow key={c.id} c={c} log={logsMap[String(c.id)]} />
               ))}

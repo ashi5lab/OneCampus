@@ -86,7 +86,7 @@ export function InstructorProfilePage() {
         </div>
       ) : (
         <>
-          <div className="bg-[#4b43c4] rounded-[24px] shadow-sm overflow-hidden text-white mb-6 bg-gradient-to-br from-[#4b43c4] to-[#3a34a8] relative">
+          <div className="bg-accent rounded-[24px] shadow-sm overflow-hidden text-white mb-6 bg-gradient-to-br from-accent to-accent-dark relative">
             {canManage && (
               <button
                 onClick={() => setShowEdit(true)}
@@ -112,11 +112,11 @@ export function InstructorProfilePage() {
                     <h1 className="text-2xl md:text-[28px] font-extrabold flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3 mb-1">
                       {instructor.first_name} {instructor.last_name}
                     </h1>
-                    <p className="text-indigo-100/90 text-[13px] font-medium leading-relaxed">
+                    <p className="text-white/80 text-[13px] font-medium leading-relaxed">
                       Staff ID: {instructor.staff_id}
                     </p>
                     {instructor.phone && (
-                      <p className="text-indigo-100/90 text-[13px] font-medium leading-relaxed mb-2">
+                      <p className="text-white/80 text-[13px] font-medium leading-relaxed mb-2">
                         {instructor.phone}
                       </p>
                     )}
@@ -132,44 +132,44 @@ export function InstructorProfilePage() {
               {/* Stats Grid inside banner */}
               <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8 pt-8 border-t border-white/10 relative">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-12 h-12 rounded-full bg-surface text-accent flex items-center justify-center shrink-0 shadow-sm">
                     <GraduationCap className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-indigo-100/90 font-medium mb-0.5">My Classes</p>
+                    <p className="text-[11px] text-white/80 font-medium mb-0.5">My Classes</p>
                     <p className="text-xl font-extrabold leading-none mb-1">{myClasses.length}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4 relative">
                   <div className="hidden lg:block absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
-                  <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-12 h-12 rounded-full bg-surface text-accent flex items-center justify-center shrink-0 shadow-sm">
                     <ClipboardList className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-indigo-100/90 font-medium mb-0.5">Assignments Created</p>
+                    <p className="text-[11px] text-white/80 font-medium mb-0.5">Assignments Created</p>
                     <p className="text-xl font-extrabold leading-none mb-1">{stats.assignmentsCreated}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4 relative">
                   <div className="hidden lg:block absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
-                  <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-12 h-12 rounded-full bg-surface text-accent flex items-center justify-center shrink-0 shadow-sm">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-indigo-100/90 font-medium mb-0.5">Exams Created</p>
+                    <p className="text-[11px] text-white/80 font-medium mb-0.5">Exams Created</p>
                     <p className="text-xl font-extrabold leading-none mb-1">{stats.examsCreated}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4 relative">
                   <div className="hidden lg:block absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10"></div>
-                  <div className="w-12 h-12 rounded-full bg-white text-[#4b43c4] flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-12 h-12 rounded-full bg-surface text-accent flex items-center justify-center shrink-0 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
                   </div>
                   <div>
-                    <p className="text-[11px] text-indigo-100/90 font-medium mb-0.5">Attendance Marked</p>
+                    <p className="text-[11px] text-white/80 font-medium mb-0.5">Attendance Marked</p>
                     <p className="text-xl font-extrabold leading-none mb-1">{stats.attendanceMarked}</p>
                   </div>
                 </div>
@@ -191,11 +191,11 @@ export function InstructorProfilePage() {
                       onClick={() => setTab(tabOption.key)}
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-colors ${
                         isActive
-                          ? 'bg-indigo-50 text-indigo-700'
+                          ? 'bg-accent-light text-accent-dark'
                           : 'bg-transparent text-ink-500 hover:bg-surface-muted hover:text-ink-900'
                       }`}
                     >
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-ink-400'}`} />
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-accent' : 'text-ink-400'}`} />
                       {tabOption.label}
                     </button>
                   );
@@ -226,7 +226,7 @@ export function InstructorProfilePage() {
                   <div className="bg-surface rounded-2xl shadow-sm border border-border p-5">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-base font-extrabold text-ink-900">My Classes</h2>
-                      <button onClick={() => setTab('classes')} className="text-xs font-bold text-indigo-600 flex items-center hover:underline">
+                      <button onClick={() => setTab('classes')} className="text-xs font-bold text-accent flex items-center hover:underline">
                         View all <ChevronRight className="w-3 h-3 ml-0.5" />
                       </button>
                     </div>
@@ -325,15 +325,15 @@ export function InstructorProfilePage() {
                 <div className="space-y-4">
                   <button onClick={() => idCardsApi.downloadInstructorCard(instructorId, instructor.staff_id)} className="w-full bg-surface rounded-xl shadow-sm border border-border p-4 flex items-center justify-between hover:bg-surface-muted transition-colors text-left">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center"><User className="w-5 h-5" /></div>
+                      <div className="w-10 h-10 rounded-full bg-accent-light text-accent flex items-center justify-center"><User className="w-5 h-5" /></div>
                       <div><p className="font-bold text-ink-900">Download ID Card</p><p className="text-xs text-ink-500">Get a PDF copy of the staff ID</p></div>
                     </div>
                     <Download className="w-5 h-5 text-ink-400" />
                   </button>
                   {canManage && (
-                    <button onClick={() => setConfirmDelete(true)} className="w-full bg-red-50 rounded-xl border border-red-100 p-4 flex items-center justify-between hover:bg-red-100 transition-colors text-left">
-                      <div className="flex items-center gap-3 text-red-700">
-                        <div className="w-10 h-10 rounded-full bg-white text-red-600 flex items-center justify-center shadow-sm"><User className="w-5 h-5" /></div>
+                    <button onClick={() => setConfirmDelete(true)} className="w-full bg-danger-light rounded-xl border border-danger/20 p-4 flex items-center justify-between hover:bg-danger/15 transition-colors text-left">
+                      <div className="flex items-center gap-3 text-danger">
+                        <div className="w-10 h-10 rounded-full bg-surface text-danger flex items-center justify-center shadow-sm"><User className="w-5 h-5" /></div>
                         <div><p className="font-bold">Delete Profile</p><p className="text-xs opacity-80">Permanently remove this record</p></div>
                       </div>
                     </button>
@@ -346,7 +346,7 @@ export function InstructorProfilePage() {
             <div className={`w-full xl:w-[320px] shrink-0 flex-col gap-5 ${tab === 'overview' ? 'flex' : 'hidden xl:flex'}`}>
               <div className="bg-surface rounded-2xl shadow-sm border border-border p-5">
                 <h3 className="text-[13px] font-bold uppercase tracking-wider text-ink-900 flex items-center gap-2 mb-4">
-                  <Users className="w-4 h-4 text-indigo-500" /> Contact
+                  <Users className="w-4 h-4 text-accent" /> Contact
                 </h3>
                 <div className="divide-y divide-border/50 text-sm">
                   <div className="flex justify-between items-center py-3">
@@ -364,23 +364,23 @@ export function InstructorProfilePage() {
 
               <div className="bg-surface rounded-2xl shadow-sm border border-border p-5">
                 <h3 className="text-[13px] font-bold uppercase tracking-wider text-ink-900 flex items-center gap-2 mb-4">
-                  <BookOpen className="w-4 h-4 text-indigo-500" /> Quick Links
+                  <BookOpen className="w-4 h-4 text-accent" /> Quick Links
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <button onClick={() => setTab('classes')} className="bg-surface-muted hover:bg-indigo-50 rounded-xl p-3 flex flex-col items-center justify-center gap-2 text-center transition-colors border border-transparent hover:border-indigo-100">
-                    <GraduationCap className="w-5 h-5 text-indigo-500" />
+                  <button onClick={() => setTab('classes')} className="bg-surface-muted hover:bg-accent-light rounded-xl p-3 flex flex-col items-center justify-center gap-2 text-center transition-colors border border-transparent hover:border-accent-light">
+                    <GraduationCap className="w-5 h-5 text-accent" />
                     <span className="text-xs font-bold text-ink-700">My Classes</span>
                   </button>
-                  <button onClick={() => navigate('/app/timetable')} className="bg-surface-muted hover:bg-indigo-50 rounded-xl p-3 flex flex-col items-center justify-center gap-2 text-center transition-colors border border-transparent hover:border-indigo-100">
-                    <Calendar className="w-5 h-5 text-indigo-500" />
+                  <button onClick={() => navigate('/app/timetable')} className="bg-surface-muted hover:bg-accent-light rounded-xl p-3 flex flex-col items-center justify-center gap-2 text-center transition-colors border border-transparent hover:border-accent-light">
+                    <Calendar className="w-5 h-5 text-accent" />
                     <span className="text-xs font-bold text-ink-700">Time Table</span>
                   </button>
-                  <button onClick={() => navigate('/app/assignments')} className="bg-surface-muted hover:bg-indigo-50 rounded-xl p-3 flex flex-col items-center justify-center gap-2 text-center transition-colors border border-transparent hover:border-indigo-100">
-                    <ClipboardList className="w-5 h-5 text-emerald-500" />
+                  <button onClick={() => navigate('/app/assignments')} className="bg-surface-muted hover:bg-accent-light rounded-xl p-3 flex flex-col items-center justify-center gap-2 text-center transition-colors border border-transparent hover:border-accent-light">
+                    <ClipboardList className="w-5 h-5 text-success" />
                     <span className="text-xs font-bold text-ink-700">Assignments</span>
                   </button>
-                  <button onClick={() => navigate('/app/exams')} className="bg-surface-muted hover:bg-indigo-50 rounded-xl p-3 flex flex-col items-center justify-center gap-2 text-center transition-colors border border-transparent hover:border-indigo-100">
-                    <FileText className="w-5 h-5 text-orange-500" />
+                  <button onClick={() => navigate('/app/exams')} className="bg-surface-muted hover:bg-accent-light rounded-xl p-3 flex flex-col items-center justify-center gap-2 text-center transition-colors border border-transparent hover:border-accent-light">
+                    <FileText className="w-5 h-5 text-warning" />
                     <span className="text-xs font-bold text-ink-700">Exams</span>
                   </button>
                 </div>

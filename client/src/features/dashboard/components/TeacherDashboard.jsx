@@ -64,9 +64,9 @@ function slotStatus(hourStr) {
 }
 
 const STATUS_STYLES = {
-  Completed: 'bg-indigo-50 text-indigo-700',
-  Next:      'bg-purple-100 text-purple-700',
-  Upcoming:  'bg-gray-100 text-gray-600',
+  Completed: 'bg-accent-light text-accent-dark',
+  Next:      'bg-accent-light text-accent-dark',
+  Upcoming:  'bg-surface-muted text-ink-700',
 };
 
 // ── component ─────────────────────────────────────────────────────────────────
@@ -117,22 +117,22 @@ export function TeacherDashboard() {
   const totalClasses   = todaySchedule.length || (typeof classCount === 'number' ? classCount : 0);
   const attendanceText = totalClasses > 0 ? `${markedCount}/${totalClasses}` : `${markedCount}`;
 
-  let attendanceColor = 'text-gray-600 bg-gray-50';
+  let attendanceColor = 'text-ink-700 bg-surface-muted';
   let AttendanceIcon = CheckCircle2;
 
   if (totalClasses > 0) {
     if (markedCount >= totalClasses) {
-      attendanceColor = 'text-emerald-600 bg-emerald-50';
+      attendanceColor = 'text-success bg-success-light';
       AttendanceIcon = CheckCircle2;
     } else if (markedCount > 0) {
-      attendanceColor = 'text-orange-600 bg-orange-50';
+      attendanceColor = 'text-warning bg-warning-light';
       AttendanceIcon = Clock;
     } else {
-      attendanceColor = 'text-red-600 bg-red-50';
+      attendanceColor = 'text-danger bg-danger-light';
       AttendanceIcon = XCircle;
     }
   } else if (markedCount > 0) {
-    attendanceColor = 'text-emerald-600 bg-emerald-50';
+    attendanceColor = 'text-success bg-success-light';
     AttendanceIcon = CheckCircle2;
   }
 
@@ -140,11 +140,11 @@ export function TeacherDashboard() {
   const assignments = assignmentsData?.assignments ?? [];
   const toGradeCount = assignments.filter((a) => (a.ungraded_count ?? 0) > 0).length;
 
-  let assignmentsColor = 'text-emerald-600 bg-emerald-50';
+  let assignmentsColor = 'text-success bg-success-light';
   let AssignmentsIcon = CheckCircle2;
 
   if (toGradeCount > 0) {
-    assignmentsColor = 'text-orange-600 bg-orange-50';
+    assignmentsColor = 'text-warning bg-warning-light';
     AssignmentsIcon = ClipboardList;
   }
 
@@ -161,7 +161,7 @@ export function TeacherDashboard() {
       icon: Users,
       value: String(typeof classCount === 'number' ? classCount : '—'),
       label: 'My Classes',
-      color: 'text-indigo-600 bg-indigo-50',
+      color: 'text-accent bg-accent-light',
       path: '/app/cohorts'
     },
     {
@@ -183,13 +183,13 @@ export function TeacherDashboard() {
       subtitle: todaySchedule.length > 0
         ? `Next: ${formatHour(todaySchedule.find(s => slotStatus(s.schedule_data?.hour) !== 'Completed')?.schedule_data?.hour || '').start}`
         : null,
-      color: 'text-indigo-600 bg-indigo-50'
+      color: 'text-accent bg-accent-light'
     },
   ];
 
   return (
     <>
-    <div className="bg-[#f8f9fe] min-h-screen pb-24 font-body">
+    <div className="bg-bg min-h-screen pb-24 font-body">
       <TeacherHeader
         showSearch={true}
         searchPlaceholder="Search students, class, apps .."
@@ -198,13 +198,13 @@ export function TeacherDashboard() {
             label: 'Students',
             value: typeof studentCount === 'number' ? studentCount.toLocaleString() : String(studentCount),
             icon: Users,
-            color: 'bg-[#917bf6]'
+            color: 'bg-accent'
           },
           {
             label: 'Classes',
             value: String(typeof classCount === 'number' ? classCount : '—'),
             icon: GraduationCap,
-            color: 'bg-[#917bf6]'
+            color: 'bg-accent'
           }
         ]}
       />
@@ -217,12 +217,12 @@ export function TeacherDashboard() {
             multi-column content rather than a cramped stacked list. */}
         <div className="md:hidden -mx-4">
           <SectionHeader className="px-4">Quick actions</SectionHeader>
-          <FlatList className="bg-white">
+          <FlatList className="bg-surface">
             <FlatRow
               onClick={() => navigate('/app/attendance')}
               icon={Zap}
-              iconBg="#dcfce7"
-              iconColor="#16a34a"
+              iconBg="var(--success-light)"
+              iconColor="var(--success)"
               title="Mark Attendance Now"
               subtitle="Quickly mark student attendance"
               chevron
@@ -230,8 +230,8 @@ export function TeacherDashboard() {
             <FlatRow
               onClick={() => navigate('/app/discipline/new')}
               icon={ShieldAlert}
-              iconBg="#ffedd5"
-              iconColor="#ea580c"
+              iconBg="var(--warning-light)"
+              iconColor="var(--warning)"
               title="Log Discipline"
               subtitle="Record student behavior"
               chevron
@@ -239,8 +239,8 @@ export function TeacherDashboard() {
             <FlatRow
               onClick={() => setShowLogLate(true)}
               icon={Clock}
-              iconBg="#fef3c7"
-              iconColor="#d97706"
+              iconBg="var(--warning-light)"
+              iconColor="var(--warning)"
               title="Log Late Attendance"
               subtitle="Mark a student late and log it"
               chevron
@@ -252,46 +252,46 @@ export function TeacherDashboard() {
           <button
             type="button"
             onClick={() => navigate('/app/attendance')}
-            className="flex items-center gap-3 bg-[#e8f9ee] rounded-2xl px-4 py-3.5 shadow-sm border border-[#c3edcf] active:scale-[0.98] transition-transform text-left w-full"
+            className="flex items-center gap-3 bg-success-light rounded-2xl px-4 py-3.5 shadow-sm border border-success/30 active:scale-[0.98] transition-transform text-left w-full"
           >
-            <div className="w-10 h-10 rounded-xl bg-[#22c55e] flex items-center justify-center flex-shrink-0 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-success flex items-center justify-center flex-shrink-0 shadow-sm">
               <Zap className="w-5 h-5 text-white fill-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold text-[#166534] leading-tight">Mark Attendance Now</div>
-              <div className="text-[11px] text-[#16a34a] mt-0.5 font-medium">Quickly mark student attendance</div>
+              <div className="text-[13px] font-bold text-success leading-tight">Mark Attendance Now</div>
+              <div className="text-[11px] text-success mt-0.5 font-medium">Quickly mark student attendance</div>
             </div>
-            <ChevronRight className="w-4 h-4 text-[#22c55e] flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-success flex-shrink-0" />
           </button>
 
           <button
             type="button"
             onClick={() => navigate('/app/discipline/new')}
-            className="flex items-center gap-3 bg-[#fff7ed] rounded-2xl px-4 py-3.5 shadow-sm border border-[#fed7aa] active:scale-[0.98] transition-transform text-left w-full"
+            className="flex items-center gap-3 bg-warning-light rounded-2xl px-4 py-3.5 shadow-sm border border-warning/30 active:scale-[0.98] transition-transform text-left w-full"
           >
-            <div className="w-10 h-10 rounded-xl bg-[#f97316] flex items-center justify-center flex-shrink-0 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-warning flex items-center justify-center flex-shrink-0 shadow-sm">
               <ShieldAlert className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold text-[#7c2d12] leading-tight">Log Discipline</div>
-              <div className="text-[11px] text-[#ea580c] mt-0.5 font-medium">Record student behavior</div>
+              <div className="text-[13px] font-bold text-warning leading-tight">Log Discipline</div>
+              <div className="text-[11px] text-warning mt-0.5 font-medium">Record student behavior</div>
             </div>
-            <ChevronRight className="w-4 h-4 text-[#f97316] flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-warning flex-shrink-0" />
           </button>
 
           <button
             type="button"
             onClick={() => setShowLogLate(true)}
-            className="flex items-center gap-3 bg-[#fffbeb] rounded-2xl px-4 py-3.5 shadow-sm border border-[#fde68a] active:scale-[0.98] transition-transform text-left w-full"
+            className="flex items-center gap-3 bg-warning-light rounded-2xl px-4 py-3.5 shadow-sm border border-warning/30 active:scale-[0.98] transition-transform text-left w-full"
           >
-            <div className="w-10 h-10 rounded-xl bg-[#d97706] flex items-center justify-center flex-shrink-0 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-warning flex items-center justify-center flex-shrink-0 shadow-sm">
               <Clock className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold text-[#78350f] leading-tight">Log Late Attendance</div>
-              <div className="text-[11px] text-[#d97706] mt-0.5 font-medium">Mark a student late and log it</div>
+              <div className="text-[13px] font-bold text-warning leading-tight">Log Late Attendance</div>
+              <div className="text-[11px] text-warning mt-0.5 font-medium">Mark a student late and log it</div>
             </div>
-            <ChevronRight className="w-4 h-4 text-[#d97706] flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-warning flex-shrink-0" />
           </button>
         </div>
 
@@ -302,7 +302,7 @@ export function TeacherDashboard() {
         <div>
           <div className="md:hidden -mx-4">
             <SectionHeader className="px-4">Today at a glance</SectionHeader>
-            <FlatList className="bg-white">
+            <FlatList className="bg-surface">
               {glanceCards.map((card, idx) => {
                 const Icon = card.icon;
                 return (
@@ -311,17 +311,17 @@ export function TeacherDashboard() {
                       <Icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[14.5px] font-semibold text-gray-900">{card.label}</div>
-                      {card.subtitle && <div className="text-[11px] font-semibold text-indigo-600 mt-0.5">{card.subtitle}</div>}
+                      <div className="text-[14.5px] font-semibold text-ink-900">{card.label}</div>
+                      {card.subtitle && <div className="text-[11px] font-semibold text-accent mt-0.5">{card.subtitle}</div>}
                     </div>
-                    <div className="text-[16px] font-bold text-gray-900">{card.value}</div>
+                    <div className="text-[16px] font-bold text-ink-900">{card.value}</div>
                   </FlatRow>
                 );
               })}
             </FlatList>
           </div>
 
-          <h2 className="hidden md:block text-[15px] font-bold text-gray-900 mb-3">Today at a glance</h2>
+          <h2 className="hidden md:block text-[15px] font-bold text-ink-900 mb-3">Today at a glance</h2>
           <div className="hidden md:flex gap-2.5 overflow-x-auto pb-2 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {glanceCards.map((card, idx) => {
               const Icon = card.icon;
@@ -330,15 +330,15 @@ export function TeacherDashboard() {
                 <CardWrapper
                   key={idx}
                   to={card.path}
-                  className={`bg-white rounded-2xl p-4 shadow-sm min-w-[140px] flex-shrink-0 flex flex-col items-start justify-between border border-gray-100 block ${card.path ? 'cursor-pointer hover:border-indigo-200 transition-colors active:scale-[0.98]' : ''}`}
+                  className={`bg-surface rounded-2xl p-4 shadow-sm min-w-[140px] flex-shrink-0 flex flex-col items-start justify-between border border-border-subtle block ${card.path ? 'cursor-pointer hover:border-accent transition-colors active:scale-[0.98]' : ''}`}
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 flex-shrink-0 ${card.color}`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-medium text-gray-500 leading-tight">{card.label}</div>
-                    {card.subtitle && <div className="text-[10px] font-semibold text-indigo-600 mt-1">{card.subtitle}</div>}
-                    <div className="text-2xl font-bold text-gray-900 mt-1">{card.value}</div>
+                    <div className="text-[11px] font-medium text-ink-500 leading-tight">{card.label}</div>
+                    {card.subtitle && <div className="text-[10px] font-semibold text-accent mt-1">{card.subtitle}</div>}
+                    <div className="text-2xl font-bold text-ink-900 mt-1">{card.value}</div>
                   </div>
                 </CardWrapper>
               );
@@ -349,31 +349,31 @@ export function TeacherDashboard() {
         {/* Today's Schedule */}
         <Card padding="p-5" className="-mx-4 md:mx-0">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-[15px] font-bold text-gray-900">Today's Schedule</h2>
-            <Link to="/app/timetable" className="text-xs font-semibold text-indigo-600">View Timetable</Link>
+            <h2 className="text-[15px] font-bold text-ink-900">Today's Schedule</h2>
+            <Link to="/app/timetable" className="text-xs font-semibold text-accent">View Timetable</Link>
           </div>
 
           {todaySchedule.length === 0 ? (
-            <div className="text-center py-6 text-[13px] text-gray-400">No classes scheduled for today.</div>
+            <div className="text-center py-6 text-[13px] text-ink-300">No classes scheduled for today.</div>
           ) : (
             <div className="space-y-0 relative">
-              <div className="absolute left-[88px] top-4 bottom-8 w-px bg-indigo-200" />
+              <div className="absolute left-[88px] top-4 bottom-8 w-px bg-accent/30" />
               {todaySchedule.map((item, idx) => {
                 const { start, end } = formatHour(item.schedule_data?.hour);
                 const status = slotStatus(item.schedule_data?.hour);
                 return (
                   <div key={item.id ?? idx} className="flex items-start gap-4 pb-6 relative z-10">
                     <div className="w-[72px] flex-shrink-0 text-right pt-2">
-                      <div className="text-[12px] font-bold text-gray-900 leading-tight">{start}</div>
-                      <div className="text-[10px] font-medium text-gray-500">{end}</div>
+                      <div className="text-[12px] font-bold text-ink-900 leading-tight">{start}</div>
+                      <div className="text-[10px] font-medium text-ink-500">{end}</div>
                     </div>
                     <div className="flex flex-col items-center pt-3">
-                      <div className={`w-2.5 h-2.5 rounded-full ${status !== 'Upcoming' ? 'bg-indigo-600' : 'bg-gray-300'}`} />
+                      <div className={`w-2.5 h-2.5 rounded-full ${status !== 'Upcoming' ? 'bg-accent' : 'bg-ink-300'}`} />
                     </div>
-                    <div className={`flex-1 rounded-2xl p-4 border flex items-center justify-between ${status === 'Next' ? 'border-indigo-100 bg-[#fbfaff]' : 'border-gray-100 bg-white'}`}>
+                    <div className={`flex-1 rounded-2xl p-4 border flex items-center justify-between ${status === 'Next' ? 'border-accent-light bg-accent-light' : 'border-border-subtle bg-surface'}`}>
                       <div>
-                        <div className="text-[14px] font-bold text-gray-900">{item.cohort_name || '—'}</div>
-                        <div className="text-[12px] text-gray-500 mt-0.5">{item.module_name || '—'}</div>
+                        <div className="text-[14px] font-bold text-ink-900">{item.cohort_name || '—'}</div>
+                        <div className="text-[12px] text-ink-500 mt-0.5">{item.module_name || '—'}</div>
                       </div>
                       <div className={`px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 ${STATUS_STYLES[status]}`}>
                         {status}
@@ -390,25 +390,25 @@ export function TeacherDashboard() {
         {/* Recent Notices */}
         <Card padding="p-5" className="-mx-4 md:mx-0">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[15px] font-bold text-gray-900">Recent Notices</h2>
-            <Link to="/app/notices" className="text-xs font-semibold text-indigo-600">View all</Link>
+            <h2 className="text-[15px] font-bold text-ink-900">Recent Notices</h2>
+            <Link to="/app/notices" className="text-xs font-semibold text-accent">View all</Link>
           </div>
           {notices.length === 0 ? (
-            <div className="text-center py-6 text-[13px] text-gray-400">No notices yet.</div>
+            <div className="text-center py-6 text-[13px] text-ink-300">No notices yet.</div>
           ) : (
             <div className="space-y-4">
               {notices.map((notice, idx) => (
-                <div key={notice.id ?? idx} className={`flex items-center gap-4 ${idx !== notices.length - 1 ? 'border-b border-gray-100 pb-4' : ''}`}>
-                  <div className="w-12 h-12 rounded-xl flex flex-shrink-0 items-center justify-center text-indigo-600 bg-indigo-50">
+                <div key={notice.id ?? idx} className={`flex items-center gap-4 ${idx !== notices.length - 1 ? 'border-b border-border-subtle pb-4' : ''}`}>
+                  <div className="w-12 h-12 rounded-xl flex flex-shrink-0 items-center justify-center text-accent bg-accent-light">
                     <Bell className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-bold text-gray-900 truncate">{notice.title}</div>
-                    <div className="text-[11px] font-medium text-gray-500 mt-0.5">
+                    <div className="text-[13px] font-bold text-ink-900 truncate">{notice.title}</div>
+                    <div className="text-[11px] font-medium text-ink-500 mt-0.5">
                       {notice.audience || notice.audience_label || 'Whole School'} • {timeAgo(notice.created_at)}
                     </div>
                   </div>
-                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 flex-shrink-0 ml-2" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0 ml-2" />
                 </div>
               ))}
             </div>
@@ -418,11 +418,11 @@ export function TeacherDashboard() {
         {/* Upcoming Events */}
         <Card padding="p-5" className="-mx-4 md:mx-0">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[15px] font-bold text-gray-900">Upcoming Events</h2>
-            <Link to="/app/calendar" className="text-xs font-semibold text-indigo-600">View calendar</Link>
+            <h2 className="text-[15px] font-bold text-ink-900">Upcoming Events</h2>
+            <Link to="/app/calendar" className="text-xs font-semibold text-accent">View calendar</Link>
           </div>
           {events.length === 0 ? (
-            <div className="text-center py-6 text-[13px] text-gray-400">No upcoming events.</div>
+            <div className="text-center py-6 text-[13px] text-ink-300">No upcoming events.</div>
           ) : (
             <div className="space-y-4">
               {events.map((event, idx) => {
@@ -434,17 +434,17 @@ export function TeacherDashboard() {
                   ? formatHour(`${event.start_time}-${event.end_time || event.start_time}`).start
                   : event.time || null;
                 return (
-                  <div key={event.id ?? idx} className={`flex items-center gap-4 ${idx !== events.length - 1 ? 'border-b border-gray-100 pb-4' : ''}`}>
-                    <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex flex-col flex-shrink-0 items-center justify-center">
-                      <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">{month}</span>
-                      <span className="text-[16px] font-extrabold text-gray-900 leading-none mt-0.5">{day}</span>
+                  <div key={event.id ?? idx} className={`flex items-center gap-4 ${idx !== events.length - 1 ? 'border-b border-border-subtle pb-4' : ''}`}>
+                    <div className="w-12 h-12 rounded-xl bg-accent-light border border-accent-light flex flex-col flex-shrink-0 items-center justify-center">
+                      <span className="text-[9px] font-bold text-accent uppercase tracking-wider">{month}</span>
+                      <span className="text-[16px] font-extrabold text-ink-900 leading-none mt-0.5">{day}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-bold text-gray-900 truncate">{event.title || event.name}</div>
-                      <div className="text-[11px] font-medium text-gray-500 mt-0.5">{event.description || event.audience || ''}</div>
+                      <div className="text-[13px] font-bold text-ink-900 truncate">{event.title || event.name}</div>
+                      <div className="text-[11px] font-medium text-ink-500 mt-0.5">{event.description || event.audience || ''}</div>
                     </div>
                     {timeStr && (
-                      <div className="bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg text-[10px] font-bold">
+                      <div className="bg-accent-light text-accent px-2.5 py-1 rounded-lg text-[10px] font-bold">
                         {timeStr}
                       </div>
                     )}

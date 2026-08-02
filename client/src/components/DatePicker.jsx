@@ -72,34 +72,34 @@ export function DatePicker({ value, onChange, max }) {
     <div className="relative w-full" ref={containerRef}>
       <div 
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full bg-white rounded-2xl px-4 py-3 shadow-sm border flex items-center gap-3 transition-all cursor-pointer ${
-          isOpen ? 'ring-2 ring-[#5a4fcf] border-[#5a4fcf]' : 'border-gray-100 hover:border-gray-200'
+        className={`w-full bg-surface rounded-2xl px-4 py-3 shadow-sm border flex items-center gap-3 transition-all cursor-pointer ${
+          isOpen ? 'ring-2 ring-accent border-accent' : 'border-border-subtle hover:border-border'
         }`}
       >
-        <CalendarIcon className="w-5 h-5 text-[#5a4fcf] flex-shrink-0" />
-        <div className="flex-1 text-[14px] font-medium text-gray-900 select-none">
+        <CalendarIcon className="w-5 h-5 text-accent flex-shrink-0" />
+        <div className="flex-1 text-[14px] font-medium text-ink-900 select-none">
           {displayString}
         </div>
       </div>
 
       {isOpen && (
-        <div 
+        <div
           ref={popoverRef}
-          className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 w-72 animate-in fade-in zoom-in-95 duration-200"
+          className="absolute top-full left-0 mt-2 bg-surface rounded-2xl shadow-xl border border-border-subtle p-4 z-50 w-72 animate-in fade-in zoom-in-95 duration-200"
         >
           <div className="flex items-center justify-between mb-4">
-            <button 
+            <button
               onClick={handlePrevMonth}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
+              className="p-2 hover:bg-surface-muted rounded-full transition-colors text-ink-700"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <div className="font-semibold text-gray-900 text-[15px]">
+            <div className="font-semibold text-ink-900 text-[15px]">
               {MONTHS[currentMonth]} {currentYear}
             </div>
-            <button 
+            <button
               onClick={handleNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
+              className="p-2 hover:bg-surface-muted rounded-full transition-colors text-ink-700"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -107,7 +107,7 @@ export function DatePicker({ value, onChange, max }) {
 
           <div className="grid grid-cols-7 gap-1 mb-2 text-center">
             {DAYS.map(d => (
-              <div key={d} className="text-[12px] font-medium text-gray-400">
+              <div key={d} className="text-[12px] font-medium text-ink-300">
                 {d}
               </div>
             ))}
@@ -130,9 +130,9 @@ export function DatePicker({ value, onChange, max }) {
                   onClick={(e) => { e.stopPropagation(); handleSelectDate(day); }}
                   className={`
                     h-9 w-9 rounded-full flex items-center justify-center text-[13px] transition-all
-                    ${disabled ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-100 cursor-pointer'}
-                    ${isSelected ? 'bg-[#5a4fcf] text-white hover:bg-[#4a3fbf] font-medium shadow-md' : 'text-gray-700'}
-                    ${isToday && !isSelected ? 'border border-[#5a4fcf] text-[#5a4fcf] font-medium' : ''}
+                    ${disabled ? 'text-ink-300 cursor-not-allowed' : 'hover:bg-surface-muted cursor-pointer'}
+                    ${isSelected ? 'bg-accent text-white hover:bg-accent-dark font-medium shadow-md' : 'text-ink-700'}
+                    ${isToday && !isSelected ? 'border border-accent text-accent font-medium' : ''}
                   `}
                 >
                   {day}
