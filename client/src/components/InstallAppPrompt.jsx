@@ -1,20 +1,19 @@
 import { useState } from 'react';
 import { usePwaInstall } from '../hooks/usePwaInstall';
 import { IosInstallModal } from './IosInstallModal';
-import { isMobile } from '../lib/pwa';
 
 // Drop-in install affordance: an "Install App" button on Android/Chrome/
 // desktop (real one-tap install via the browser's own prompt), or a "How
 // to install on iPhone/iPad" help button that opens step-by-step
 // instructions on iOS (which has no install-prompt API at all). Renders
 // nothing once already installed, or on a platform/browser that offers
-// neither path (e.g. Firefox desktop).
+// neither path (e.g. Firefox desktop, or desktop Safari — canInstall and
+// isIosInstallable are both already the correct per-platform signal, so
+// there's no separate "mobile only" gate needed on top of them; desktop
+// Chrome/Edge fire beforeinstallprompt too and should get the same button).
 export function InstallAppPrompt({ className = '' }) {
   const { canInstall, isIosInstallable, installed, promptInstall } = usePwaInstall();
   const [showIosHelp, setShowIosHelp] = useState(false);
-
-  // Only show the install prompt on mobile devices
-  if (!isMobile()) return null;
 
   if (installed || (!canInstall && !isIosInstallable)) return null;
 
