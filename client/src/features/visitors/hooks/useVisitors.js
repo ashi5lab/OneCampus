@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { visitorsApi } from '../services/visitorsApi';
 
-export function useVisitors({ filters = {} } = {}) {
-  return useQuery({ queryKey: ['visitors', filters], queryFn: () => visitorsApi.list(filters) });
+export function useVisitors({ filters = {}, enabled = true } = {}) {
+  return useQuery({ queryKey: ['visitors', filters], queryFn: () => visitorsApi.list(filters), enabled });
 }
 
 export function useCheckInVisitor() {
