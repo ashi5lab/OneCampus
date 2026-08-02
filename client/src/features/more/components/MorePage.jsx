@@ -120,7 +120,7 @@ export function MorePage() {
             to="/app/admin-tools"
             className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3.5 transition hover:border-accent hover:shadow-sm"
           >
-            <div className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold transition-transform duration-200 group-hover:scale-105">
+            <div className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-xl bg-accent text-white font-bold transition-transform duration-200 group-hover:scale-105">
               <span className="text-lg">🛡️</span>
             </div>
             <div className="min-w-0 flex-1">
@@ -139,7 +139,7 @@ export function MorePage() {
         {categorizedData.map((category, catIdx) => (
           <div key={catIdx} className="space-y-1">
             <SectionHeader className="px-4">{category.name}</SectionHeader>
-            <FlatList className="bg-white">
+            <FlatList className="bg-surface">
               {category.items.map((item) => (
                 <FlatRow
                   key={item.key}

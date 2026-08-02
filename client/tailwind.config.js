@@ -49,8 +49,8 @@ export default {
           ink: 'var(--info-ink)'
         },
         microsoft: {
-          blue: '#0067b8',
-          hover: '#005da6'
+          blue: 'var(--accent)',
+          hover: 'var(--accent-dark)'
         },
         sidebar: {
           bg: 'var(--sidebar-bg)',

@@ -52,7 +52,7 @@ export function SuperAdminInboxPage() {
   }
 
   if (loading) return <div className="min-h-screen bg-bg font-body p-8">Loading...</div>;
-  if (error) return <div className="min-h-screen bg-bg font-body p-8 text-red-500">{error}</div>;
+  if (error) return <div className="min-h-screen bg-bg font-body p-8 text-danger">{error}</div>;
 
   return (
     <div className="min-h-screen bg-bg font-body">
@@ -77,9 +77,9 @@ export function SuperAdminInboxPage() {
           <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Inbox ({inquiries.length})</h1>
         </div>
       
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-surface rounded-lg shadow-sm border border-border overflow-hidden">
           <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-surface-muted border-b border-border">
             <tr>
               <th className="p-4 font-semibold">Date</th>
               <th className="p-4 font-semibold">Type</th>
@@ -97,10 +97,10 @@ export function SuperAdminInboxPage() {
               </tr>
             )}
             {inquiries.map((inq) => (
-              <tr key={inq.id} className={`border-b border-gray-100 hover:bg-gray-50 ${!inq.is_read ? 'font-semibold bg-blue-50/30' : ''}`}>
+              <tr key={inq.id} className={`border-b border-border-subtle hover:bg-surface-muted ${!inq.is_read ? 'font-semibold bg-info-light/30' : ''}`}>
                 <td className="p-4">{new Date(inq.created_at).toLocaleDateString()}</td>
                 <td className="p-4 uppercase text-xs tracking-wider">
-                  <span className={`px-2 py-1 rounded ${inq.type === 'demo' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                  <span className={`px-2 py-1 rounded ${inq.type === 'demo' ? 'bg-accent-light text-accent-dark' : 'bg-info-light text-info'}`}>
                     {inq.type}
                   </span>
                 </td>
@@ -110,14 +110,14 @@ export function SuperAdminInboxPage() {
                 <td className="p-4">
                   <button 
                     onClick={() => markAsRead(inq.id, inq.is_read)}
-                    className={`text-xs px-2 py-1 rounded ${inq.is_read ? 'text-gray-500 hover:bg-gray-200' : 'bg-microsoft-blue text-white'}`}
+                    className={`text-xs px-2 py-1 rounded ${inq.is_read ? 'text-ink-500 hover:bg-surface-muted' : 'bg-microsoft-blue text-white'}`}
                   >
                     {inq.is_read ? 'Mark Unread' : 'Mark Read'}
                   </button>
                 </td>
                 <td className="p-4">
                   <button onClick={() => setSelectedInquiry(inq)} className="text-microsoft-blue hover:underline mr-4">View</button>
-                  <button onClick={() => deleteInquiry(inq.id)} className="text-red-500 hover:underline">Delete</button>
+                  <button onClick={() => deleteInquiry(inq.id)} className="text-danger hover:underline">Delete</button>
                 </td>
               </tr>
             ))}
@@ -127,7 +127,7 @@ export function SuperAdminInboxPage() {
 
       {selectedInquiry && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative">
+          <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg p-6 relative">
             <button 
               onClick={() => setSelectedInquiry(null)}
               className="absolute top-4 right-4 text-ink-500 hover:text-ink-900 font-bold"
@@ -177,14 +177,14 @@ export function SuperAdminInboxPage() {
               {selectedInquiry.message && (
                 <div className="border-t pt-4">
                   <span className="block font-semibold text-ink-500 mb-2">Message:</span>
-                  <p className="whitespace-pre-wrap bg-gray-50 p-4 rounded text-ink-700">{selectedInquiry.message}</p>
+                  <p className="whitespace-pre-wrap bg-surface-muted p-4 rounded text-ink-700">{selectedInquiry.message}</p>
                 </div>
               )}
             </div>
 
             <div className="mt-8 flex justify-end gap-2">
-              <button onClick={() => deleteInquiry(selectedInquiry.id)} className="px-4 py-2 text-red-500 hover:bg-red-50 rounded">Delete</button>
-              <button onClick={() => setSelectedInquiry(null)} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded">Close</button>
+              <button onClick={() => deleteInquiry(selectedInquiry.id)} className="px-4 py-2 text-danger hover:bg-danger-light rounded">Delete</button>
+              <button onClick={() => setSelectedInquiry(null)} className="px-4 py-2 bg-surface-muted hover:bg-border rounded">Close</button>
             </div>
           </div>
         </div>

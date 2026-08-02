@@ -110,7 +110,7 @@ export function OmniSearch({ placeholder = "Search students, class, apps ..", va
 
   return (
     <div className="flex-1 relative">
-      <Search className="w-[22px] h-[22px] text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" strokeWidth={2} />
+      <Search className="w-[22px] h-[22px] text-ink-300 absolute left-4 top-1/2 -translate-y-1/2" strokeWidth={2} />
       <input 
         ref={inputRef}
         type="text" 
@@ -122,18 +122,18 @@ export function OmniSearch({ placeholder = "Search students, class, apps ..", va
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        className="w-full h-[50px] bg-white text-gray-900 rounded-full pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#9b7ffc]/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-50 transition-shadow"
+        className="w-full h-[50px] bg-surface text-ink-900 rounded-full pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-border-subtle transition-shadow"
       />
       
       {open && query.trim() && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-border bg-white shadow-xl max-h-[400px] overflow-y-auto">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-border bg-surface shadow-xl max-h-[400px] overflow-y-auto">
           {!hasResults ? (
-            <div className="px-4 py-6 text-center text-[13px] text-gray-500">No results found for "{query}"</div>
+            <div className="px-4 py-6 text-center text-[13px] text-ink-500">No results found for "{query}"</div>
           ) : (
             <div className="py-2">
               {results.map((group) => (
                 <div key={group.category} className="mb-2 last:mb-0">
-                  <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-300">
                     {group.category}
                   </div>
                   {group.items.map((item) => {
@@ -143,19 +143,19 @@ export function OmniSearch({ placeholder = "Search students, class, apps ..", va
                         key={item.to}
                         type="button"
                         onMouseDown={() => goTo(item.to)}
-                        className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 transition-colors"
+                        className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-surface-muted transition-colors"
                       >
                         {item.avatar !== undefined ? (
                           <Avatar name={item.label} src={item.avatar} size={32} className="flex-shrink-0" />
                         ) : (
-                          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600`}>
+                          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-accent-light text-accent`}>
                             <Icon className="h-4 w-4" />
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-[13px] font-semibold text-gray-900">{item.label}</div>
+                          <div className="truncate text-[13px] font-semibold text-ink-900">{item.label}</div>
                           {item.subtitle && (
-                            <div className="truncate text-[11px] text-gray-500">{item.subtitle}</div>
+                            <div className="truncate text-[11px] text-ink-500">{item.subtitle}</div>
                           )}
                         </div>
                       </button>

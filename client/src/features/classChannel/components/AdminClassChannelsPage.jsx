@@ -51,7 +51,7 @@ function AdminClassPicker({ cohorts }) {
           keeps its card treatment (per Rules.md — desktop uses multi-column
           layouts). */}
       <div className="sm:hidden -mx-4">
-        <FlatList className="bg-white">
+        <FlatList className="bg-surface">
           {cohorts.map((c, i) => (
             <ClassListRow key={c.id} cohort={c} to={`/app/class-channels/${c.id}`} index={i} />
           ))}

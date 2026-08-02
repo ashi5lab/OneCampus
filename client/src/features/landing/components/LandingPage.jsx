@@ -49,8 +49,8 @@ export function LandingPage() {
 
   if (isAppMode) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 p-4 sm:p-6 overflow-y-auto">
-        <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl my-auto">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-bg p-4 sm:p-6 overflow-y-auto">
+        <div className="w-full max-w-md overflow-hidden rounded-2xl bg-surface shadow-2xl my-auto">
           <LoginPage />
         </div>
       </div>
@@ -88,9 +88,9 @@ export function LandingPage() {
   };
 
   return (
-    <div className="font-body bg-[#f8fafc] text-ink-900 min-h-screen">
+    <div className="font-body bg-bg text-ink-900 min-h-screen">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-200">
+      <nav className="bg-surface shadow-sm sticky top-0 z-50 border-b border-border">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="font-extrabold text-2xl text-microsoft-blue tracking-tight">OneCampus</div>
           <div className="hidden md:flex space-x-6 text-[13px] font-semibold text-ink-700">
@@ -110,7 +110,7 @@ export function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-white border-b border-gray-200">
+      <section className="bg-surface border-b border-border">
         <div className="max-w-7xl mx-auto px-6 py-24 grid md:grid-cols-2 gap-10 items-center">
           <div>
             <h1 className="text-5xl font-extrabold leading-tight text-ink-900">
@@ -129,7 +129,7 @@ export function LandingPage() {
               </button>
               <button 
                 onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-                className="border border-microsoft-blue text-microsoft-blue px-6 py-3 text-sm font-semibold hover:bg-blue-50 transition-colors shadow-sm"
+                className="border border-microsoft-blue text-microsoft-blue px-6 py-3 text-sm font-semibold hover:bg-accent-light transition-colors shadow-sm"
               >
                 Contact Us
               </button>
@@ -137,17 +137,17 @@ export function LandingPage() {
           </div>
           <div className="flex justify-center">
             {/* Placeholder graphic styled for Microsoft aesthetic */}
-            <div className="w-full max-w-md h-64 bg-gray-50 border border-gray-200 shadow-sm flex flex-col p-4">
+            <div className="w-full max-w-md h-64 bg-surface-muted border border-border shadow-sm flex flex-col p-4">
               <div className="flex gap-2 mb-4">
-                <div className="w-3 h-3 bg-red-500"></div>
-                <div className="w-3 h-3 bg-yellow-500"></div>
-                <div className="w-3 h-3 bg-green-500"></div>
+                <div className="w-3 h-3 bg-danger"></div>
+                <div className="w-3 h-3 bg-warning"></div>
+                <div className="w-3 h-3 bg-success"></div>
               </div>
               <div className="flex-1 flex gap-4">
-                <div className="w-1/3 bg-gray-200"></div>
+                <div className="w-1/3 bg-border"></div>
                 <div className="w-2/3 flex flex-col gap-2">
                   <div className="h-1/4 bg-microsoft-blue bg-opacity-20"></div>
-                  <div className="h-3/4 bg-gray-200"></div>
+                  <div className="h-3/4 bg-border"></div>
                 </div>
               </div>
             </div>
@@ -165,14 +165,14 @@ export function LandingPage() {
         {/* Scroll Buttons */}
         <button 
           onClick={() => scroll('left')}
-          className="absolute left-2 top-1/2 mt-12 md:-ml-4 z-10 p-3 rounded-full bg-white shadow-lg text-ink-900 hover:text-microsoft-blue hover:scale-110 transition-all border border-gray-100 focus:outline-none focus:ring-2 focus:ring-microsoft-blue"
+          className="absolute left-2 top-1/2 mt-12 md:-ml-4 z-10 p-3 rounded-full bg-surface shadow-lg text-ink-900 hover:text-microsoft-blue hover:scale-110 transition-all border border-border-subtle focus:outline-none focus:ring-2 focus:ring-microsoft-blue"
           aria-label="Scroll left"
         >
           <FiChevronLeft className="w-6 h-6" />
         </button>
         <button 
           onClick={() => scroll('right')}
-          className="absolute right-2 top-1/2 mt-12 md:-mr-4 z-10 p-3 rounded-full bg-white shadow-lg text-ink-900 hover:text-microsoft-blue hover:scale-110 transition-all border border-gray-100 focus:outline-none focus:ring-2 focus:ring-microsoft-blue"
+          className="absolute right-2 top-1/2 mt-12 md:-mr-4 z-10 p-3 rounded-full bg-surface shadow-lg text-ink-900 hover:text-microsoft-blue hover:scale-110 transition-all border border-border-subtle focus:outline-none focus:ring-2 focus:ring-microsoft-blue"
           aria-label="Scroll right"
         >
           <FiChevronRight className="w-6 h-6" />
@@ -196,9 +196,9 @@ export function LandingPage() {
             <button 
               key={i} 
               onClick={() => document.getElementById('contact').scrollIntoView({ behavior: 'smooth' })}
-              className="group min-w-[280px] sm:min-w-[320px] flex-shrink-0 snap-center bg-white p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-gray-100 flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-microsoft-blue focus:border-transparent rounded-xl"
+              className="group min-w-[280px] sm:min-w-[320px] flex-shrink-0 snap-center bg-surface p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-border-subtle flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-microsoft-blue focus:border-transparent rounded-xl"
             >
-              <div className="w-14 h-14 rounded-full bg-blue-50 text-microsoft-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+              <div className="w-14 h-14 rounded-full bg-accent-light text-microsoft-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <f.icon className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-ink-900 mb-3">{f.title}</h3>
@@ -209,7 +209,7 @@ export function LandingPage() {
       </section>
 
       {/* About Section */}
-      <section className="bg-white border-y border-gray-200 py-20">
+      <section className="bg-surface border-y border-border py-20">
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12">
           <div id="about">
             <h2 className="text-2xl font-bold mb-4 text-ink-900">About OneCampus</h2>
@@ -230,36 +230,36 @@ export function LandingPage() {
       </section>
 
       {/* Why OneCampus */}
-      <section className="bg-gray-50 py-24 border-b border-gray-200">
+      <section className="bg-bg py-24 border-b border-border">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-4xl font-extrabold text-ink-900 tracking-tight">Why OneCampus?</h2>
             <p className="mt-4 text-lg text-ink-500">Built from the ground up to be the most reliable and easy to use school management system.</p>
           </div>
           <div className="grid md:grid-cols-4 gap-8 text-center">
-            <div className="group bg-white border border-gray-200 p-8 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
-              <div className="w-12 h-12 mx-auto bg-blue-50 text-microsoft-blue rounded flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="group bg-surface border border-border p-8 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
+              <div className="w-12 h-12 mx-auto bg-accent-light text-microsoft-blue rounded flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <FiGlobe className="w-6 h-6" />
               </div>
               <h3 className="font-bold text-ink-900 mb-2">Cloud Based</h3>
               <p className="text-sm text-ink-500 leading-relaxed">Access from anywhere, anytime without complex installations.</p>
             </div>
-            <div className="group bg-white border border-gray-200 p-8 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
-              <div className="w-12 h-12 mx-auto bg-blue-50 text-microsoft-blue rounded flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="group bg-surface border border-border p-8 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
+              <div className="w-12 h-12 mx-auto bg-accent-light text-microsoft-blue rounded flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <FiShield className="w-6 h-6" />
               </div>
               <h3 className="font-bold text-ink-900 mb-2">Secure</h3>
               <p className="text-sm text-ink-500 leading-relaxed">Enterprise-grade security and role-based access control.</p>
             </div>
-            <div className="group bg-white border border-gray-200 p-8 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
-              <div className="w-12 h-12 mx-auto bg-blue-50 text-microsoft-blue rounded flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="group bg-surface border border-border p-8 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
+              <div className="w-12 h-12 mx-auto bg-accent-light text-microsoft-blue rounded flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <FiSmartphone className="w-6 h-6" />
               </div>
               <h3 className="font-bold text-ink-900 mb-2">Mobile Friendly</h3>
               <p className="text-sm text-ink-500 leading-relaxed">Works perfectly on desktops, tablets, and mobile phones.</p>
             </div>
-            <div className="group bg-white border border-gray-200 p-8 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
-              <div className="w-12 h-12 mx-auto bg-blue-50 text-microsoft-blue rounded flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="group bg-surface border border-border p-8 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
+              <div className="w-12 h-12 mx-auto bg-accent-light text-microsoft-blue rounded flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <FiCheckCircle className="w-6 h-6" />
               </div>
               <h3 className="font-bold text-ink-900 mb-2">Fast & Modern</h3>
@@ -270,7 +270,7 @@ export function LandingPage() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="bg-white text-ink-900 py-24 border-t border-gray-200">
+      <section id="contact" className="bg-surface text-ink-900 py-24 border-t border-border">
         <div className="max-w-4xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-start">
           <div>
             <h2 className="text-4xl font-extrabold mb-4 tracking-tight">Get in touch</h2>
@@ -279,11 +279,11 @@ export function LandingPage() {
             </p>
           </div>
           <form onSubmit={handleContactSubmit} className="grid gap-4">
-            <input required name="name" className="p-3 bg-gray-50 border border-gray-200 rounded text-ink-900 placeholder-ink-500 text-sm outline-none focus:border-microsoft-blue focus:ring-1 focus:ring-microsoft-blue transition-all" placeholder="Your Name" />
-            <input required type="email" name="email" className="p-3 bg-gray-50 border border-gray-200 rounded text-ink-900 placeholder-ink-500 text-sm outline-none focus:border-microsoft-blue focus:ring-1 focus:ring-microsoft-blue transition-all" placeholder="Email" />
-            <textarea required name="message" className="p-3 bg-gray-50 border border-gray-200 rounded text-ink-900 placeholder-ink-500 text-sm outline-none focus:border-microsoft-blue focus:ring-1 focus:ring-microsoft-blue transition-all resize-none" rows="5" placeholder="Message"></textarea>
-            {contactStatus.error && <div className="text-red-500 text-sm">{contactStatus.error}</div>}
-            {contactStatus.success && <div className="text-green-600 text-sm">Thank you! Your message has been sent.</div>}
+            <input required name="name" className="p-3 bg-surface-muted border border-border rounded text-ink-900 placeholder-ink-500 text-sm outline-none focus:border-microsoft-blue focus:ring-1 focus:ring-microsoft-blue transition-all" placeholder="Your Name" />
+            <input required type="email" name="email" className="p-3 bg-surface-muted border border-border rounded text-ink-900 placeholder-ink-500 text-sm outline-none focus:border-microsoft-blue focus:ring-1 focus:ring-microsoft-blue transition-all" placeholder="Email" />
+            <textarea required name="message" className="p-3 bg-surface-muted border border-border rounded text-ink-900 placeholder-ink-500 text-sm outline-none focus:border-microsoft-blue focus:ring-1 focus:ring-microsoft-blue transition-all resize-none" rows="5" placeholder="Message"></textarea>
+            {contactStatus.error && <div className="text-danger text-sm">{contactStatus.error}</div>}
+            {contactStatus.success && <div className="text-success text-sm">Thank you! Your message has been sent.</div>}
             <button disabled={contactStatus.loading} className="bg-microsoft-blue text-white font-bold p-3 rounded hover:bg-microsoft-hover transition-colors text-sm mt-2 disabled:opacity-50">
               {contactStatus.loading ? 'Sending...' : 'Send Message'}
             </button>
@@ -304,7 +304,7 @@ export function LandingPage() {
       </section>
 
       {/* Terms & Conditions */}
-      <section id="terms" className="max-w-6xl mx-auto px-6 py-16 border-t border-gray-200">
+      <section id="terms" className="max-w-6xl mx-auto px-6 py-16 border-t border-border">
         <h2 className="text-2xl font-bold mb-4 text-ink-900">Terms & Conditions</h2>
         <ul className="list-disc pl-6 space-y-2 text-ink-700 text-sm">
           <li>Users agree to use OneCampus lawfully.</li>
@@ -321,7 +321,7 @@ export function LandingPage() {
           <div className="font-bold text-xl tracking-tight">OneCampus</div>
           <p className="mt-3 text-sm opacity-80">OneCampus is a product of <strong>Webdez Studio</strong>.</p>
           <p className="mt-1 text-sm opacity-80">© 2026 OneCampus. All rights reserved.</p>
-          <div className="mt-6 text-xs text-gray-400 flex gap-4">
+          <div className="mt-6 text-xs text-ink-300 flex gap-4">
             <a href="#privacy" className="hover:text-white">Privacy Policy</a>
             <a href="#terms" className="hover:text-white">Terms & Conditions</a>
             <a href="#contact" className="hover:text-white">Contact</a>
@@ -332,10 +332,10 @@ export function LandingPage() {
       {/* Login Modal */}
       {isLoginModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm sm:p-6 overflow-y-auto">
-          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl my-auto">
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-surface shadow-2xl my-auto">
             <button 
               onClick={() => setIsLoginModalOpen(false)}
-              className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-ink-500 transition-colors hover:bg-gray-200 hover:text-ink-900 focus:outline-none focus:ring-2 focus:ring-microsoft-blue"
+              className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-ink-500 transition-colors hover:bg-border hover:text-ink-900 focus:outline-none focus:ring-2 focus:ring-microsoft-blue"
               aria-label="Close"
             >
               &times;
@@ -388,10 +388,10 @@ function RequestDemoModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl my-auto">
+      <div className="relative w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl my-auto">
         <button 
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-ink-500 transition-colors hover:bg-gray-200 hover:text-ink-900 focus:outline-none focus:ring-2 focus:ring-microsoft-blue"
+          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-ink-500 transition-colors hover:bg-border hover:text-ink-900 focus:outline-none focus:ring-2 focus:ring-microsoft-blue"
         >
           &times;
         </button>
@@ -399,7 +399,7 @@ function RequestDemoModal({ onClose }) {
         
         {status.success ? (
           <div className="py-8 text-center">
-            <div className="mb-4 text-5xl text-green-500">✓</div>
+            <div className="mb-4 text-5xl text-success">✓</div>
             <h3 className="mb-2 text-xl font-bold text-ink-900">Request Received!</h3>
             <p className="text-ink-500">Our team will contact you shortly to schedule your demo.</p>
             <button onClick={onClose} className="mt-6 rounded bg-microsoft-blue px-6 py-2 text-sm font-semibold text-white hover:bg-microsoft-hover">Close</button>
@@ -408,31 +408,31 @@ function RequestDemoModal({ onClose }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink-900">Institution Name</label>
-              <input required name="institution_name" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" />
+              <input required name="institution_name" className="w-full rounded border border-border bg-surface-muted p-2 text-sm outline-none focus:border-microsoft-blue" />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink-900">Institution Type</label>
-              <input name="institution_type" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" placeholder="e.g. School, College" />
+              <input name="institution_type" className="w-full rounded border border-border bg-surface-muted p-2 text-sm outline-none focus:border-microsoft-blue" placeholder="e.g. School, College" />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink-900">Contact Person Name</label>
-              <input required name="name" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" />
+              <input required name="name" className="w-full rounded border border-border bg-surface-muted p-2 text-sm outline-none focus:border-microsoft-blue" />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink-900">Contact Number</label>
-              <input required name="phone" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" placeholder="+1..." />
+              <input required name="phone" className="w-full rounded border border-border bg-surface-muted p-2 text-sm outline-none focus:border-microsoft-blue" placeholder="+1..." />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink-900">Email Address</label>
-              <input required type="email" name="email" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" />
+              <input required type="email" name="email" className="w-full rounded border border-border bg-surface-muted p-2 text-sm outline-none focus:border-microsoft-blue" />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink-900">Address</label>
-              <input name="address" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" />
+              <input name="address" className="w-full rounded border border-border bg-surface-muted p-2 text-sm outline-none focus:border-microsoft-blue" />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink-900">How did you hear about us?</label>
-              <select value={source} onChange={(e) => setSource(e.target.value)} className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue">
+              <select value={source} onChange={(e) => setSource(e.target.value)} className="w-full rounded border border-border bg-surface-muted p-2 text-sm outline-none focus:border-microsoft-blue">
                 <option value="Website">Website</option>
                 <option value="Social media">Social media</option>
                 <option value="Linkedin">Linkedin</option>
@@ -441,11 +441,11 @@ function RequestDemoModal({ onClose }) {
             </div>
             {source === 'Other' && (
               <div>
-                <input required name="otherSource" className="w-full rounded border border-gray-200 bg-gray-50 p-2 text-sm outline-none focus:border-microsoft-blue" placeholder="Please specify" />
+                <input required name="otherSource" className="w-full rounded border border-border bg-surface-muted p-2 text-sm outline-none focus:border-microsoft-blue" placeholder="Please specify" />
               </div>
             )}
             
-            {status.error && <div className="text-sm text-red-500">{status.error}</div>}
+            {status.error && <div className="text-sm text-danger">{status.error}</div>}
             
             <button disabled={status.loading} className="mt-4 w-full rounded bg-microsoft-blue py-3 text-sm font-bold text-white transition-colors hover:bg-microsoft-hover disabled:opacity-50">
               {status.loading ? 'Submitting...' : 'Submit Request'}

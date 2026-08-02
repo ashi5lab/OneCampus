@@ -18,11 +18,11 @@ const TABS = [
 ];
 
 const ROLE_COLORS = {
-  admin: 'bg-purple-100 text-purple-700',
-  instructor: 'bg-blue-100 text-blue-700',
-  staff: 'bg-amber-100 text-amber-700',
-  learner: 'bg-green-100 text-green-700',
-  guardian: 'bg-pink-100 text-pink-700'
+  admin: 'bg-accent-light text-accent-dark',
+  instructor: 'bg-info-light text-info',
+  staff: 'bg-warning-light text-warning',
+  learner: 'bg-success-light text-success',
+  guardian: 'bg-accent-light text-accent-dark'
 };
 
 const FILTERS = [
@@ -105,24 +105,24 @@ function UsersReportTab() {
         <SummaryCard
           label="Missing Profile"
           value={summary.no_profile ?? '—'}
-          color="text-red-600"
-          bg="bg-red-50"
+          color="text-danger"
+          bg="bg-danger-light"
           onClick={() => setFilter('no_profile')}
           active={filter === 'no_profile'}
         />
         <SummaryCard
           label="Students without Class"
           value={summary.learners_no_class ?? '—'}
-          color="text-amber-600"
-          bg="bg-amber-50"
+          color="text-warning"
+          bg="bg-warning-light"
           onClick={() => setFilter('learners_no_class')}
           active={filter === 'learners_no_class'}
         />
         <SummaryCard
           label="Teachers without Class"
           value={summary.instructors_no_class ?? '—'}
-          color="text-blue-600"
-          bg="bg-blue-50"
+          color="text-info"
+          bg="bg-info-light"
           onClick={() => setFilter('instructors_no_class')}
           active={filter === 'instructors_no_class'}
         />
@@ -216,7 +216,7 @@ function UserRow({ user, onEdit }) {
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${ROLE_COLORS[user.role] ?? 'bg-gray-100 text-gray-600'}`}>
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${ROLE_COLORS[user.role] ?? 'bg-surface-muted text-ink-700'}`}>
             {user.role}
           </span>
           {user.cohort_name ? (
@@ -224,10 +224,10 @@ function UserRow({ user, onEdit }) {
               <BookOpen className="w-3 h-3" />{user.cohort_name}
             </span>
           ) : needsClass ? (
-            <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">No Class</span>
+            <span className="text-[11px] font-bold text-warning bg-warning-light px-2 py-0.5 rounded-full">No Class</span>
           ) : null}
           {needsProfile && (
-            <span className="text-[11px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">No Profile</span>
+            <span className="text-[11px] font-bold text-danger bg-danger-light px-2 py-0.5 rounded-full">No Profile</span>
           )}
           <span className="text-[11px] text-ink-300">ID: {user.user_id}</span>
         </div>
@@ -235,9 +235,9 @@ function UserRow({ user, onEdit }) {
 
       <div className="flex items-center gap-2 flex-shrink-0">
         {isOk ? (
-          <CheckCircle2 className="w-4 h-4 text-green-500" />
+          <CheckCircle2 className="w-4 h-4 text-success" />
         ) : (
-          <AlertCircle className="w-4 h-4 text-amber-500" />
+          <AlertCircle className="w-4 h-4 text-warning" />
         )}
         <button
           onClick={onEdit}
@@ -369,7 +369,7 @@ function SecurityControlsTab() {
     <Card padding="p-6">
       <div className="mb-6">
         <h2 className="text-lg font-bold text-ink-900 flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-light text-accent">
             <ShieldCheck className="w-4 h-4" />
           </span>
           Institutional Security Controls

@@ -20,7 +20,7 @@ export function ClassListRow({ cohort, to, index = 0 }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <div className="text-[14.5px] font-bold text-ink-900 truncate">{cohort.name}</div>
-          <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded-full text-[9.5px] font-bold whitespace-nowrap">
+          <span className="bg-accent-light text-accent-dark px-1.5 py-0.5 rounded-full text-[9.5px] font-bold whitespace-nowrap">
             {section}
           </span>
         </div>

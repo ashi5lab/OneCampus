@@ -80,7 +80,7 @@ export function ProfilePage() {
           name={me.username} 
           pictureUrl={me.profile_picture_url} 
           invalidateKey={MY_PROFILE_KEY} 
-          containerClassName="w-24 h-24 shrink-0 rounded-full border-[3px] border-white shadow-md relative mx-auto mb-4 bg-white/50"
+          containerClassName="w-24 h-24 shrink-0 rounded-full border-[3px] border-surface shadow-md relative mx-auto mb-4 bg-surface/50"
         />
         
         <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4 text-[13.5px]">

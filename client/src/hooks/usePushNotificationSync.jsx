@@ -46,7 +46,7 @@ function showNotificationToast({ title, body, url, source, navigate, queryClient
             navigate(url);
           }
         }}
-        className={`flex items-start gap-3 rounded-2xl border border-white/20 bg-gradient-to-br from-violet-600 to-indigo-600 px-4 py-3.5 shadow-2xl ring-1 ring-black/5 ${
+        className={`flex items-start gap-3 rounded-2xl border border-white/20 bg-gradient-to-br from-accent to-accent-dark px-4 py-3.5 shadow-2xl ring-1 ring-black/5 ${
           url ? 'cursor-pointer' : ''
         }`}
         style={{ minWidth: 320, maxWidth: 400 }}

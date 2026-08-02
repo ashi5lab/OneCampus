@@ -78,7 +78,7 @@ export function LoginPage() {
       <div className="w-full">
         <form
           onSubmit={handleSubmit}
-          className="w-full bg-white px-8 py-10 sm:px-10"
+          className="w-full bg-surface px-8 py-10 sm:px-10"
         >
           <div className="mb-2 flex justify-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-microsoft-blue/10 text-microsoft-blue">
@@ -98,7 +98,7 @@ export function LoginPage() {
             <div>
               <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-ink-700">Username</label>
               <input
-                className="w-full rounded-lg border border-border bg-surface-muted px-4 py-3 text-[14px] text-ink-900 placeholder-ink-400 outline-none transition-colors focus:border-microsoft-blue focus:bg-white focus:ring-1 focus:ring-microsoft-blue"
+                className="w-full rounded-lg border border-border bg-surface-muted px-4 py-3 text-[14px] text-ink-900 placeholder-ink-400 outline-none transition-colors focus:border-microsoft-blue focus:bg-surface focus:ring-1 focus:ring-microsoft-blue"
                 placeholder="Enter your username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -110,7 +110,7 @@ export function LoginPage() {
               <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-ink-700">Password</label>
               <input
                 type="password"
-                className="w-full rounded-lg border border-border bg-surface-muted px-4 py-3 text-[14px] text-ink-900 placeholder-ink-400 outline-none transition-colors focus:border-microsoft-blue focus:bg-white focus:ring-1 focus:ring-microsoft-blue"
+                className="w-full rounded-lg border border-border bg-surface-muted px-4 py-3 text-[14px] text-ink-900 placeholder-ink-400 outline-none transition-colors focus:border-microsoft-blue focus:bg-surface focus:ring-1 focus:ring-microsoft-blue"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

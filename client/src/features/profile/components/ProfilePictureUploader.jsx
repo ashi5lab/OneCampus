@@ -125,14 +125,14 @@ export function ProfilePictureUploader({ name, pictureUrl, invalidateKey, custom
             <button
               type="button"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-md border border-border text-[#4b43c4] hover:bg-surface-muted transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-surface shadow-md border border-border text-accent hover:bg-surface-muted transition-colors"
               title="Edit photo"
             >
               <Pencil className="w-4 h-4" fill="currentColor" strokeWidth={2} />
             </button>
 
             {isMenuOpen && (
-              <div className="absolute top-10 md:left-0 right-0 w-32 bg-white rounded-lg shadow-xl border border-border p-1 flex flex-col z-20">
+              <div className="absolute top-10 md:left-0 right-0 w-32 bg-surface rounded-lg shadow-xl border border-border p-1 flex flex-col z-20">
                 <input
                   ref={inputRef}
                   type="file"
@@ -146,7 +146,7 @@ export function ProfilePictureUploader({ name, pictureUrl, invalidateKey, custom
                   disabled={upload.isPending}
                   className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-ink-700 hover:bg-surface-muted rounded disabled:opacity-50 text-left"
                 >
-                  <Pencil className="w-3.5 h-3.5 text-[#4b43c4]" />
+                  <Pencil className="w-3.5 h-3.5 text-accent" />
                   {upload.isPending ? 'Uploading…' : 'Change'}
                 </button>
                 {pictureUrl && (
@@ -157,7 +157,7 @@ export function ProfilePictureUploader({ name, pictureUrl, invalidateKey, custom
                       remove.mutate();
                     }}
                     disabled={remove.isPending}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-danger hover:bg-red-50 rounded disabled:opacity-50 text-left"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-danger hover:bg-danger-light rounded disabled:opacity-50 text-left"
                   >
                     <Trash2 className="w-4 h-4" />
                     Remove
@@ -172,7 +172,7 @@ export function ProfilePictureUploader({ name, pictureUrl, invalidateKey, custom
           </div>
         )}
 
-        {error && <div className="absolute -bottom-10 whitespace-nowrap text-[10px] text-danger font-medium bg-red-50 px-2 py-1 rounded border border-red-200 z-10">{error}</div>}
+        {error && <div className="absolute -bottom-10 whitespace-nowrap text-[10px] text-danger font-medium bg-danger-light px-2 py-1 rounded border border-danger z-10">{error}</div>}
       </div>
 
       {showFullPhoto && pictureUrl && (

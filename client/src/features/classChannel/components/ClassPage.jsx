@@ -50,7 +50,7 @@ import { ClassListRow } from './ClassListRow';
 // multi-column grid on wider screens), so this is flat rows everywhere.
 function ClassPicker({ cohorts }) {
   return (
-    <div className="bg-[#f8f9fe] min-h-screen pb-24 font-body">
+    <div className="bg-bg min-h-screen pb-24 font-body">
       <TeacherHeader
         title="My Classes"
         subtitle="All classes you're teaching"
@@ -61,7 +61,7 @@ function ClassPicker({ cohorts }) {
 
       <div className="px-4 relative z-20 space-y-4 pt-4">
         <div className="-mx-4">
-          <FlatList className="bg-white">
+          <FlatList className="bg-surface">
             {cohorts.map((c, i) => (
               <ClassListRow key={c.id} cohort={c} to={`/app/class/${c.id}`} index={i} />
             ))}
@@ -69,15 +69,15 @@ function ClassPicker({ cohorts }) {
         </div>
 
         {/* Timetable Promo Banner */}
-        <div className="mt-8 bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center gap-4">
-          <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center flex-shrink-0 text-indigo-600">
+        <div className="mt-8 bg-accent-light border border-accent-light rounded-2xl p-4 flex items-center gap-4">
+          <div className="w-12 h-12 bg-surface rounded-xl shadow-sm flex items-center justify-center flex-shrink-0 text-accent">
             <CalendarDays className="w-6 h-6" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-bold text-indigo-900">Need to manage timetable?</div>
-            <div className="text-[11px] text-indigo-700/80 mt-0.5">View or update class timetable</div>
+            <div className="text-[13px] font-bold text-ink-900">Need to manage timetable?</div>
+            <div className="text-[11px] text-ink-700/80 mt-0.5">View or update class timetable</div>
           </div>
-          <Link to="/app/timetable" className="bg-[#5a4fcf] text-white px-4 py-2 rounded-xl text-[12px] font-bold shadow-sm whitespace-nowrap">
+          <Link to="/app/timetable" className="bg-accent text-white px-4 py-2 rounded-xl text-[12px] font-bold shadow-sm whitespace-nowrap">
             Open Timetable
           </Link>
         </div>

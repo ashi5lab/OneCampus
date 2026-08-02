@@ -29,7 +29,7 @@ export function Topbar() {
   return (
     <div className="relative z-30 pt-2 px-3 md:px-5 w-full max-w-[1600px] mx-auto shrink-0">
       {/* Light Purple Top Box */}
-      <div className="relative bg-[#f8f6ff] rounded-[20px] md:rounded-[24px] p-3 md:p-4 overflow-hidden border border-indigo-50 shadow-sm">
+      <div className="relative bg-accent-light rounded-[20px] md:rounded-[24px] p-3 md:p-4 overflow-hidden border border-accent-light shadow-sm">
         
         {/* Abstract swoosh waves */}
         <div className="absolute bottom-0 right-0 pointer-events-none w-full h-full">
@@ -43,25 +43,25 @@ export function Topbar() {
           {config?.title ? (
             <div className="flex items-center gap-3">
               {config?.showBack && (
-                <div className="bg-white/80 rounded-full flex items-center justify-center shadow-sm">
+                <div className="bg-surface/80 rounded-full flex items-center justify-center shadow-sm">
                   <BackButton onClick={config?.onBack} />
                 </div>
               )}
               <div>
-                <h1 className="text-lg md:text-xl font-extrabold text-[#212437]">{config.title}</h1>
-                {config.subtitle && <p className="text-gray-500 text-[11px] md:text-xs font-semibold mt-0.5">{config.subtitle}</p>}
+                <h1 className="text-lg md:text-xl font-extrabold text-ink-900">{config.title}</h1>
+                {config.subtitle && <p className="text-ink-500 text-[11px] md:text-xs font-semibold mt-0.5">{config.subtitle}</p>}
               </div>
             </div>
           ) : (
             <div className="flex items-center gap-2.5">
-              <div className="w-[40px] h-[40px] bg-white rounded-full flex flex-shrink-0 items-center justify-center shadow-sm text-indigo-600 hidden sm:flex">
+              <div className="w-[40px] h-[40px] bg-surface rounded-full flex flex-shrink-0 items-center justify-center shadow-sm text-accent hidden sm:flex">
                   <School className="w-5 h-5" strokeWidth={2.5} />
               </div>
               <div>
-                <p className="text-gray-500 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-0.5">Good Morning,</p>
+                <p className="text-ink-500 text-[11px] md:text-xs font-semibold uppercase tracking-wider mb-0.5">Good Morning,</p>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-lg md:text-xl font-extrabold text-[#212437] truncate max-w-[160px] sm:max-w-xs">{displayName}</h1>
-                  <span className="bg-[#e4d9fd] text-[#6d4cea] px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide hidden sm:inline-block">
+                  <h1 className="text-lg md:text-xl font-extrabold text-ink-900 truncate max-w-[160px] sm:max-w-xs">{displayName}</h1>
+                  <span className="bg-accent/15 text-accent-dark px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide hidden sm:inline-block">
                     {user?.role === 'admin' ? 'Admin' : user?.role || 'Learner'}
                   </span>
                 </div>
@@ -74,12 +74,12 @@ export function Topbar() {
             <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" className="relative transition active:scale-95 border-2 border-white shadow-sm rounded-full" aria-label="Account menu">
+                <button type="button" className="relative transition active:scale-95 border-2 border-surface shadow-sm rounded-full" aria-label="Account menu">
                   <Avatar className="h-[36px] w-[36px]">
                     <AvatarImage src={myProfile?.profile_picture_url} alt={user?.username} />
                     <AvatarFallback>{(user?.username || '?').slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#22c55e] border-2 border-white rounded-full"></div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success border-2 border-surface rounded-full"></div>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
