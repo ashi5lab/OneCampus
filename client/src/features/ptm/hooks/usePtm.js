@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ptmApi } from '../services/ptmApi';
 
-export function usePtmSlots() {
-  return useQuery({ queryKey: ['ptm', 'slots'], queryFn: ptmApi.listSlots });
+export function usePtmSlots({ enabled = true } = {}) {
+  return useQuery({ queryKey: ['ptm', 'slots'], queryFn: ptmApi.listSlots, enabled });
 }
 
 export function useMyLearners() {

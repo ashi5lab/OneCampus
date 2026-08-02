@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { noticesApi } from '../services/noticesApi';
 
-export function useNotices() {
-  return useQuery({ queryKey: ['notices'], queryFn: noticesApi.list });
+export function useNotices({ enabled = true } = {}) {
+  return useQuery({ queryKey: ['notices'], queryFn: noticesApi.list, enabled });
 }
 
 export function useCreateNotice() {
