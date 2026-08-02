@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 // The bottom tab bar's own fixed destinations (see BottomTabBar.jsx/
 // Sidebar.jsx) — there's nothing shallower to pop back to from any of
 // these, so they never get a back button.
-const ROOT_PATHS = ['/app', '/app/learners', '/app/cohorts', '/app/class', '/app/activities', '/app/more', '/app/profile'];
+const ROOT_PATHS = ['/app', '/app/learners', '/app/cohorts', '/app/class', '/app/activities', '/app/reports', '/app/more', '/app/profile'];
 
 // Exported (not just used internally) for the handful of pages whose header
 // isn't the standard eyebrow/title shape — an avatar-centric profile card,
