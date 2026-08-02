@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 // The browser fires beforeinstallprompt once, early — often while the
 // user is still on the marketing landing page, well before they've ever
 // opened the login form. usePwaInstall's listener used to live inside
-// InstallAppPrompt (only mounted once the login modal opens), so by the
+// InstallAppPopup (only mounted once the login screen opens), so by the
 // time it attached, the event had already fired and been lost for good —
 // Chrome does not re-fire it on demand. Capturing it here, at module
 // evaluation time (this file is imported once, immediately, from

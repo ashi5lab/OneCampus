@@ -70,7 +70,7 @@ messaging.onBackgroundMessage((payload) => {
 
     const notificationOptions = {
       body,
-      icon: '/icon-192x192.svg',
+      icon: '/icon-192x192.png',
       data: { url: payload.data?.url || payload.fcmOptions?.link || '/app' }
     };
 
